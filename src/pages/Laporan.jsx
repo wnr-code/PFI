@@ -51,7 +51,15 @@ export default function Laporan() {
   useEffect(() => {
     let cancelled = false;
     setPosts([]);
+    setModeration(null);
+    setReviewNotes({});
     setLoading(true);
+    setForm({
+      title: '', body: '', city: '', latitude: '', longitude: '',
+      observedAt: localDateTime(loc.offset), timeZone: zlabel(loc),
+      weather: 'Cerah', instrument: 'Mata telanjang', visibility: 'Belum dinilai',
+      elevation: '', photo: null,
+    });
     (async () => {
       try {
         const result = await api('/api/posts');
