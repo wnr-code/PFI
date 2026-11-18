@@ -4,7 +4,7 @@
 // AI-assisted implementation; reviewed and maintained by the project maintainer.
 import React, { useEffect, useMemo, useState } from 'react';
 import { usePFI, go } from '../state.jsx';
-import { api, offlineGet } from '../lib/api.js';
+import { api, apiUrl, offlineGet } from '../lib/api.js';
 import {
   FileDown, FileText, Share2, ChevronRight, MapPin, LocateFixed,
   Send, Clock3, CloudSun, Telescope, ShieldCheck, AlertCircle,
@@ -21,6 +21,10 @@ export default function Laporan() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [moderation, setModeration] = useState(null);
+  const [moderationLoading, setModerationLoading] = useState(false);
+  const [moderationBusy, setModerationBusy] = useState(false);
+  const [reviewNotes, setReviewNotes] = useState({});
   const [form, setForm] = useState({
     title: '', body: '', city: '', latitude: '', longitude: '',
     observedAt: localDateTime(), weather: 'Cerah', instrument: 'Mata telanjang',
@@ -38,12 +42,27 @@ export default function Laporan() {
       } catch {
         const cached = await offlineGet('posts');
         if (!cancelled) setPosts(cached || []);
+      }
+      if (['reviewer', 'admin'].includes(data.account?.role)) {
+        try {
+          if (!cancelled) setModerationLoading(true);
+          const result = await api('/api/moderation');
+          if (!cancelled) setModeration(result);
+        } catch (error) {
+          if (!cancelled) tell(error.message || t('Data moderasi gagal dimuat.', 'Unable to load moderation queue.'));
+        } finally {
+          if (!cancelled) setModerationLoading(false);
+        }
+      } else if (!cancelled) {
+        setModeration(null);
+      }
+      try {
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [data.account?.id]);
+  }, [data.account?.id, data.account?.role]);
 
   const reports = useMemo(() => posts.filter((p) => p.type === 'rukyat'), [posts]);
   const update = (key, value) => setForm((f) => ({ ...f, [key]: value }));
@@ -111,6 +130,33 @@ export default function Laporan() {
     }
   };
 
+  const submitModeration = async (entity, item, decision) => {
+    const key = `${entity}:${item.id}`;
+    const note = String(reviewNotes[key] || '').trim();
+    if (note.length < 8 || note.length > 1000) {
+      tell(t('Catatan petugas harus 8–1.000 karakter.', 'Reviewer note must be 8–1,000 characters.'));
+      return;
+    }
+    setModerationBusy(true);
+    try {
+      await api(`/api/moderation/${entity}/${item.id}`, 'POST', { decision, note });
+      const [nextQueue, nextPosts] = await Promise.all([
+        api('/api/moderation'),
+        api('/api/posts'),
+      ]);
+      setModeration(nextQueue);
+      setPosts(nextPosts);
+      setReviewNotes((current) => ({ ...current, [key]: '' }));
+      tell(decision === 'verified'
+        ? t('Data berhasil diverifikasi.', 'Record verified.')
+        : t('Data dikembalikan untuk revisi.', 'Record returned for revision.'));
+    } catch (error) {
+      tell(error.message || t('Moderasi gagal disimpan.', 'Unable to save moderation decision.'));
+    } finally {
+      setModerationBusy(false);
+    }
+  };
+
   const formatDate = (value) => {
     const date = new Date(value);
     if (!Number.isFinite(date.getTime())) return '—';
@@ -133,6 +179,61 @@ export default function Laporan() {
         <h1>{t('Laporan Pengamatan Hilal', 'Crescent Observation Report')}</h1>
         <p>{t('Kirim catatan pengamatan dengan lokasi dan waktu yang jelas agar dapat ditinjau oleh petugas.', 'Submit an observation with precise location and time for reviewer assessment.')}</p>
       </div>
+
+      {['reviewer', 'admin'].includes(data.account?.role) && (
+        <section className="card" style={{ marginBottom: 18 }}>
+          <div className="card-header">
+            <h2>{t('Antrean Moderasi', 'Moderation Queue')}</h2>
+            <span className="pill pending">{(moderation?.posts?.length || 0) + (moderation?.accounts?.length || 0)}</span>
+          </div>
+          <div className="card-body">
+            {moderationLoading ? (
+              <p>{t('Memuat antrean…', 'Loading queue…')}</p>
+            ) : !moderation || (!moderation.posts?.length && !moderation.accounts?.length) ? (
+              <p style={{ color: '#8fa3b8' }}>{t('Tidak ada data yang menunggu pemeriksaan.', 'No records are awaiting review.')}</p>
+            ) : (
+              <>
+                {(moderation.posts || []).filter((item) => item.authorId !== data.account.id).map((item) => {
+                  const key = `posts:${item.id}`;
+                  return (
+                    <article key={item.id} style={{ padding: 12, border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
+                      <b>{item.title}</b>
+                      <p style={{ fontSize: 12, color: '#8fa3b8' }}>{item.author} · {item.city} · {formatDate(item.observedAt || item.date)}</p>
+                      <p style={{ fontSize: 13 }}>{item.body}</p>
+                      <p style={{ fontSize: 12, color: '#8fa3b8' }}>
+                        {t('Koordinat', 'Coordinates')}: {item.latitude}, {item.longitude} ·
+                        {t('Instrumen', 'Instrument')}: {item.instrument || '—'} ·
+                        {t('Cuaca', 'Weather')}: {item.weather || '—'}
+                      </p>
+                      {item.photo && <img src={apiUrl(item.photo)} alt={t('Foto laporan rukyat', 'Rukyat report photo')} loading="lazy" style={{ width: '100%', maxHeight: 240, objectFit: 'contain', borderRadius: 8, background: 'var(--surface2)' }} />}
+                      <textarea value={reviewNotes[key] || ''} onChange={(event) => setReviewNotes((current) => ({ ...current, [key]: event.target.value }))} minLength={8} maxLength={1000} rows={2} placeholder={t('Catatan pemeriksaan (wajib, 8–1.000 karakter)', 'Review note (required, 8–1,000 characters)')} />
+                      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                        <button className="btn primary full" disabled={moderationBusy} onClick={() => submitModeration('posts', item, 'verified')}>{t('Verifikasi', 'Verify')}</button>
+                        <button className="btn secondary full" disabled={moderationBusy} onClick={() => submitModeration('posts', item, 'revision')}>{t('Minta revisi', 'Request revision')}</button>
+                      </div>
+                    </article>
+                  );
+                })}
+                {(moderation.accounts || []).filter((item) => item.id !== data.account.id).map((item) => {
+                  const key = `users:${item.id}`;
+                  return (
+                    <article key={item.id} style={{ padding: 12, border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
+                      <b>{item.name}</b>
+                      <p style={{ fontSize: 12, color: '#8fa3b8' }}>{item.org || '—'} · {formatDate(item.created)}</p>
+                      <p style={{ fontSize: 13 }}>{item.evidence}</p>
+                      <textarea value={reviewNotes[key] || ''} onChange={(event) => setReviewNotes((current) => ({ ...current, [key]: event.target.value }))} minLength={8} maxLength={1000} rows={2} placeholder={t('Catatan pemeriksaan (wajib, 8–1.000 karakter)', 'Review note (required, 8–1,000 characters)')} />
+                      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                        <button className="btn primary full" disabled={moderationBusy} onClick={() => submitModeration('users', item, 'verified')}>{t('Verifikasi', 'Verify')}</button>
+                        <button className="btn secondary full" disabled={moderationBusy} onClick={() => submitModeration('users', item, 'revision')}>{t('Minta revisi', 'Request revision')}</button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </>
+            )}
+          </div>
+        </section>
+      )}
 
       <div className="card" style={{ marginBottom: 18 }}>
         <div className="card-body">
