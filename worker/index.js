@@ -522,8 +522,11 @@ export default {
             env.falaq.prepare('INSERT INTO group_coordinators (group_id,user_id,appointed) VALUES (?,?,?)')
               .bind(id, profile.id, created),
           ]);
-        } catch {
-          return fail(409, 'ID kelompok sudah digunakan. Gunakan nama kelompok yang berbeda.');
+        } catch (error) {
+          if (/UNIQUE|constraint/i.test(String(error?.message || error))) {
+            return fail(409, 'ID kelompok sudah digunakan. Gunakan nama kelompok yang berbeda.');
+          }
+          throw error;
         }
         return json({ id, name, description, members: 1 }, 201);
       }
