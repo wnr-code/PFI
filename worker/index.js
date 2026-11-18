@@ -401,6 +401,205 @@ export default {
         return json(rows.results || []);
       }
 
+      if (url.pathname === '/api/profile' && request.method === 'PUT') {
+        const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk untuk mengubah profil.');
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== 'object') return fail(400, 'Data profil tidak valid.');
+        const name = typeof body.name === 'string' ? body.name.trim() : '';
+        const org = typeof body.org === 'string' ? body.org.trim() : '';
+        const bio = typeof body.bio === 'string' ? body.bio.trim() : '';
+        if (name.length < 2 || name.length > 80 || org.length > 120 || bio.length > 360) {
+          return fail(400, 'Nama, organisasi, atau bio tidak sesuai batas karakter.');
+        }
+        await env.falaq.prepare('UPDATE users SET name=?,org=?,bio=?,updated=? WHERE id=?')
+          .bind(name, org, bio, new Date().toISOString(), profile.id).run();
+        const updated = await env.falaq.prepare(
+          'SELECT id,email,name,org,bio,role,verification,review_note,created FROM users WHERE id=?'
+        ).bind(profile.id).first();
+        return json({ id: updated.id, email: updated.email, name: updated.name, org: updated.org, bio: updated.bio, role: updated.role, verification: updated.verification, reviewNote: updated.review_note, created: updated.created });
+      }
+
+      if (url.pathname === '/api/preferences' && request.method === 'PUT') {
+        const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk untuk mengubah preferensi.');
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== 'object' || Array.isArray(body)) return fail(400, 'Preferensi tidak valid.');
+        let current = {};
+        try { current = JSON.parse(profile.prefs || '{}'); } catch { current = {}; }
+        const next = { ...current };
+        if ('theme' in body) {
+          if (!['light','dark'].includes(body.theme)) return fail(400, 'Tema tidak valid.');
+          next.theme = body.theme;
+        }
+        if ('mode' in body) {
+          if (!['pemula','profesional'].includes(body.mode)) return fail(400, 'Mode tidak valid.');
+          next.mode = body.mode;
+        }
+        if ('lang' in body) {
+          if (!['id','en'].includes(body.lang)) return fail(400, 'Bahasa tidak valid.');
+          next.lang = body.lang;
+        }
+        if ('site' in body) {
+          if (!SITES.some((site) => site.id === body.site)) return fail(400, 'Lokasi pengamatan tidak valid.');
+          next.site = body.site;
+        }
+        if ('notify' in body) next.notify = Boolean(body.notify);
+        await env.falaq.prepare('UPDATE users SET prefs=?,updated=? WHERE id=?')
+          .bind(JSON.stringify(next), new Date().toISOString(), profile.id).run();
+        return json({ ok: true, prefs: next });
+      }
+
+      if (url.pathname === '/api/verification' && request.method === 'POST') {
+        const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk untuk mengajukan verifikasi.');
+        if (['verified','pending'].includes(profile.verification)) return fail(409, 'Permohonan sudah diajukan atau disetujui.');
+        const body = await request.json().catch(() => null);
+        const evidence = typeof body?.evidence === 'string' ? body.evidence.trim() : '';
+        if (evidence.length < 20 || evidence.length > 1000) return fail(400, 'Keterangan bukti harus 20–1.000 karakter.');
+        await env.falaq.prepare("UPDATE users SET verification='pending',evidence=?,review_note='',updated=? WHERE id=?")
+          .bind(evidence, new Date().toISOString(), profile.id).run();
+        return json({ status: 'pending' });
+      }
+
+      if (url.pathname === '/api/moderation' && request.method === 'GET') {
+        const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk.');
+        if (!['reviewer','admin'].includes(profile.role)) return fail(403, 'Khusus petugas verifikasi.');
+        const [users, posts] = await Promise.all([
+          env.falaq.prepare("SELECT id,name,org,evidence,created FROM users WHERE verification='pending' ORDER BY created").all(),
+          env.falaq.prepare("SELECT * FROM posts WHERE type='rukyat' AND status='pending' ORDER BY created").all(),
+        ]);
+        const postRows = [];
+        for (const post of posts.results || []) postRows.push(await postView(env, post, profile.id));
+        return json({ accounts: users.results || [], posts: postRows });
+      }
+
+      const moderationMatch = url.pathname.match(/^\/api\/moderation\/([a-z]+)\/([a-zA-Z0-9_-]+)$/);
+      if (moderationMatch && request.method === 'POST') {
+        const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk.');
+        if (!['reviewer','admin'].includes(profile.role)) return fail(403, 'Khusus petugas verifikasi.');
+        const [, entity, id] = moderationMatch;
+        if (!['users','posts'].includes(entity)) return fail(400, 'Jenis data tidak valid.');
+        const body = await request.json().catch(() => null);
+        const decision = body?.decision;
+        const note = typeof body?.note === 'string' ? body.note.trim() : '';
+        if (!['verified','revision'].includes(decision) || note.length < 8 || note.length > 1000) return fail(400, 'Keputusan atau catatan verifikasi tidak valid.');
+        const table = entity;
+        const item = await env.falaq.prepare(`SELECT * FROM ${table} WHERE id=?`).bind(id).first();
+        const column = entity === 'users' ? 'verification' : 'status';
+        if (!item || item[column] !== 'pending') return fail(409, 'Pengajuan tidak lagi menunggu tinjauan.');
+        if ((entity === 'users' ? id : item.user_id) === profile.id) return fail(403, 'Petugas tidak dapat menyetujui pengajuannya sendiri.');
+        await env.falaq.batch([
+          env.falaq.prepare(`UPDATE ${table} SET ${column}=?,review_note=? WHERE id=?`).bind(decision, note, id),
+          env.falaq.prepare('INSERT INTO reviews (id,reviewer,entity,entity_id,decision,note,created) VALUES (?,?,?,?,?,?,?)')
+            .bind(uuid(), profile.id, entity, id, decision, note, new Date().toISOString()),
+        ]);
+        return json({ ok: true });
+      }
+
+      const groupMembersMatch = url.pathname.match(/^\/api\/groups\/([a-zA-Z0-9_-]+)\/members$/);
+      if (groupMembersMatch && request.method === 'GET') {
+        const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk untuk melihat anggota kelompok.');
+        const groupId = groupMembersMatch[1];
+        const group = await env.falaq.prepare('SELECT id,name,description FROM groups WHERE id=?').bind(groupId).first();
+        if (!group) return fail(404, 'Kelompok tidak ditemukan.');
+        const [coord, rows] = await Promise.all([
+          env.falaq.prepare('SELECT user_id FROM group_coordinators WHERE group_id=?').bind(groupId).first(),
+          env.falaq.prepare(`SELECT u.id,u.name,u.email,u.org,u.bio,u.role,u.verification,u.review_note,u.created
+            FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.group_id=? ORDER BY u.name`).bind(groupId).all(),
+        ]);
+        return json({ group: group.id, name: group.name, description: group.description, coordinator: coord?.user_id || null,
+          members: (rows.results || []).map((u) => ({ ...u, isCoordinator: coord?.user_id === u.id })) });
+      }
+
+      const groupPostsMatch = url.pathname.match(/^\/api\/groups\/([a-zA-Z0-9_-]+)\/posts$/);
+      if (groupPostsMatch && request.method === 'GET') {
+        const profile = await profileFor(request, env);
+        const groupId = groupPostsMatch[1];
+        const group = await env.falaq.prepare('SELECT id FROM groups WHERE id=?').bind(groupId).first();
+        if (!group) return fail(404, 'Kelompok tidak ditemukan.');
+        const rows = profile && ['reviewer','admin'].includes(profile.role)
+          ? await env.falaq.prepare('SELECT * FROM posts WHERE group_id=? ORDER BY created DESC LIMIT 100').bind(groupId).all()
+          : profile
+            ? await env.falaq.prepare("SELECT * FROM posts WHERE group_id=? AND (type!='rukyat' OR status='verified' OR user_id=?) ORDER BY created DESC LIMIT 100").bind(groupId, profile.id).all()
+            : await env.falaq.prepare("SELECT * FROM posts WHERE group_id=? AND (type!='rukyat' OR status='verified') ORDER BY created DESC LIMIT 100").bind(groupId).all();
+        const result = [];
+        for (const post of rows.results || []) result.push(await postView(env, post, profile?.id));
+        return json(result);
+      }
+
+      const groupCoordinatorMatch = url.pathname.match(/^\/api\/groups\/([a-zA-Z0-9_-]+)\/coordinator$/);
+      if (groupCoordinatorMatch && request.method === 'POST') {
+        const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk.');
+        const groupId = groupCoordinatorMatch[1];
+        const member = await env.falaq.prepare('SELECT 1 AS yes FROM memberships WHERE group_id=? AND user_id=?').bind(groupId, profile.id).first();
+        if (!member) return fail(403, 'Anda belum menjadi anggota kelompok ini.');
+        const existing = await env.falaq.prepare('SELECT user_id FROM group_coordinators WHERE group_id=?').bind(groupId).first();
+        if (existing && existing.user_id !== profile.id) return fail(403, 'Kelompok ini sudah memiliki koordinator.');
+        await env.falaq.prepare('INSERT OR REPLACE INTO group_coordinators (group_id,user_id,appointed) VALUES (?,?,?)')
+          .bind(groupId, profile.id, new Date().toISOString()).run();
+        return json({ ok: true, group: groupId, coordinator: profile.id });
+      }
+
+      if (url.pathname === '/api/agendas' && request.method === 'GET') {
+        const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk.');
+        const memberships = await env.falaq.prepare('SELECT group_id FROM memberships WHERE user_id=?').bind(profile.id).all();
+        const ids = (memberships.results || []).map((row) => row.group_id);
+        if (!ids.length) return json([]);
+        const placeholders = ids.map(() => '?').join(',');
+        const rows = await env.falaq.prepare(`SELECT a.*,u.name AS creator_name FROM agendas a JOIN users u ON u.id=a.created_by
+          WHERE a.group_id IN (${placeholders}) ORDER BY a.date ASC`).bind(...ids).all();
+        return json((rows.results || []).map((a) => ({ id:a.id, group:a.group_id, groupName:a.group_id, title:a.title, body:a.body, date:a.date, location:a.location, createdBy:a.created_by, creatorName:a.creator_name, created:a.created })));
+      }
+
+      const agendaMatch = url.pathname.match(/^\/api\/agendas\/([a-zA-Z0-9_-]+)$/);
+      if (agendaMatch && request.method === 'GET') {
+        const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk.');
+        const agenda = await env.falaq.prepare('SELECT a.*,u.name AS creator_name FROM agendas a JOIN users u ON u.id=a.created_by WHERE a.id=?').bind(agendaMatch[1]).first();
+        if (!agenda) return fail(404, 'Agenda tidak ditemukan.');
+        const member = await env.falaq.prepare('SELECT 1 AS yes FROM memberships WHERE group_id=? AND user_id=?').bind(agenda.group_id, profile.id).first();
+        if (!member) return fail(403, 'Anda bukan anggota kelompok ini.');
+        return json({ id:agenda.id, group:agenda.group_id, groupName:agenda.group_id, title:agenda.title, body:agenda.body, date:agenda.date, location:agenda.location, createdBy:agenda.created_by, creatorName:agenda.creator_name, created:agenda.created });
+      }
+
+      if (url.pathname === '/api/agendas' && request.method === 'POST') {
+        const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk.');
+        const body = await request.json().catch(() => null);
+        const groupId = typeof body?.group === 'string' ? body.group : '';
+        const title = typeof body?.title === 'string' ? body.title.trim() : '';
+        const content = typeof body?.body === 'string' ? body.body.trim() : '';
+        const date = typeof body?.date === 'string' ? body.date : '';
+        const location = typeof body?.location === 'string' ? body.location.trim() : '';
+        if (!title || title.length > 130 || content.length < 3 || content.length > 1000 || location.length > 100 || !/^\\d{4}-\\d{2}-\\d{2}$/.test(date) || date < '1900-01-01' || date > '2099-12-31') return fail(400, 'Data agenda tidak valid.');
+        const member = await env.falaq.prepare('SELECT 1 AS yes FROM memberships WHERE group_id=? AND user_id=?').bind(groupId, profile.id).first();
+        if (!member) return fail(403, 'Anda bukan anggota kelompok ini.');
+        const coord = await env.falaq.prepare('SELECT 1 AS yes FROM group_coordinators WHERE group_id=? AND user_id=?').bind(groupId, profile.id).first();
+        if (!coord) return fail(403, 'Hanya koordinator yang dapat membuat agenda.');
+        const id = uuid();
+        const created = new Date().toISOString();
+        await env.falaq.prepare('INSERT INTO agendas (id,group_id,title,body,date,location,created_by,created) VALUES (?,?,?,?,?,?,?,?)')
+          .bind(id, groupId, title, content, date, location, profile.id, created).run();
+        return json({ id, group: groupId, title, body: content, date, location, createdBy: profile.id, creatorName: profile.name, created }, 201);
+      }
+
+      if (agendaMatch && request.method === 'DELETE') {
+        const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk.');
+        const agenda = await env.falaq.prepare('SELECT * FROM agendas WHERE id=?').bind(agendaMatch[1]).first();
+        if (!agenda) return fail(404, 'Agenda tidak ditemukan.');
+        const coord = await env.falaq.prepare('SELECT 1 AS yes FROM group_coordinators WHERE group_id=? AND user_id=?').bind(agenda.group_id, profile.id).first();
+        if (!coord || agenda.created_by !== profile.id) return fail(403, 'Hanya koordinator pembuat agenda yang dapat menghapusnya.');
+        await env.falaq.prepare('DELETE FROM agendas WHERE id=?').bind(agenda.id).run();
+        return json({ ok: true });
+      }
+
       // Fail explicitly rather than silently sending unsupported writes to a
       // partially migrated backend. Remaining endpoints are ported in phases.
       if (url.pathname.startsWith('/api/')) {
