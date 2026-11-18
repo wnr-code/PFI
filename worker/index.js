@@ -293,6 +293,7 @@ async function getPhoto(request, env, id) {
   if (!await canAccessPost(env, meta, profile)) {
     return fail(profile ? 403 : 401, 'Foto atau laporan ini tidak dapat diakses.');
   }
+  const isPublic = meta.status === 'verified' && !meta.group_id;
 
   const object = await env.r2falaq.get(meta.object_key);
   if (!object) return fail(404, 'Berkas foto tidak ditemukan.');
@@ -300,7 +301,7 @@ async function getPhoto(request, env, id) {
     headers: {
       'content-type': meta.mime,
       'content-length': String(meta.size_bytes),
-      'cache-control': isVerified ? 'public, max-age=86400' : 'private, no-store',
+      'cache-control': isPublic ? 'public, max-age=86400' : 'private, no-store',
       'x-content-type-options': 'nosniff',
     },
   });
