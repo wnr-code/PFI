@@ -12,13 +12,13 @@ async function getToken() {
 export async function api(path, method = 'GET', body = null) {
   const token = await getToken();
   const headers = { Accept: 'application/json' };
-  if (body !== null && body !== undefined) headers['Content-Type'] = 'application/json';
+  if (body !== null && body !== undefined && !(body instanceof FormData)) headers['Content-Type'] = 'application/json';
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers,
-    body: body === null || body === undefined ? undefined : JSON.stringify(body),
+    body: body === null || body === undefined ? undefined : (body instanceof FormData ? body : JSON.stringify(body)),
     credentials: 'same-origin',
   });
 
