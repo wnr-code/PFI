@@ -4,11 +4,31 @@
 // AI-assisted implementation; reviewed and maintained by the project maintainer.
 import React, { useEffect, useMemo, useState } from 'react';
 import { usePFI, go } from '../state.jsx';
-import { api, apiUrl, offlineGet } from '../lib/api.js';
+import { api, apiBlob, offlineGet } from '../lib/api.js';
 import {
   FileDown, FileText, Share2, ChevronRight, MapPin, LocateFixed,
   Send, Clock3, CloudSun, Telescope, ShieldCheck, AlertCircle,
 } from 'lucide-react';
+
+function ProtectedPhoto({ path, alt }) {
+  const [src, setSrc] = useState('');
+  useEffect(() => {
+    let active = true;
+    let objectUrl = null;
+    apiBlob(path).then((blob) => {
+      objectUrl = URL.createObjectURL(blob);
+      if (active) setSrc(objectUrl);
+      else URL.revokeObjectURL(objectUrl);
+    }).catch(() => {
+      if (active) setSrc('');
+    });
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [path]);
+  return src ? <img src={src} alt={alt} loading="lazy" style={{ width: '100%', maxHeight: 260, objectFit: 'contain', borderRadius: 8, background: 'var(--surface2)', marginTop: 10 }} /> : null;
+}
 
 const localDateTime = () => {
   const d = new Date();
@@ -202,7 +222,7 @@ export default function Laporan() {
                         {t('Instrumen', 'Instrument')}: {item.instrument || '—'} ·
                         {t('Cuaca', 'Weather')}: {item.weather || '—'}
                       </p>
-                      {item.photo && <img src={apiUrl(item.photo)} alt={t('Foto laporan rukyat', 'Rukyat report photo')} loading="lazy" style={{ width: '100%', maxHeight: 240, objectFit: 'contain', borderRadius: 8, background: 'var(--surface2)' }} />}
+                      {item.photo && <ProtectedPhoto path={item.photo} alt={t('Foto laporan rukyat', 'Rukyat report photo')} />}
                       <textarea value={reviewNotes[key] || ''} onChange={(event) => setReviewNotes((current) => ({ ...current, [key]: event.target.value }))} minLength={8} maxLength={1000} rows={2} placeholder={t('Catatan pemeriksaan (wajib, 8–1.000 karakter)', 'Review note (required, 8–1,000 characters)')} />
                       <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                         <button className="btn primary full" disabled={moderationBusy} onClick={() => submitModeration('posts', item, 'verified')}>{t('Verifikasi', 'Verify')}</button>
@@ -331,7 +351,7 @@ export default function Laporan() {
               </div>
               <b>{p.title}</b>
               <div className="post-body">{p.body}</div>
-              {p.photo && <img src={apiUrl(p.photo)} alt={t('Foto pengamatan', 'Observation photo')} loading="lazy" style={{ width: '100%', maxHeight: 260, objectFit: 'contain', borderRadius: 8, background: 'var(--surface2)', marginTop: 10 }} />}
+              {p.photo && <ProtectedPhoto path={p.photo} alt={t('Foto pengamatan', 'Observation photo')} />}
               {p.reviewNote && <p style={{ color: '#d6ae62', fontSize: 12 }}>{t('Catatan petugas:', 'Reviewer note:')} {p.reviewNote}</p>}
               <div className="post-actions">
                 <button className="btn icon" onClick={() => go('komunitas')}><ChevronRight size={14} /></button>
