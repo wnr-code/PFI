@@ -31,6 +31,15 @@ Bagian ini mencatat kondisi awal saat audit dimulai, bukan seluruh kondisi branc
 - Hisab saat ini hanya menerima metode MABIMS. Posisi hilal dihitung pada sunset lokal; tinggi memakai koordinat topocentric dengan refraction normal dan elongasi geocentric. Tampilan membedakan pemenuhan kriteria dari klaim hilal benar-benar terlihat.
 - Dashboard memakai peristiwa astronomi dinamis, bukan tanggal contoh lama. Kalender tetap menandai Umm al-Qura sebagai referensi, bukan penetapan resmi Indonesia.
 
+## Fitur UI yang masih perlu diselesaikan
+
+- Manajemen kelompok (bergabung/keluar, daftar anggota, posting khusus kelompok) belum seluruhnya tersedia di UI walaupun endpoint dan kontrol akses Worker sudah ada.
+- Pembuatan dan pengelolaan agenda kelompok belum memiliki formulir UI lengkap.
+- Peta rukyat saat ini berupa daftar koordinat dan tautan peta, belum peta interaktif.
+- Preferensi notifikasi sudah tersimpan, tetapi pengiriman push/email otomatis belum diaktifkan.
+- Lokasi hisab yang tersedia masih berupa daftar titik acuan proyek; perlu diverifikasi/ditambah dari data geospasial resmi dan dapat diperluas dengan input koordinat pengamat.
+- Hisab yang tampil menghitung lokasi terpilih; belum menghitung keputusan nasional multi-titik pada seluruh titik observasi MABIMS.
+
 ## Status validasi dan pekerjaan yang belum selesai
 
 - Tes tambahan telah ditulis untuk otorisasi grup, metadata rukyat, waktu sunset, dan elongasi Bulan.
