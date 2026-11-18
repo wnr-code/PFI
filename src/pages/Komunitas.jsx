@@ -19,7 +19,7 @@ export default function Komunitas() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newPost, setNewPost] = useState('');
-  const [postType, setPostType] = useState('rukyat');
+  const [postType, setPostType] = useState('diskusi');
 
   useEffect(() => {
     let cancelled = false;
@@ -47,6 +47,11 @@ export default function Komunitas() {
   const createPost = async (e) => {
     e.preventDefault();
     if (!newPost.trim()) return;
+    if (postType === 'rukyat') {
+      tell(t('Untuk laporan rukyat, gunakan formulir laporan agar koordinat, waktu, dan data pengamatan tercatat lengkap.', 'Use the observation report form for rukyat so coordinates, time, and observation details are recorded.'));
+      go('laporan');
+      return;
+    }
     try {
       await api('/api/posts', 'POST', {
         type: postType,
@@ -96,7 +101,7 @@ export default function Komunitas() {
             <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <label style={{ margin: 0, minWidth: 100 }}>{t('Jenis', 'Type')}</label>
               <select value={postType} onChange={(e) => setPostType(e.target.value)}>
-                <option value="rukyat">{t('Laporan Rukyat', 'Crescent Report')}</option>
+                <option value="rukyat">{t('Laporan Rukyat (formulir khusus)', 'Rukyat report (dedicated form)')}</option>
                 <option value="diskusi">{t('Diskusi', 'Discussion')}</option>
               </select>
             </div>
