@@ -24,7 +24,7 @@ export default function Laporan() {
   const [form, setForm] = useState({
     title: '', body: '', city: '', latitude: '', longitude: '',
     observedAt: localDateTime(), weather: 'Cerah', instrument: 'Mata telanjang',
-    visibility: 'Belum dinilai', elevation: '',
+    visibility: 'Belum dinilai', elevation: '', photo: null,
   });
 
   useEffect(() => {
@@ -85,8 +85,22 @@ export default function Laporan() {
           elevation: form.elevation,
         },
       });
-      setPosts((current) => [created, ...current]);
-      setForm((f) => ({ ...f, title: '', body: '', latitude: '', longitude: '', elevation: '' }));
+      let saved = created;
+      if (form.photo) {
+        const attachment = new FormData();
+        attachment.append('photo', form.photo);
+        try {
+          await api(`/api/posts/${created.id}/photo`, 'POST', attachment);
+          saved = { ...created, photo: `/api/photos/${created.id}` };
+        } catch (uploadError) {
+          setPosts((current) => [created, ...current]);
+          setForm((f) => ({ ...f, title: '', body: '', latitude: '', longitude: '', elevation: '', photo: null }));
+          tell(t(`Laporan tersimpan, tetapi foto gagal diunggah: ${uploadError.message}`, `Report saved, but photo upload failed: ${uploadError.message}`));
+          return;
+        }
+      }
+      setPosts((current) => [saved, ...current]);
+      setForm((f) => ({ ...f, title: '', body: '', latitude: '', longitude: '', elevation: '', photo: null }));
       tell(t('Laporan berhasil dikirim dan menunggu verifikasi.', 'Report submitted and awaiting review.'));
     } catch (error) {
       tell(error.message || t('Laporan gagal dikirim.', 'Unable to submit report.'));
@@ -170,6 +184,15 @@ export default function Laporan() {
               </select>
             </label>
             <label className="field" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span>{t('Foto pengamatan (opsional, maks. 3 MB)', 'Observation photo (optional, max 3 MB)')}</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(e) => update('photo', e.target.files?.[0] || null)}
+              />
+              {form.photo && <small style={{ color: 'var(--muted, #8fa3b8)' }}>{form.photo.name} · {(form.photo.size / 1024 / 1024).toFixed(2)} MB</small>}
+            </label>
+            <label className="field" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span>{t('Catatan pengamatan', 'Observation notes')}</span>
               <textarea required rows={4} maxLength={5000} value={form.body} onChange={(e) => update('body', e.target.value)} placeholder={t('Jelaskan proses pengamatan, arah pandang, kondisi ufuk, dan hasil yang diperoleh…', 'Describe the observation process, viewing direction, horizon conditions, and result…')} />
             </label>
@@ -177,10 +200,7 @@ export default function Laporan() {
               <Send size={16} /> {saving ? t('Mengirim…', 'Submitting…') : t('Kirim laporan untuk ditinjau', 'Submit report for review')}
             </button>
           </form>
-          <div style={{ marginTop: 12, color: 'var(--muted, #8fa3b8)', fontSize: 11 }}>
-            <AlertCircle size={13} style={{ verticalAlign: 'middle', marginRight: 5 }} />
-            {t('Lampiran foto belum tersedia pada tahap ini. Simpan berkas asli untuk dilampirkan setelah fitur upload R2 diaktifkan.', 'Photo attachments are not yet available in this phase. Keep original files for upload once R2 attachment support is enabled.')}
-          </div>
+
         </div>
       </div>
 
