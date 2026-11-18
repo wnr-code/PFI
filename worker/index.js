@@ -196,18 +196,31 @@ async function uploadPostPhoto(request, env, postId) {
   return json({ id, photo: `/api/photos/${id}`, mime, size: bytes.byteLength, sha256 }, 201);
 }
 
-async function getPhoto(env, id) {
+async function getPhoto(request, env, id) {
   const meta = await env.falaq.prepare(
-    'SELECT mime,object_key,size_bytes FROM photos WHERE id = ?'
+    `SELECT ph.mime,ph.object_key,ph.size_bytes,p.user_id,p.status
+     FROM photos ph JOIN posts p ON p.id = ph.post_id
+     WHERE ph.id = ?`
   ).bind(id).first();
   if (!meta) return fail(404, 'Foto tidak ditemukan.');
+
+  // Unverified field-observation photos are private. Never rely on an
+  // unguessable photo ID as an authorization mechanism.
+  const profile = await profileFor(request, env);
+  const isReviewer = profile && ['reviewer', 'admin'].includes(profile.role);
+  const isOwner = profile && profile.id === meta.user_id;
+  const isVerified = meta.status === 'verified';
+  if (!isVerified && !isOwner && !isReviewer) {
+    return fail(profile ? 403 : 401, 'Foto laporan ini belum dipublikasikan.');
+  }
+
   const object = await env.r2falaq.get(meta.object_key);
   if (!object) return fail(404, 'Berkas foto tidak ditemukan.');
   return new Response(object.body, {
     headers: {
       'content-type': meta.mime,
       'content-length': String(meta.size_bytes),
-      'cache-control': 'public, max-age=86400',
+      'cache-control': isVerified ? 'public, max-age=86400' : 'private, no-store',
       'x-content-type-options': 'nosniff',
     },
   });
@@ -337,7 +350,7 @@ export default {
       }
 
       const photoMatch = url.pathname.match(/^\/api\/photos\/([a-zA-Z0-9_-]+)$/);
-      if (photoMatch && request.method === 'GET') return await getPhoto(env, photoMatch[1]);
+      if (photoMatch && request.method === 'GET') return await getPhoto(request, env, photoMatch[1]);
 
       const likeMatch = url.pathname.match(/^\/api\/posts\/([a-zA-Z0-9_-]+)\/like$/);
       if (likeMatch && request.method === 'POST') {
