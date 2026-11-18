@@ -107,6 +107,14 @@ export function Provider({ children }) {
         } catch {
           // Keep the conservative observer fallback if the profile API is unavailable.
         }
+        try {
+          const agendas = await api('/api/agendas');
+          setData((d) => ({ ...d, agendas }));
+        } catch {
+          setData((d) => ({ ...d, agendas: [] }));
+        }
+      } else {
+        setData((d) => ({ ...d, groups: [], agendas: [], calculations: [] }));
       }
 
       // Fetch posts from API (with offline fallback)
@@ -132,7 +140,7 @@ export function Provider({ children }) {
         await refresh();
       } else if (event === 'SIGNED_OUT') {
         session(null);
-        setData((d) => ({ ...d, posts: [] }));
+        setData((d) => ({ ...d, posts: [], groups: [], agendas: [], calculations: [] }));
       }
     });
 
