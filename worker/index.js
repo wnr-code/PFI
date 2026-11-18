@@ -81,6 +81,9 @@ export function normalizeRukyatDetails(details) {
   const observedAt = typeof details.observedAt === 'string' ? details.observedAt.trim() : '';
   const timestampPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/;
   if (!timestampPattern.test(observedAt) || !Number.isFinite(Date.parse(observedAt))) return null;
+  const datePart = observedAt.slice(0, 10);
+  const validCalendarDate = new Date(`${datePart}T12:00:00.000Z`);
+  if (!Number.isFinite(validCalendarDate.getTime()) || validCalendarDate.toISOString().slice(0, 10) !== datePart) return null;
 
   const zoneOffsets = { WIB: 420, WITA: 480, WIT: 540 };
   const timeZone = details.timeZone;
