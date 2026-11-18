@@ -119,9 +119,23 @@ async function postView(env, post, userId) {
 async function getPosts(request, env, profile) {
   const url = new URL(request.url);
   const limit = Math.min(100, Math.max(1, Number(url.searchParams.get('limit')) || 50));
-  const rows = await env.falaq.prepare(
-    'SELECT * FROM posts ORDER BY created DESC LIMIT ?'
-  ).bind(limit).all();
+  // Pending rukyat reports are private to their author and reviewers.
+  // Public visitors only see reports after a reviewer verifies them.
+  const rows = profile && ['reviewer', 'admin'].includes(profile.role)
+    ? await env.falaq.prepare(
+        'SELECT * FROM posts ORDER BY created DESC LIMIT ?'
+      ).bind(limit).all()
+    : profile
+      ? await env.falaq.prepare(`
+          SELECT * FROM posts
+          WHERE type != 'rukyat' OR status = 'verified' OR user_id = ?
+          ORDER BY created DESC LIMIT ?
+        `).bind(profile.id, limit).all()
+      : await env.falaq.prepare(`
+          SELECT * FROM posts
+          WHERE type != 'rukyat' OR status = 'verified'
+          ORDER BY created DESC LIMIT ?
+        `).bind(limit).all();
   const result = [];
   for (const row of rows.results || []) result.push(await postView(env, row, profile?.id));
   return json(result);
@@ -213,7 +227,12 @@ export default {
 
       if (url.pathname === '/api/session' && request.method === 'GET') {
         const profile = await profileFor(request, env);
-        return json(profile ? {
+        if (!profile) return json({ account: null, groups: [], history: [] });
+        const [memberships, calculations] = await Promise.all([
+          env.falaq.prepare('SELECT group_id FROM memberships WHERE user_id = ?').bind(profile.id).all(),
+          env.falaq.prepare('SELECT result FROM calculations WHERE user_id = ? ORDER BY created DESC LIMIT 100').bind(profile.id).all(),
+        ]);
+        return json({
           account: {
             id: profile.id, name: profile.name, email: profile.email,
             org: profile.org, bio: profile.bio, role: profile.role,
@@ -221,7 +240,11 @@ export default {
             created: profile.created,
           },
           prefs: JSON.parse(profile.prefs || '{}'),
-        } : { account: null });
+          groups: (memberships.results || []).map((row) => row.group_id),
+          history: (calculations.results || []).map((row) => {
+            try { return JSON.parse(row.result); } catch { return null; }
+          }).filter(Boolean),
+        });
       }
 
       if (url.pathname === '/api/hisab' && request.method === 'POST') {
@@ -315,6 +338,59 @@ export default {
 
       const photoMatch = url.pathname.match(/^\/api\/photos\/([a-zA-Z0-9_-]+)$/);
       if (photoMatch && request.method === 'GET') return await getPhoto(env, photoMatch[1]);
+
+      const likeMatch = url.pathname.match(/^\\/api\\/posts\\/([a-zA-Z0-9_-]+)\\/like$/);
+      if (likeMatch && request.method === 'POST') {
+        const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk untuk menyukai postingan.');
+        const post = await env.falaq.prepare('SELECT id FROM posts WHERE id = ?').bind(likeMatch[1]).first();
+        if (!post) return fail(404, 'Postingan tidak ditemukan.');
+        const body = await request.json().catch(() => null);
+        if (body?.liked === true) {
+          await env.falaq.prepare('INSERT OR IGNORE INTO likes (post_id,user_id) VALUES (?,?)').bind(post.id, profile.id).run();
+        } else {
+          await env.falaq.prepare('DELETE FROM likes WHERE post_id = ? AND user_id = ?').bind(post.id, profile.id).run();
+        }
+        const row = await env.falaq.prepare('SELECT * FROM posts WHERE id = ?').bind(post.id).first();
+        return json(await postView(env, row, profile.id));
+      }
+
+      const commentsMatch = url.pathname.match(/^\\/api\\/posts\\/([a-zA-Z0-9_-]+)\\/comments$/);
+      if (commentsMatch && request.method === 'POST') {
+        const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk untuk berkomentar.');
+        const post = await env.falaq.prepare('SELECT * FROM posts WHERE id = ?').bind(commentsMatch[1]).first();
+        if (!post) return fail(404, 'Postingan tidak ditemukan.');
+        const body = await request.json().catch(() => null);
+        const value = typeof body?.text === 'string' ? body.text.trim() : '';
+        if (!value || value.length > 1400) return fail(400, 'Komentar wajib diisi dan maksimal 1.400 karakter.');
+        if (post.type === 'rukyat' && post.status !== 'verified' && post.user_id !== profile.id && !['reviewer','admin'].includes(profile.role)) {
+          return fail(404, 'Postingan tidak ditemukan.');
+        }
+        await env.falaq.prepare(
+          'INSERT INTO comments (id,post_id,user_id,body,created) VALUES (?,?,?,?,?)'
+        ).bind(uuid(), post.id, profile.id, value, new Date().toISOString()).run();
+        const updated = await env.falaq.prepare('SELECT * FROM posts WHERE id = ?').bind(post.id).first();
+        return json(await postView(env, updated, profile.id), 201);
+      }
+
+      const groupJoinMatch = url.pathname.match(/^\\/api\\/groups\\/([a-zA-Z0-9_-]+)$/);
+      if (groupJoinMatch && request.method === 'POST') {
+        const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk untuk bergabung dengan kelompok.');
+        const groupId = groupJoinMatch[1];
+        const group = await env.falaq.prepare('SELECT id FROM groups WHERE id = ?').bind(groupId).first();
+        if (!group) return fail(404, 'Kelompok tidak ditemukan.');
+        const body = await request.json().catch(() => null);
+        if (body?.join === true) {
+          await env.falaq.prepare('INSERT OR IGNORE INTO memberships (group_id,user_id) VALUES (?,?)').bind(groupId, profile.id).run();
+        } else {
+          await env.falaq.prepare('DELETE FROM memberships WHERE group_id = ? AND user_id = ?').bind(groupId, profile.id).run();
+          await env.falaq.prepare('DELETE FROM group_coordinators WHERE group_id = ? AND user_id = ?').bind(groupId, profile.id).run();
+        }
+        const memberships = await env.falaq.prepare('SELECT group_id FROM memberships WHERE user_id = ?').bind(profile.id).all();
+        return json({ groups: (memberships.results || []).map((row) => row.group_id) });
+      }
 
       if (url.pathname === '/api/groups' && request.method === 'GET') {
         const rows = await env.falaq.prepare(`
