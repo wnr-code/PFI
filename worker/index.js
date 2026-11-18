@@ -132,9 +132,10 @@ async function uploadPostPhoto(request, env, postId) {
   if (!profile) return fail(401, 'Silakan masuk untuk mengunggah foto.');
 
   const post = await env.falaq.prepare(
-    'SELECT id,user_id FROM posts WHERE id = ?'
+    'SELECT id,user_id,type FROM posts WHERE id = ?'
   ).bind(postId).first();
   if (!post) return fail(404, 'Laporan tidak ditemukan.');
+  if (post.type !== 'rukyat') return fail(400, 'Lampiran foto hanya tersedia untuk laporan rukyat.');
   if (post.user_id !== profile.id && profile.role !== 'admin') {
     return fail(403, 'Anda tidak memiliki izin untuk melampirkan foto pada laporan ini.');
   }
