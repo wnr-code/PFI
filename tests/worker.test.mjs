@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker, { canReviewEntity, canViewGroup, canViewPost, normalizeRukyatDetails, uploadContentLengthStatus } from '../worker/index.js';
-import { SITES, clock, lunar, sunsetTime } from '../src/lib/astro.js';
+import { SITES, calculateHisab, clock, lunar, sunsetTime } from '../src/lib/astro.js';
 
 test('Worker health endpoint reports Cloudflare runtime', async () => {
   const response = await worker.fetch(new Request('https://pfi.test/api/health'), {}, {});
@@ -115,4 +115,19 @@ test('lunar phase data exposes a finite geocentric elongation', () => {
   const result = lunar(new Date('2026-11-19T12:00:00.000Z'));
   assert.ok(Number.isFinite(result.elongation));
   assert.ok(result.elongation >= 0 && result.elongation <= 180);
+});
+
+
+test('Shawwal 1443 hisab remains within the published 1 May 2022 Indonesian reference envelope', () => {
+  const aceh = SITES.find((site) => site.id === 'aceh');
+  const result = calculateHisab(
+    { start: '2022-05-02', year: 1443, month: 10, day: 1 },
+    aceh,
+    'mabims'
+  );
+  assert.ok(result.sunset > result.conj);
+  assert.ok(result.age > 0 && result.age < 24);
+  assert.ok(result.moon.alt >= 3.5 && result.moon.alt <= 6.0);
+  assert.ok(result.elongation >= 5.0 && result.elongation <= 8.0);
+  assert.equal(result.meets, result.moon.alt >= 3 && result.elongation >= 6.4);
 });
