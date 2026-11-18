@@ -356,8 +356,8 @@ export default {
       if (likeMatch && request.method === 'POST') {
         const profile = await profileFor(request, env);
         if (!profile) return fail(401, 'Silakan masuk untuk menyukai postingan.');
-        const post = await env.falaq.prepare('SELECT id FROM posts WHERE id = ?').bind(likeMatch[1]).first();
-        if (!post) return fail(404, 'Postingan tidak ditemukan.');
+        const post = await env.falaq.prepare('SELECT * FROM posts WHERE id = ?').bind(likeMatch[1]).first();
+        if (!post || !canViewPost(post, profile)) return fail(404, 'Postingan tidak ditemukan.');
         const body = await request.json().catch(() => null);
         if (body?.liked === true) {
           await env.falaq.prepare('INSERT OR IGNORE INTO likes (post_id,user_id) VALUES (?,?)').bind(post.id, profile.id).run();
@@ -377,9 +377,7 @@ export default {
         const body = await request.json().catch(() => null);
         const value = typeof body?.text === 'string' ? body.text.trim() : '';
         if (!value || value.length > 1400) return fail(400, 'Komentar wajib diisi dan maksimal 1.400 karakter.');
-        if (post.type === 'rukyat' && post.status !== 'verified' && post.user_id !== profile.id && !['reviewer','admin'].includes(profile.role)) {
-          return fail(404, 'Postingan tidak ditemukan.');
-        }
+        if (!canViewPost(post, profile)) return fail(404, 'Postingan tidak ditemukan.');
         await env.falaq.prepare(
           'INSERT INTO comments (id,post_id,user_id,body,created) VALUES (?,?,?,?,?)'
         ).bind(uuid(), post.id, profile.id, value, new Date().toISOString()).run();
