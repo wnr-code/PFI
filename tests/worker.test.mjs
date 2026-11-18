@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker, { canReviewEntity, canViewGroup, canViewPost, normalizeRukyatDetails, uploadContentLengthStatus } from '../worker/index.js';
+import worker, { canReviewEntity, canViewGroup, canViewPost, groupSlug, normalizeRukyatDetails, uploadContentLengthStatus } from '../worker/index.js';
 import { SITES, calculateHisab, clock, lunar, sunsetTime } from '../src/lib/astro.js';
 
 test('Worker health endpoint reports Cloudflare runtime', async () => {
@@ -137,4 +137,12 @@ test('Shawwal 1443 hisab remains within the published 1 May 2022 Indonesian refe
   assert.ok(result.moon.alt >= 3.5 && result.moon.alt <= 6.0);
   assert.ok(result.elongation >= 5.0 && result.elongation <= 8.0);
   assert.equal(result.meets, result.moon.alt >= 3 && result.elongation >= 6.4);
+});
+
+
+test('group IDs are generated as stable URL-safe slugs', () => {
+  assert.equal(groupSlug('Falak Tasikmalaya'), 'falak-tasikmalaya');
+  assert.equal(groupSlug('Kelompok Falak: Jawa Barat'), 'kelompok-falak-jawa-barat');
+  assert.equal(groupSlug('   '), '');
+  assert.equal(groupSlug(null), '');
 });
