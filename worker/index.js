@@ -35,6 +35,12 @@ function fail(status, message) {
   return json({ error: message }, status);
 }
 
+// Pending rukyat reports are private to their owner and authorized reviewers.
+export function canViewPost(post, profile) {
+  if (post?.type !== 'rukyat' || post.status === 'verified') return true;
+  return Boolean(profile && (profile.id === post.user_id || ['reviewer', 'admin'].includes(profile.role)));
+}
+
 function uuid() {
   return crypto.randomUUID();
 }
@@ -181,7 +187,7 @@ async function uploadPostPhoto(request, env, postId) {
   const id = uuid();
   const objectKey = `posts/${postId}/${id}`;
   await env.r2falaq.put(objectKey, bytes, {
-    httpMetadata: { contentType: mime, cacheControl: 'public, max-age=86400' },
+    httpMetadata: { contentType: mime, cacheControl: 'private, no-store' },
     customMetadata: { postId, uploadedBy: profile.id, sha256 },
   });
 
