@@ -14,12 +14,15 @@ const TABS = [
 ];
 
 export default function Komunitas() {
-  const { data, t, lang, tell, refresh } = usePFI();
+  const { data, t, lang, tell, loc } = usePFI();
   const [tab, setTab] = useState('beranda');
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newPost, setNewPost] = useState('');
   const [postType, setPostType] = useState('diskusi');
+  const [expandedPostId, setExpandedPostId] = useState(null);
+  const [commentDraft, setCommentDraft] = useState('');
+  const [commentBusy, setCommentBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,6 +69,31 @@ export default function Komunitas() {
       tell(t('Postingan berhasil dibuat.', 'Post created.'));
     } catch (e) {
       tell(e.message || 'Gagal membuat postingan.');
+    }
+  };
+
+  const toggleLike = async (post) => {
+    try {
+      const updated = await api(`/api/posts/${post.id}/like`, 'POST', { liked: !post.liked });
+      setPosts((current) => current.map((item) => item.id === post.id ? updated : item));
+    } catch (error) {
+      tell(error.message || t('Like gagal disimpan.', 'Unable to save like.'));
+    }
+  };
+
+  const submitComment = async (event, post) => {
+    event.preventDefault();
+    const text = commentDraft.trim();
+    if (!text || text.length > 1400) return;
+    setCommentBusy(true);
+    try {
+      const updated = await api(`/api/posts/${post.id}/comments`, 'POST', { text });
+      setPosts((current) => current.map((item) => item.id === post.id ? updated : item));
+      setCommentDraft('');
+    } catch (error) {
+      tell(error.message || t('Komentar gagal dikirim.', 'Unable to submit comment.'));
+    } finally {
+      setCommentBusy(false);
     }
   };
 
@@ -151,16 +179,37 @@ export default function Komunitas() {
               </div>
               <div className="post-body">{p.body}</div>
               <div className="post-actions">
-                <button className="btn icon" onClick={() => tell(t('Like', 'Liked'))}>
-                  <CheckCircle2 size={16} />
+                <button className="btn icon" onClick={() => toggleLike(p)} aria-pressed={Boolean(p.liked)}>
+                  <CheckCircle2 size={16} /> {p.likes || 0}
                 </button>
-                <button className="btn icon">
-                  <MessageCircle size={16} />
+                <button className="btn icon" onClick={() => setExpandedPostId((current) => current === p.id ? null : p.id)} aria-expanded={expandedPostId === p.id}>
+                  <MessageCircle size={16} /> {p.comments?.length || 0}
                 </button>
-                <button className="btn icon" onClick={() => go(`komunitas/${p.id}`)}>
+                <button className="btn icon" onClick={() => setExpandedPostId((current) => current === p.id ? null : p.id)} aria-label={t('Lihat diskusi', 'View discussion')}>
                   <ChevronRight size={14} />
                 </button>
               </div>
+              {expandedPostId === p.id && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+                    {(p.comments || []).map((comment) => (
+                      <div key={comment.id} style={{ fontSize: 12, padding: 8, background: 'var(--surface2)', borderRadius: 8 }}>
+                        <b>{comment.author}</b>
+                        <div>{comment.text}</div>
+                      </div>
+                    ))}
+                    {(!p.comments || p.comments.length === 0) && (
+                      <p style={{ color: '#8fa3b8', fontSize: 12 }}>{t('Belum ada komentar.', 'No comments yet.')}</p>
+                    )}
+                  </div>
+                  <form onSubmit={(event) => submitComment(event, p)} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <textarea value={commentDraft} onChange={(event) => setCommentDraft(event.target.value)} maxLength={1400} rows={2} placeholder={t('Tulis komentar…', 'Write a comment…')} required />
+                    <button className="btn secondary" type="submit" disabled={commentBusy || !commentDraft.trim()}>
+                      {commentBusy ? t('Mengirim…', 'Sending…') : t('Kirim komentar', 'Post comment')}
+                    </button>
+                  </form>
+                </div>
+              )}
             </div>
           ))}
         </div>
