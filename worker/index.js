@@ -1,3 +1,5 @@
+import { SITES, calculateHisab, hijri, localTime } from '../src/lib/astro.js';
+
 /**
  * PFI Cloudflare Worker API (migration phase 1).
  *
@@ -161,6 +163,33 @@ export default {
           },
           prefs: JSON.parse(profile.prefs || '{}'),
         } : { account: null });
+      }
+
+      if (url.pathname === '/api/hisab' && request.method === 'POST') {
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== 'object') return fail(400, 'Data permintaan tidak valid.');
+        const site = SITES.find((item) => item.id === body.site);
+        if (!site) return fail(400, 'Lokasi pengamatan tidak dikenal.');
+        const start = body.start;
+        if (typeof start !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}$/.test(start) || start < '1900-01-01' || start > '2099-12-31') {
+          return fail(400, 'Tanggal di luar rentang.');
+        }
+        const date = localTime(start, '12:00', site);
+        if (!Number.isFinite(date.getTime())) return fail(400, 'Tanggal tidak valid.');
+        const period = hijri(date, site);
+        if (period.day !== 1) return fail(400, 'Pilih hari pertama bulan Hijriah.');
+        const method = body.method;
+        if (!['mabims', 'geometri'].includes(method)) return fail(400, 'Metode hisab tidak valid.');
+        const result = calculateHisab({ start, ...period }, site, method);
+        result.engine = 'Astronomy Engine 2.1.19';
+
+        const profile = await profileFor(request, env);
+        if (profile) {
+          await env.falaq.prepare(
+            'INSERT INTO calculations (id,user_id,result,created) VALUES (?,?,?,?)'
+          ).bind(result.id, profile.id, JSON.stringify(result), result.created).run();
+        }
+        return json(result, 200);
       }
 
       if (url.pathname === '/api/posts' && request.method === 'GET') {
