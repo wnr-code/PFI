@@ -42,6 +42,7 @@ export default function Kalender() {
   const [groupDetails, setGroupDetails] = useState({});
   const [agendaForm, setAgendaForm] = useState({ group: '', title: '', body: '', location: '' });
   const [agendaBusy, setAgendaBusy] = useState(false);
+  const [agendaDeleting, setAgendaDeleting] = useState(null);
 
   const cells = useMemo(() => {
     const year = month.getUTCFullYear();
@@ -114,6 +115,24 @@ export default function Kalender() {
       tell(error.message || t('Agenda gagal dibuat. Pastikan Anda koordinator kelompok.', 'Unable to create agenda. Confirm you are the group coordinator.'));
     } finally {
       setAgendaBusy(false);
+    }
+  };
+
+  const deleteAgenda = async (agenda) => {
+    const allowed = data.account && (
+      agenda.createdBy === data.account.id ||
+      groupDetails[agenda.group]?.coordinator === data.account.id
+    );
+    if (!allowed || !window.confirm(t('Hapus agenda ini?', 'Delete this agenda?'))) return;
+    setAgendaDeleting(agenda.id);
+    try {
+      await api(`/api/agendas/${agenda.id}`, 'DELETE');
+      await refresh();
+      tell(t('Agenda berhasil dihapus.', 'Agenda deleted.'));
+    } catch (error) {
+      tell(error.message || t('Agenda gagal dihapus.', 'Unable to delete agenda.'));
+    } finally {
+      setAgendaDeleting(null);
     }
   };
 
@@ -215,6 +234,11 @@ export default function Kalender() {
                 <b>{agenda.title}</b>
                 <p>{agenda.body}</p>
                 <small><Clock size={12} /> {agenda.time || t('Waktu belum ditentukan','Time not set')} <MapPin size={12} /> {agenda.location || t('Lokasi belum ditentukan','Location not set')}</small>
+                {data.account && (agenda.createdBy === data.account.id || groupDetails[agenda.group]?.coordinator === data.account.id) && (
+                  <button className="btn icon" aria-label={t('Hapus agenda', 'Delete agenda')} disabled={agendaDeleting === agenda.id} onClick={() => deleteAgenda(agenda)}>
+                    <Trash2 size={14} />
+                  </button>
+                )}
               </div>
             </article>
           )) : (
