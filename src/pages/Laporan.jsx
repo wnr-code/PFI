@@ -216,7 +216,7 @@ export default function Laporan() {
         <section className="card" style={{ marginBottom: 18 }}>
           <div className="card-header">
             <h2>{t('Antrean Moderasi', 'Moderation Queue')}</h2>
-            <span className="pill pending">{(moderation?.posts?.length || 0) + (moderation?.accounts?.length || 0)}</span>
+            <span className="pill pending">{(moderation?.posts || []).filter((item) => item.authorId !== data.account?.id).length + (moderation?.accounts || []).filter((item) => item.id !== data.account?.id).length}</span>
           </div>
           <div className="card-body">
             {moderationLoading ? (
