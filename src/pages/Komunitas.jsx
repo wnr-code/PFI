@@ -49,6 +49,8 @@ export default function Komunitas() {
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDescription, setNewGroupDescription] = useState('');
   const [groupCreating, setGroupCreating] = useState(false);
+  const [groupDetails, setGroupDetails] = useState({});
+  const [groupDetailsBusy, setGroupDetailsBusy] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -140,6 +142,32 @@ export default function Komunitas() {
       tell(error.message || t('Keanggotaan kelompok gagal diperbarui.', 'Unable to update group membership.'));
     } finally {
       setGroupBusyId(null);
+    }
+  };
+
+  const loadGroupDetails = async (group) => {
+    if (!data.account) {
+      open('auth');
+      return;
+    }
+    setGroupDetailsBusy(group.id);
+    try {
+      const details = await api(`/api/groups/${group.id}/members`);
+      setGroupDetails((current) => ({ ...current, [group.id]: details }));
+    } catch (error) {
+      tell(error.message || t('Anggota kelompok tidak dapat dimuat.', 'Unable to load group members.'));
+    } finally {
+      setGroupDetailsBusy(null);
+    }
+  };
+
+  const becomeCoordinator = async (group) => {
+    try {
+      await api(`/api/groups/${group.id}/coordinator`, 'POST', {});
+      await loadGroupDetails(group);
+      tell(t('Anda menjadi koordinator kelompok.', 'You are now the group coordinator.'));
+    } catch (error) {
+      tell(error.message || t('Tidak dapat menjadi koordinator.', 'Unable to become coordinator.'));
     }
   };
 
@@ -238,10 +266,35 @@ export default function Komunitas() {
                       <p style={{ fontSize: 12, color: '#8fa3b8', marginTop: 3 }}>{group.description || t('Kelompok pengamatan falak.', 'Falak observation group.')}</p>
                       <small style={{ color: '#8fa3b8' }}>{group.members || 0} {t('anggota', 'members')}</small>
                     </div>
+                    {joined && (
+                      <button className="btn secondary" disabled={groupDetailsBusy === group.id} onClick={() => loadGroupDetails(group)}>
+                        {groupDetailsBusy === group.id ? t('Memuat…', 'Loading…') : t('Anggota', 'Members')}
+                      </button>
+                    )}
                     <button className={`btn ${joined ? 'secondary' : 'primary'}`} disabled={groupBusyId === group.id} onClick={() => joinGroup(group)}>
                       {groupBusyId === group.id ? t('Memproses…', 'Working…') : joined ? t('Keluar', 'Leave') : t('Gabung', 'Join')}
                     </button>
                   </div>
+                  {groupDetails[group.id] && (
+                    <div style={{ padding: 10, background: 'var(--surface2)', borderRadius: 8, marginTop: 8 }}>
+                      <p style={{ fontSize: 12, marginBottom: 8 }}>
+                        {t('Koordinator:', 'Coordinator:')} {groupDetails[group.id].members?.find((member) => member.id === groupDetails[group.id].coordinator)?.name || t('Belum ditunjuk', 'Not appointed')}
+                      </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {(groupDetails[group.id].members || []).map((member) => (
+                          <div key={member.id} style={{ fontSize: 12, display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                            <span>{member.name}{member.isCoordinator ? ' · ' + t('Koordinator', 'Coordinator') : ''}</span>
+                            <span style={{ color: '#8fa3b8' }}>{member.org || ''}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {joined && !groupDetails[group.id].coordinator && (
+                        <button className="btn secondary" style={{ marginTop: 10 }} onClick={() => becomeCoordinator(group)}>
+                          {t('Jadi koordinator', 'Become coordinator')}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 );
               })}
             </div>
