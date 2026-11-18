@@ -14,7 +14,7 @@ const TABS = [
 ];
 
 export default function Komunitas() {
-  const { data, t, lang, tell, refreshPosts } = usePFI();
+  const { data, t, lang, tell, refresh } = usePFI();
   const [tab, setTab] = useState('beranda');
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +62,7 @@ export default function Komunitas() {
         city: 'Tasikmalaya',
       });
       setNewPost('');
-      await refreshPosts();
+      await refresh();
       tell(t('Postingan berhasil dibuat.', 'Post created.'));
     } catch (e) {
       tell(e.message || 'Gagal membuat postingan.');
