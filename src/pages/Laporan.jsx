@@ -5,6 +5,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { usePFI, go } from '../state.jsx';
 import { api, apiBlob, offlineGet } from '../lib/api.js';
+import { zlabel } from '../lib/astro.js';
 import {
   FileDown, FileText, Share2, ChevronRight, MapPin, LocateFixed,
   Send, Clock3, CloudSun, Telescope, ShieldCheck, AlertCircle,
@@ -30,14 +31,10 @@ function ProtectedPhoto({ path, alt }) {
   return src ? <img src={src} alt={alt} loading="lazy" style={{ width: '100%', maxHeight: 260, objectFit: 'contain', borderRadius: 8, background: 'var(--surface2)', marginTop: 10 }} /> : null;
 }
 
-const localDateTime = () => {
-  const d = new Date();
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0, 16);
-};
+const localDateTime = (offset = 7) => new Date(Date.now() + offset * 3600000).toISOString().slice(0, 16);
 
 export default function Laporan() {
-  const { data, t, lang, tell } = usePFI();
+  const { data, t, lang, tell, loc } = usePFI();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -47,7 +44,7 @@ export default function Laporan() {
   const [reviewNotes, setReviewNotes] = useState({});
   const [form, setForm] = useState({
     title: '', body: '', city: '', latitude: '', longitude: '',
-    observedAt: localDateTime(), weather: 'Cerah', instrument: 'Mata telanjang',
+    observedAt: localDateTime(loc.offset), timeZone: zlabel(loc), weather: 'Cerah', instrument: 'Mata telanjang',
     visibility: 'Belum dinilai', elevation: '', photo: null,
   });
 
@@ -116,7 +113,8 @@ export default function Laporan() {
         details: {
           latitude: form.latitude,
           longitude: form.longitude,
-          observedAt: new Date(form.observedAt).toISOString(),
+          observedAt: new Date(`${form.observedAt}:00${form.timeZone === 'WIB' ? '+07:00' : form.timeZone === 'WITA' ? '+08:00' : '+09:00'}`).toISOString(),
+          timeZone: form.timeZone,
           weather: form.weather,
           instrument: form.instrument,
           visibility: form.visibility,
@@ -174,6 +172,15 @@ export default function Laporan() {
     }
   };
 
+  const formatObservationTime = (item) => {
+    const date = new Date(item.observedAt);
+    if (!Number.isFinite(date.getTime())) return '—';
+    const offset = Number(item.utcOffsetMinutes);
+    if (!Number.isFinite(offset)) return formatDate(date);
+    const local = new Date(date.getTime() + offset * 60000);
+    return `${local.toISOString().slice(0, 16).replace('T', ' ')} ${item.timeZone || ''}`.trim();
+  };
+
   const formatDate = (value) => {
     const date = new Date(value);
     if (!Number.isFinite(date.getTime())) return '—';
@@ -215,7 +222,7 @@ export default function Laporan() {
                   return (
                     <article key={item.id} style={{ padding: 12, border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
                       <b>{item.title}</b>
-                      <p style={{ fontSize: 12, color: '#8fa3b8' }}>{item.author} · {item.city} · {formatDate(item.observedAt || item.date)}</p>
+                      <p style={{ fontSize: 12, color: '#8fa3b8' }}>{item.author} · {item.city} · {item.observedAt ? formatObservationTime(item) : formatDate(item.date)}</p>
                       <p style={{ fontSize: 13 }}>{item.body}</p>
                       <p style={{ fontSize: 12, color: '#8fa3b8' }}>
                         {t('Koordinat', 'Coordinates')}: {item.latitude}, {item.longitude} ·
@@ -282,6 +289,14 @@ export default function Laporan() {
               <LocateFixed size={16} /> {t('Gunakan lokasi GPS', 'Use GPS location')}
             </button>
             {field(t('Waktu pengamatan', 'Observation time'), 'observedAt', { type: 'datetime-local', required: true })}
+            <label className="field">
+              <span>{t('Zona waktu lokasi pengamatan', 'Observation time zone')}</span>
+              <select value={form.timeZone} onChange={(event) => update('timeZone', event.target.value)}>
+                <option value="WIB">WIB (UTC+7)</option>
+                <option value="WITA">WITA (UTC+8)</option>
+                <option value="WIT">WIT (UTC+9)</option>
+              </select>
+            </label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 10 }}>
               <label className="field" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <span><CloudSun size={14} style={{ verticalAlign: 'middle', marginRight: 5 }} />{t('Cuaca', 'Weather')}</span>
@@ -343,7 +358,7 @@ export default function Laporan() {
                 <div className="avatar">{p.author?.split(' ').map((w) => w[0]).join('') ?? '?'}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <b style={{ fontSize: 13, display: 'block' }}>{p.author}</b>
-                  <div style={{ fontSize: 11, color: '#8fa3b8' }}>{p.city} · {formatDate(p.date)}</div>
+                  <div style={{ fontSize: 11, color: '#8fa3b8' }}>{p.city} · {p.observedAt ? formatObservationTime(p) : formatDate(p.date)}</div>
                 </div>
                 <span className={`pill ${p.status === 'verified' ? 'verified' : 'pending'}`} style={{ fontSize: 9 }}>
                   {p.status === 'verified' ? t('Terverifikasi', 'Verified') : p.status === 'revision' ? t('Perlu revisi', 'Revision') : t('Menunggu', 'Pending')}
