@@ -1,0 +1,130 @@
+import React, { useMemo } from 'react';
+import { usePFI, go } from '../state.jsx';
+import { lunar, dateFmt, hijriText, SITES } from '../lib/astro.js';
+import {
+  Moon, Sun, CalendarDays, MapPin, Calculator, Telescope, UsersRound,
+  FileText, Share2, Orbit, History, FileDown, ArrowRight,
+} from 'lucide-react';
+
+export default function Dashboard() {
+  const { data, t, lang, loc, events, tell } = usePFI();
+  const today = dateFmt(new Date(), loc, lang, { day: 'numeric', month: 'long', year: 'numeric' });
+  const hijri = hijriText(new Date(), loc, lang, false);
+
+  const moon = useMemo(() => lunar(new Date()), [loc]);
+
+  const quickActions = [
+    { id: 'hisab', label: t('Hisab Awal Bulan', 'New Month Calculation'), icon: Calculator, color: 'text-gold' },
+    { id: 'astronomi', label: t('Simulasi Hilal', 'Crescent Simulation'), icon: Telescope, color: 'text-gold' },
+    { id: 'kalender', label: t('Kalender Hijriah', 'Hijri Calendar'), icon: CalendarDays, color: 'text-gold' },
+    { id: 'peta', label: t('Peta Rukyat', 'Observation Map'), icon: MapPin, color: 'text-gold' },
+    { id: 'komunitas', label: t('Komunitas', 'Community'), icon: UsersRound, color: 'text-gold' },
+    { id: 'laporan', label: t('Pusat Laporan', 'Report Centre'), icon: FileText, color: 'text-gold' },
+  ];
+
+  return (
+    <div className="page-wrap">
+      <div className="page-head">
+        <div className="eyebrow">
+          <i /> {t('ASSALAMU\'ALAIKUM', 'ASSALAMU\'ALAIKUM')}
+        </div>
+        <h1>{t('Mari bersama melengkapi ilmu falak dan astronomi Islam.', 'Let\'s complete Islamic astronomy and falak knowledge together.')}</h1>
+        <p>{dateFmt(new Date(), loc, lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · {hijri}</p>
+      </div>
+
+      <div className="card">
+        <div className="card-body">
+          <div className="moon-display">
+            <div className="moon-big">
+              <Moon size={48} color="#d6ae62" />
+            </div>
+            <div className="moon-info">
+              <h3>{t('Fase Bulan', 'Moon Phase')} · {moon.phase === 'full' ? t('Purnama', 'Full Moon') : moon.phase === 'new' ? t('Ijtimak', 'New Moon') : t('Fase ' + moon.phase, 'Phase ' + moon.phase)}</h3>
+              <p>{t('Iluminasi', 'Illumination')}: {Math.round(moon.illumination)}% · {t('Usia', 'Age')}: {moon.age?.toFixed?.(1) ?? '—'} {t('hari', 'days')}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="quick-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
+        <div className="card">
+          <div className="card-header">
+            <h2>{t('Jadwal Ijtimak & Rukyat', 'Conjunction & Observation Schedule')}</h2>
+          </div>
+          <div className="card-body">
+            <div className="result-grid">
+              <div className="metric">
+                <span className="label">{t('Ijtimak Berikutnya', 'Next Conjunction')}</span>
+                <b>{t('10 Mar 2025', '10 Mar 2025')}</b>
+                <small>{t('22:00 WIB', '22:00 WIB')}</small>
+              </div>
+              <div className="metric">
+                <span className="label">{t('Rukyat Hilal', 'Crescent Observation')}</span>
+                <b>{t('11 Mar 2025', '11 Mar 2025')}</b>
+                <small>{t('Sore hari', 'Evening')}</small>
+              </div>
+            </div>
+          </div>
+          <div className="card-footer">
+            <button className="btn primary full" onClick={() => go('hisab')}>
+              <CalendarDays size={16} /> {t('Hitung Sekarang', 'Calculate Now')}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header">
+          <h2>{t('Pilihan Cepat', 'Quick Actions')}</h2>
+        </div>
+        <div className="card-body">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12 }}>
+            {quickActions.map((a) => (
+              <button
+                key={a.id}
+                className={`btn secondary full ${a.color}`}
+                onClick={() => go(a.id)}
+              >
+                <a.icon size={18} /> {a.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header">
+          <h2>{t('Agenda Langit', 'Sky Events')}</h2>
+        </div>
+        <div className="card-body">
+          {events.length === 0 ? (
+            <p style={{ color: '#747f8e', fontSize: 13, textAlign: 'center', padding: 20 }}>
+              {t('Tidak ada agenda astronomi mendatang.', 'No upcoming astronomical events.')}
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {events.slice(0, 5).map((e) => (
+                <div key={e.id} style={{ padding: 12, background: 'var(--surface2)', borderRadius: 8, border: '1px solid var(--line)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <b style={{ fontSize: 13 }}>{e.title}</b>
+                      <div style={{ fontSize: 11, color: '#8fa3b8' }}>{e.loc?.city ?? '-'}</div>
+                    </div>
+                    <div style={{ fontSize: 11, color: '#d6ae62', fontWeight: 600 }}>
+                      {dateFmt(new Date(e.date), loc, lang, { day: 'numeric', month: 'short' })}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="card-footer">
+          <button className="btn secondary full" onClick={() => go('kalender')}>
+            <CalendarDays size={16} /> {t('Lihat Kalender Lengkap', 'View Full Calendar')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

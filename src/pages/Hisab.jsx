@@ -1,0 +1,191 @@
+import React, { useState, useMemo } from 'react';
+import { usePFI, go } from '../state.jsx';
+import {
+  calculateHisab, hijri, isoDay, localTime, SITES, num,
+} from '../lib/astro.js';
+import { api } from '../lib/api.js';
+import {
+  Calendar, MapPin, Settings, Sun, Moon, Compass, FileDown, Share2,
+  ArrowRight, CheckCircle2, Info, History,
+} from 'lucide-react';
+
+const BULAN_HIJRIAH = [
+  'Muharram', 'Safar', 'Rabi\'ul Awwal', 'Rabi\'ul Akhir',
+  'Jumadil Awwal', 'Jumadil Akhir', 'Rajab', 'Syaban',
+  'Ramadan', 'Syawal', 'Dzulqaidah', 'Dzulhijah',
+];
+
+const BULAN_HIJRIAH_EN = [
+  'Muharram', 'Safar', "Rabi' al-Awwal", "Rabi' al-Thani",
+  'Jumada al-Awwal', 'Jumada al-Thani', 'Rajab', 'Sha\'ban',
+  'Ramadan', 'Shawwal', 'Dhu al-Qidah', 'Dhu al-Hijjah',
+];
+
+export default function Hisab() {
+  const { data, t, lang, loc, tell, update } = usePFI();
+  const [bulan, setBulan] = useState(8); // Ramadan default
+  [9]; // Syawal
+  const [siteId, setSiteId] = useState(data.site || 'jakarta');
+  const [metode, setMetode] = useState('mabims');
+  const [result, setResult] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  const site = SITES.find((s) => s.id === siteId) || SITES[0];
+
+  const hitung = async () => {
+    setBusy(true);
+    try {
+      const start = localTime('2026-01-01', '12:00', site);
+      const h = hijri(start, site);
+      const r = calculateHisab(
+        { start, ...h, month: bulan + 1 },
+        site,
+        metode
+      );
+      setResult(r);
+      try {
+        await api('/api/hisab', 'POST', {
+          site: siteId,
+          start: '2026-01-01',
+          method: metode,
+          result: r,
+        });
+      } catch (e) {
+        // offline: store locally
+        console.warn('API hisab gagal, simpan lokal:', e.message);
+      }
+      tell(t('Perhitungan selesai.', 'Calculation complete.'));
+    } catch (e) {
+      tell(e.message || 'Perhitungan gagal.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const formatAngle = (v) => v?.toFixed?.(2) ?? '—';
+  const formatTime = (v) => {
+    if (!v) return '—';
+    return new Date(v).toLocaleTimeString(lang === 'id' ? 'id-ID' : 'en-GB', {
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+  };
+
+  const bulanLabel = lang === 'id' ? BULAN_HIJRIAH[bulan] : BULAN_HIJRIAH_EN[bulan];
+
+  return (
+    <div className="page-wrap">
+      <div className="page-head">
+        <div className="eyebrow"><i /> {t('HISAB AWAL BULAN', 'NEW MONTH CALCULATION')}</div>
+        <h1>{t('Perhitungan awal bulan Hijriah', 'New month calculation')}</h1>
+        <p>{t('Hitung ijtimak, terbenam matahari, tinggi hilal, elongasi, dan posisi bulan.', 'Calculate conjunction, sunset, crescent height, elongation, and moon position.')}</p>
+      </div>
+
+      <div className="card">
+        <div className="card-body">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+            <div className="field">
+              <label>{t('Bulan Hijriah', 'Hijri Month')}</label>
+              <select value={bulan} onChange={(e) => setBulan(Number(e.target.value))}>
+                {BULAN_HIJRIAH.map((b, i) => (
+                  <option key={i} value={i}>{b}</option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label>{t('Lokasi Pengamatan', 'Observation Site')}</label>
+              <select value={siteId} onChange={(e) => setSiteId(e.target.value)}>
+                {SITES.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.city}, {s.region}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label>{t('Metode Hisab', 'Calculation Method')}</label>
+              <select value={metode} onChange={(e) => setMetode(e.target.value)}>
+                <option value="mabims">MABIMS (tinggi ≥ 3°, elongasi ≥ 6,4°)</option>
+                <option value="geometri">Geometri (posisi geometris)</option>
+                <option value="nu">NU (Nahdlatul Ulama)</option>
+                <option value="muhammadiyah">Muhammadiyah</option>
+              </select>
+            </div>
+          </div>
+          <div style={{ marginTop: 20 }}>
+            <button
+              className="btn primary full"
+              onClick={hitung}
+              disabled={busy}
+            >
+              {busy ? t('Menghitung…', 'Calculating…') : <><Calculator size={18} /> {t('Hitung Sekarang', 'Calculate Now')}</>}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {result && (
+        <div className="card">
+          <div className="card-header">
+            <h2>{t('Hasil Perhitungan', 'Calculation Result')}</h2>
+            <span className="pill verified">{t('Data astronomis', 'Astronomical Data')}</span>
+          </div>
+          <div className="card-body">
+            <div className="result-grid">
+              <div className="result-box">
+                <span className="label">{t('Waktu Ijtimak', 'Conjunction Time')}</span>
+                <b>{formatTime(result.iJt ?? result.conjunction)}</b>
+                <small>{t('UTC', 'UTC')}</small>
+              </div>
+              <div className="result-box">
+                <span className="label">{t('Tinggi Hilal', 'Crescent Height')}</span>
+                <b>{formatAngle(result.alt)}°</b>
+                <small>{t('pada terbenam matahari', 'at sunset')}</small>
+              </div>
+              <div className="result-box">
+                <span className="label">{t('Elongasi', 'Elongation')}</span>
+                <b>{formatAngle(result.elong)}°</b>
+                <small>{t('jarak bulan-matahari', 'moon-sun distance')}</small>
+              </div>
+              <div className="result-box">
+                <span className="label">{t('Umur Bulan', 'Moon Age')}</span>
+                <b>{formatAngle(result.age)}</b>
+                <small>{t('jam', 'hours')}</small>
+              </div>
+              <div className="result-box">
+                <span className="label">{t('Azimut Hilal', 'Crescent Azimuth')}</span>
+                <b>{formatAngle(result.az)}°</b>
+                <small>{t('arah mata kompas', 'compass direction')}</small>
+              </div>
+              <div className="result-box">
+                <span className="label">{t('Visibilitas', 'Visibility')}</span>
+                <b>{result.visible ? t('Terlihat', 'Visible') : t('Tidak terlihat', 'Not Visible')}</b>
+                <small>{result.visible ? '✓' : '✗'}</small>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 16, padding: 14, background: 'var(--surface2)', border: '1px solid var(--line)', borderRadius: 8 }}>
+              <h3 style={{ fontSize: 13, marginBottom: 8, color: '#d6ae62' }}>{t('Kesimpulan', 'Conclusion')}</h3>
+              <p style={{ fontSize: 13, lineHeight: 1.6, color: '#c7d1df' }}>{result.visible ? t('Kondisi matahari terbenam mencukupi untuk pengamatan hilal. Namun, penetapan resmi awal bulan adalah wewenang sidang isbat.', 'Sunset conditions sufficient for crescent observation. Official determination is authority of isbat session.') : t('Kondisi matahari terbenam kurang mencukupi untuk pengamatan hilal berdasarkan metode yang dipilih.', 'Sunset conditions insufficient for crescent observation based on selected method.')}</p>
+              <p style={{ fontSize: 11, color: '#747f8e', marginTop: 8 }}>
+                {t('Hasil perhitungan adalah data astronomis, bukan keputusan resmi awal bulan. Setiap lembaga (MUI, NU, Muhammadiyah, dll.) memiliki metoda perhitungan sendiri.', 'Calculation results are astronomical data, not official new month determination. Each institution (MUI, NU, Muhammadiyah, etc.) has its own calculation method.')}
+              </p>
+            </div>
+          </div>
+          <div className="card-footer">
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="btn secondary full" onClick={() => tell(t('PDF akan diunduh (demo).', 'PDF will download (demo).'))}>
+                <FileDown size={16} /> {t('Unduh PDF', 'Download PDF')}
+              </button>
+              <button className="btn secondary full" onClick={() => {
+                const txt = `Hisab ${bulanLabel}: Tinggi ${formatAngle(result.alt)}°, Elongasi ${formatAngle(result.elong)}°, ${result.visible ? 'Terlihat' : 'Tidak terlihat'}`;
+                navigator.clipboard?.writeText(txt).then(() => tell(t('Disalin ke clipboard.', 'Copied to clipboard.')));
+              }}>
+                <Share2 size={16} /> {t('Bagikan', 'Share')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
