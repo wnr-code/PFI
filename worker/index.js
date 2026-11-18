@@ -69,8 +69,9 @@ export function canViewGroup(profile, isMember) {
 // Coordinates must be explicit; timestamps must carry a timezone/UTC offset.
 export function normalizeRukyatDetails(details) {
   if (!details || typeof details !== 'object' || Array.isArray(details)) return null;
-  if (details.latitude === null || details.latitude === undefined || String(details.latitude).trim() === '' ||
-      details.longitude === null || details.longitude === undefined || String(details.longitude).trim() === '') return null;
+  if (!['number', 'string'].includes(typeof details.latitude) ||
+      !['number', 'string'].includes(typeof details.longitude) ||
+      String(details.latitude).trim() === '' || String(details.longitude).trim() === '') return null;
 
   const latitude = Number(details.latitude);
   const longitude = Number(details.longitude);
@@ -83,6 +84,7 @@ export function normalizeRukyatDetails(details) {
 
   let elevation = null;
   if (details.elevation !== null && details.elevation !== undefined && String(details.elevation).trim() !== '') {
+    if (!['number', 'string'].includes(typeof details.elevation)) return null;
     elevation = Number(details.elevation);
     if (!Number.isFinite(elevation) || elevation < -500 || elevation > 9000) return null;
   }
