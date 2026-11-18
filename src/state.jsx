@@ -46,6 +46,7 @@ export function Provider({ children }) {
   const [toast, setToast] = useState('');
   const [ready, setReady] = useState(false);
   const [online, setOnline] = useState(true);
+  const refreshVersion = useRef(0);
 
   const tell = useCallback((msg) => {
     setToast(msg);
@@ -74,8 +75,10 @@ export function Provider({ children }) {
   };
 
   const refresh = useCallback(async () => {
+    const version = ++refreshVersion.current;
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      if (version !== refreshVersion.current) return;
       const account = session?.user
         ? {
             id: session.user.id,
@@ -100,6 +103,7 @@ export function Provider({ children }) {
       if (session?.user) {
         try {
           const serverSession = await api('/api/session');
+          if (version !== refreshVersion.current) return;
           setData((d) => ({
             ...d,
             account: serverSession.account || account,
@@ -113,29 +117,39 @@ export function Provider({ children }) {
           }));
         } catch {
           // Keep the conservative observer fallback if the profile API is unavailable.
+          if (version !== refreshVersion.current) return;
         }
         try {
           const agendas = await api('/api/agendas');
+          if (version !== refreshVersion.current) return;
           setData((d) => ({ ...d, agendas }));
         } catch {
+          if (version !== refreshVersion.current) return;
           setData((d) => ({ ...d, agendas: [] }));
         }
       } else {
+        if (version !== refreshVersion.current) return;
         setData((d) => ({ ...d, groups: [], agendas: [], calculations: [] }));
       }
 
       // Fetch posts from API (with offline fallback)
       try {
         const posts = await api('/api/posts');
+        if (version !== refreshVersion.current) return;
         await offlineStore('posts', posts);
+        if (version !== refreshVersion.current) return;
         setData((d) => ({ ...d, posts }));
       } catch (e) {
+        if (version !== refreshVersion.current) return;
         const cached = await offlineGet('posts');
+        if (version !== refreshVersion.current) return;
         setData((d) => ({ ...d, posts: cached || [] }));
       }
 
+      if (version !== refreshVersion.current) return;
       setData((d) => ({ ...d, ready: true }));
     } catch (e) {
+      if (version !== refreshVersion.current) return;
       setData((d) => ({ ...d, ready: true }));
     }
   }, []);
@@ -146,6 +160,7 @@ export function Provider({ children }) {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         await refresh();
       } else if (event === 'SIGNED_OUT') {
+        refreshVersion.current += 1;
         session(null);
         setData((d) => ({ ...d, posts: [], groups: [], agendas: [], calculations: [] }));
       }
