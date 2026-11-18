@@ -310,7 +310,7 @@ export default {
         const period = hijri(date, site);
         if (period.day !== 1) return fail(400, 'Pilih hari pertama bulan Hijriah.');
         const method = body.method;
-        if (!['mabims', 'geometri'].includes(method)) return fail(400, 'Metode hisab tidak valid.');
+        if (method !== 'mabims') return fail(400, 'Metode hisab belum didukung. Saat ini hanya MABIMS yang tersedia.');
         const result = calculateHisab({ start, ...period }, site, method);
         result.engine = 'Astronomy Engine 2.1.19';
 
