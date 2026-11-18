@@ -1,15 +1,30 @@
 import {build} from 'esbuild';
-import {mkdirSync, copyFileSync, readdirSync, writeFileSync, rmSync} from 'node:fs';
+import {mkdirSync, copyFileSync, readdirSync, writeFileSync, rmSync, readFileSync, existsSync} from 'node:fs';
 import {join} from 'node:path';
 
+function readBuildEnv(){
+  const values = { ...process.env };
+  // Cloudflare Dashboard build variables take precedence. The tracked file
+  // contains only public/publishable frontend configuration for local builds.
+  if (existsSync('.env.production')) {
+    for (const line of readFileSync('.env.production', 'utf8').split(/\\r?\\n/)) {
+      const match = line.match(/^\\s*(VITE_[A-Z0-9_]+)\\s*=\\s*(.*)\\s*$/);
+      if (!match || values[match[1]]) continue;
+      values[match[1]] = match[2].replace(/^(['"])(.*)\\1$/, '$2');
+    }
+  }
+  return values;
+}
+
 async function main(){
+  const env = readBuildEnv();
   rmSync('dist',{recursive:true,force:true});
   mkdirSync('dist/assets/fonts',{recursive:true});
   mkdirSync('dist/images',{recursive:true});
   const fileLoader={'.woff2':'file','.webp':'file'};
   await build({
     entryPoints:['src/main.jsx'],outfile:'dist/assets/main.js',bundle:true,format:'esm',minify:true,
-    logLevel:'info',target:'es2020',loader:fileLoader,
+    logLevel:'info',target:'es2020',loader:fileLoader,\n    define:{\n      'import.meta.env.VITE_SUPABASE_URL':JSON.stringify(env.VITE_SUPABASE_URL || ''),\n      'import.meta.env.VITE_SUPABASE_ANON_KEY':JSON.stringify(env.VITE_SUPABASE_ANON_KEY || ''),\n      'import.meta.env.VITE_API_URL':JSON.stringify(env.VITE_API_URL || ''),\n    },
   });
   await build({
     entryPoints:['src/styles.css'],outfile:'dist/assets/styles.css',bundle:true,minify:true,logLevel:'info',
