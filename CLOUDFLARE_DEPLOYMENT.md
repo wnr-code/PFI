@@ -73,3 +73,8 @@ UI `src/pages/Laporan.jsx` menyediakan formulir pengamatan dan pengisian koordin
 - Uji laporan tanpa token (harus 401), data koordinat invalid (harus 400), dan laporan valid (harus 201).
 - Pastikan waktu yang dikirim adalah ISO UTC dan tampilan mengonversi ke zona waktu perangkat.
 - Jangan deploy ke produksi sampai upload R2, moderasi, semua endpoint lama, dan migrasi data selesai.
+
+
+### Validasi posting ke kelompok
+
+Saat membuat posting dengan `groupId`, Worker memeriksa bahwa kelompok tersebut benar-benar ada dan pengguna merupakan anggota kelompok. Admin dapat membuat posting ke kelompok tanpa membership biasa. Permintaan dengan kelompok yang tidak ada ditolak sebagai HTTP 400; pengguna yang bukan anggota ditolak sebagai HTTP 403.
