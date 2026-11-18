@@ -1,3 +1,7 @@
+// PFI — Pusat Falak Indonesia | Maintainer: @wnr-code
+// Repository: https://github.com/wnr-code/PFI
+// Project support: https://trakteer.id/lanteraku/tip
+// AI-assisted implementation; reviewed and maintained by the project maintainer.
 import { supabase } from './supabase.js';
 
 // API is same-origin on Cloudflare Workers. Set VITE_API_URL only when the API
