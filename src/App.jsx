@@ -97,7 +97,7 @@ function AuxiliaryModal() {
 }
 
 export default function App() {
-  const { page, modal, data, ready } = usePFI();
+  const { page, modal, data, ready, toast } = usePFI();
   const Page = routes[page] || Dashboard;
 
   return (
@@ -122,11 +122,11 @@ export default function App() {
       <AuxiliaryModal />
       <div
         className="toast"
-        style={{ display: data.toast ? 'flex' : 'none' }}
+        style={{ display: toast ? 'flex' : 'none' }}
         role="status"
         aria-live="polite"
       >
-        <span>{data.toast}</span>
+        <span>{toast}</span>
       </div>
     </div>
   );
