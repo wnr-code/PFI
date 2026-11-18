@@ -29,6 +29,8 @@ export default function Laporan() {
 
   useEffect(() => {
     let cancelled = false;
+    setPosts([]);
+    setLoading(true);
     (async () => {
       try {
         const result = await api('/api/posts');
@@ -41,7 +43,7 @@ export default function Laporan() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [data.account?.id]);
 
   const reports = useMemo(() => posts.filter((p) => p.type === 'rukyat'), [posts]);
   const update = (key, value) => setForm((f) => ({ ...f, [key]: value }));
