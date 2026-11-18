@@ -9,6 +9,7 @@ import Komunitas from './pages/Komunitas.jsx';
 import Profil from './pages/Profil.jsx';
 import PetaRukyat from './pages/PetaRukyat.jsx';
 import Laporan from './pages/Laporan.jsx';
+import Kalender from './pages/Kalender.jsx';
 
 const routes = {
   beranda: Dashboard,
@@ -18,6 +19,7 @@ const routes = {
   profil: Profil,
   peta: PetaRukyat,
   laporan: Laporan,
+  kalender: Kalender,
 };
 
 export default function App() {
