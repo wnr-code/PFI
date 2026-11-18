@@ -33,7 +33,7 @@ const TABS = [
 ];
 
 export default function Komunitas() {
-  const { data, t, lang, tell, loc } = usePFI();
+  const { data, t, lang, tell, loc, open, update } = usePFI();
   const [tab, setTab] = useState('beranda');
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +42,10 @@ export default function Komunitas() {
   const [expandedPostId, setExpandedPostId] = useState(null);
   const [commentDraft, setCommentDraft] = useState('');
   const [commentBusy, setCommentBusy] = useState(false);
+  const [groups, setGroups] = useState([]);
+  const [groupsLoading, setGroupsLoading] = useState(true);
+  const [groupBusyId, setGroupBusyId] = useState(null);
+  const [selectedGroupId, setSelectedGroupId] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -65,11 +69,52 @@ export default function Komunitas() {
     return () => { cancelled = true; };
   }, [data.account?.id]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const result = await api('/api/groups');
+        if (!cancelled) setGroups(result || []);
+      } catch {
+        if (!cancelled) setGroups([]);
+      } finally {
+        if (!cancelled) setGroupsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const filtered = useMemo(() => {
     if (tab === 'rukyat') return posts.filter((p) => p.type === 'rukyat');
     if (tab === 'diskusi') return posts.filter((p) => p.type === 'diskusi');
     return posts;
   }, [posts, tab]);
+
+  const joinGroup = async (group) => {
+    if (!data.account) {
+      tell(t('Masuk terlebih dahulu untuk bergabung dengan kelompok.', 'Sign in before joining a group.'));
+      open('auth');
+      return;
+    }
+    const joined = (data.groups || []).includes(group.id);
+    setGroupBusyId(group.id);
+    try {
+      const membership = await api(`/api/groups/${group.id}`, 'POST', { join: !joined });
+      update({ groups: membership.groups || [] });
+      if (joined && selectedGroupId === group.id) setSelectedGroupId('');
+      const [nextPosts, nextGroups] = await Promise.all([
+        api('/api/posts'),
+        api('/api/groups'),
+      ]);
+      setPosts(nextPosts);
+      setGroups(nextGroups);
+      tell(joined ? t('Anda keluar dari kelompok.', 'You left the group.') : t('Berhasil bergabung dengan kelompok.', 'You joined the group.'));
+    } catch (error) {
+      tell(error.message || t('Keanggotaan kelompok gagal diperbarui.', 'Unable to update group membership.'));
+    } finally {
+      setGroupBusyId(null);
+    }
+  };
 
   const createPost = async (e) => {
     e.preventDefault();
@@ -85,6 +130,7 @@ export default function Komunitas() {
         title: newPost.slice(0, 60),
         body: newPost,
         city: loc.city,
+        ...(selectedGroupId ? { groupId: selectedGroupId } : {}),
       });
       setPosts((current) => [created, ...current]);
       setNewPost('');
@@ -135,6 +181,38 @@ export default function Komunitas() {
         <p>{t('Laporan pribadi memerlukan tinjauan dan bukan penetapan resmi awal bulan.', 'Personal reports require review and are not official new month declarations.')}</p>
       </div>
 
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="card-header">
+          <h2>{t('Kelompok Falak', 'Falak Groups')}</h2>
+          <span className="pill">{groups.length}</span>
+        </div>
+        <div className="card-body">
+          {groupsLoading ? (
+            <p>{t('Memuat kelompok…', 'Loading groups…')}</p>
+          ) : groups.length === 0 ? (
+            <p style={{ color: '#8fa3b8', fontSize: 12 }}>{t('Belum ada kelompok yang tersedia.', 'No groups are available yet.')}</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {groups.map((group) => {
+                const joined = (data.groups || []).includes(group.id);
+                return (
+                  <div key={group.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 10, border: '1px solid var(--line)', borderRadius: 8 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <b>{group.name}</b>
+                      <p style={{ fontSize: 12, color: '#8fa3b8', marginTop: 3 }}>{group.description || t('Kelompok pengamatan falak.', 'Falak observation group.')}</p>
+                      <small style={{ color: '#8fa3b8' }}>{group.members || 0} {t('anggota', 'members')}</small>
+                    </div>
+                    <button className={`btn ${joined ? 'secondary' : 'primary'}`} disabled={groupBusyId === group.id} onClick={() => joinGroup(group)}>
+                      {groupBusyId === group.id ? t('Memproses…', 'Working…') : joined ? t('Keluar', 'Leave') : t('Gabung', 'Join')}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {TABS.map((tb) => (
           <button
@@ -157,6 +235,17 @@ export default function Komunitas() {
                 <option value="diskusi">{t('Diskusi', 'Discussion')}</option>
               </select>
             </div>
+            {postType === 'diskusi' && (
+              <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <label style={{ margin: 0, minWidth: 100 }}>{t('Kirim ke', 'Post to')}</label>
+                <select value={selectedGroupId} onChange={(event) => setSelectedGroupId(event.target.value)}>
+                  <option value="">{t('Forum umum', 'Public forum')}</option>
+                  {groups.filter((group) => (data.groups || []).includes(group.id)).map((group) => (
+                    <option key={group.id} value={group.id}>{group.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <textarea
               value={newPost}
               onChange={(e) => setNewPost(e.target.value)}
@@ -196,6 +285,7 @@ export default function Komunitas() {
                     <span>{p.city}</span>
                     <span>{formatDate(p.date)}</span>
                     {p.status === 'verified' && <span className="pill verified" style={{ fontSize: 9, padding: '2px 6px' }}>{t('Terverifikasi', 'Verified')}</span>}
+                    {p.group && <span className="pill" style={{ fontSize: 9, padding: '2px 6px' }}>{groups.find((group) => group.id === p.group)?.name || t('Kelompok', 'Group')}</span>}
                   </div>
                 </div>
               </div>
