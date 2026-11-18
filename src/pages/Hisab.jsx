@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { usePFI, go } from '../state.jsx';
 import {
   calculateHisab, hijri, periods, SITES, num,
@@ -28,6 +28,10 @@ export default function Hisab() {
   const [metode, setMetode] = useState('mabims');
   const [result, setResult] = useState(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (SITES.some((item) => item.id === data.site)) setSiteId(data.site);
+  }, [data.site]);
 
   const site = SITES.find((s) => s.id === siteId) || SITES[0];
 
