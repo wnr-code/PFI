@@ -50,7 +50,9 @@ export default function Hisab() {
           method: metode,
         });
         setResult(authoritative);
-        tell(t('Perhitungan selesai dan tersimpan.', 'Calculation complete and saved.'));
+        tell(authoritative.saved
+          ? t('Perhitungan selesai dan tersimpan ke riwayat akun.', 'Calculation complete and saved to account history.')
+          : t('Perhitungan selesai. Masuk ke akun untuk menyimpan riwayat.', 'Calculation complete. Sign in to save it to account history.'));
       } catch (e) {
         // Only a network failure may fall back to the local engine. HTTP errors
         // mean the server rejected the request and must be shown to the user.
