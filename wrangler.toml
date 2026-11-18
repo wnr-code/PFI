@@ -18,8 +18,8 @@ migrations_dir = "migrations"
 binding = "r2falaq"
 bucket_name = "pfi-falaq-r2"
 
-# Preview memakai D1 Production yang sama sesuai keputusan maintainer.
-# PERINGATAN: perubahan data dari Preview akan langsung memengaruhi Production.
+# Preview D1 akan diarahkan ke database donate setelah database_id dikonfirmasi.
+# Jangan isi database_id dengan ID perkiraan karena dapat menghubungkan database yang salah.
 [previews]
 
 [[previews.d1_databases]]
@@ -27,11 +27,11 @@ binding = "falaq"
 database_name = "pfi-falaq"
 database_id = "0ae91ae2-8bec-474f-b72d-1b793f951d4a"
 
-# Preview memakai bucket R2 Production yang sama sesuai keputusan maintainer.
-# PERINGATAN: unggahan/penghapusan dari Preview memengaruhi berkas Production.
+# Preview memakai bucket R2 forumcgs.
+# Pastikan bucket ini memang bucket yang ditujukan untuk data Preview.
 [[previews.r2_buckets]]
 binding = "r2falaq"
-bucket_name = "pfi-falaq-r2"
+bucket_name = "forumcgs"
 
 # Set these as Worker secrets/vars in Cloudflare Dashboard, not as VITE_*
 # frontend values. SUPABASE_ANON_KEY is a public/publishable key but is kept
