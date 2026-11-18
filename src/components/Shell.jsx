@@ -17,6 +17,7 @@ export const navMain = [
 export const navMore = [
   ['peta', 'Peta Rukyat', 'Observation Map', MapPinned],
   ['laporan', 'Pusat Laporan', 'Report Centre', Files],
+  ['kalender', 'Kalender Hijriah', 'Hijri Calendar', CalendarDays],
 ];
 
 function Observatory() {
