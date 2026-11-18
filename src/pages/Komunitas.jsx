@@ -262,7 +262,8 @@ export default function Komunitas() {
               {groups.map((group) => {
                 const joined = (data.groups || []).includes(group.id);
                 return (
-                  <div key={group.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 10, border: '1px solid var(--line)', borderRadius: 8 }}>
+                  <React.Fragment key={group.id}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 10, border: '1px solid var(--line)', borderRadius: 8 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <b>{group.name}</b>
                       <p style={{ fontSize: 12, color: '#8fa3b8', marginTop: 3 }}>{group.description || t('Kelompok pengamatan falak.', 'Falak observation group.')}</p>
@@ -297,6 +298,7 @@ export default function Komunitas() {
                       )}
                     </div>
                   )}
+                  </React.Fragment>
                 );
               })}
             </div>
