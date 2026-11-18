@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { usePFI, go } from '../state.jsx';
 import { lunar, position, sunsetTime, clock, SITES, zlabel } from '../lib/astro.js';
 import {
@@ -18,6 +18,10 @@ export default function Astronomi() {
     return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
   });
   const [siteId, setSiteId] = useState(() => SITES.some((item) => item.id === data.site) ? data.site : 'tasik');
+
+  useEffect(() => {
+    if (SITES.some((item) => item.id === data.site)) setSiteId(data.site);
+  }, [data.site]);
 
   const site = SITES.find((s) => s.id === siteId) || SITES[0];
   // MABIMS criteria are evaluated at local sunset, not at an arbitrary clock time.
