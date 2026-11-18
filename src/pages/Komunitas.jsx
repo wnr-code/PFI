@@ -53,6 +53,7 @@ export default function Komunitas() {
     setNewPost('');
     setCommentDraft('');
     setExpandedPostId(null);
+    setSelectedGroupId('');
     setLoading(true);
     (async () => {
       try {
