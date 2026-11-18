@@ -110,6 +110,8 @@ export function normalizeRukyatDetails(details) {
     latitude,
     longitude,
     observedAt: new Date(observedAt).toISOString(),
+    timeZone,
+    utcOffsetMinutes,
     weather: String(details.weather || '').slice(0, 80),
     instrument: String(details.instrument || '').slice(0, 120),
     visibility: String(details.visibility || '').slice(0, 80),
