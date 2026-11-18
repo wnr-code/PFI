@@ -10,6 +10,8 @@ import Profil from './pages/Profil.jsx';
 import PetaRukyat from './pages/PetaRukyat.jsx';
 import Laporan from './pages/Laporan.jsx';
 import Kalender from './pages/Kalender.jsx';
+import { SITES } from './lib/astro.js';
+import { api } from './lib/api.js';
 
 const routes = {
   beranda: Dashboard,
@@ -21,6 +23,78 @@ const routes = {
   laporan: Laporan,
   kalender: Kalender,
 };
+
+function AuxiliaryModal() {
+  const { modal, close, data, update, t, tell } = usePFI();
+  if (!modal || modal.type === 'auth') return null;
+
+  const savePreference = async (key, value) => {
+    const previous = data[key];
+    update({ [key]: value });
+    if (data.account) {
+      try {
+        await api('/api/preferences', 'PUT', { [key]: value });
+      } catch (error) {
+        update({ [key]: previous });
+        tell(error.message || t('Pengaturan gagal disimpan.', 'Unable to save setting.'));
+        return;
+      }
+    }
+    close();
+  };
+
+  let title = t('Pengaturan', 'Settings');
+  let content = null;
+  if (modal.type === 'location') {
+    title = t('Lokasi Pengamatan', 'Observation Location');
+    content = (
+      <label className="field">
+        <span>{t('Pilih lokasi acuan', 'Choose reference location')}</span>
+        <select value={data.site} onChange={(event) => savePreference('site', event.target.value)}>
+          {SITES.map((site) => <option key={site.id} value={site.id}>{site.city} — {site.site}</option>)}
+        </select>
+      </label>
+    );
+  } else if (modal.type === 'mode') {
+    title = t('Mode Pengalaman', 'Experience Mode');
+    content = (
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button className={`btn ${data.mode === 'pemula' ? 'primary' : 'secondary'} full`} onClick={() => savePreference('mode', 'pemula')}>
+          {t('Pemula', 'Beginner')}
+        </button>
+        <button className={`btn ${data.mode === 'profesional' ? 'primary' : 'secondary'} full`} onClick={() => savePreference('mode', 'profesional')}>
+          {t('Profesional', 'Professional')}
+        </button>
+      </div>
+    );
+  } else if (modal.type === 'notifications') {
+    title = t('Notifikasi', 'Notifications');
+    content = (
+      <div>
+        <p style={{ color: 'var(--muted, #8fa3b8)', fontSize: 13, marginBottom: 14 }}>
+          {t('Pengaturan pengingat agenda astronomi.', 'Astronomical agenda reminder settings.')}
+        </p>
+        <button className="btn secondary full" onClick={() => savePreference('notify', !data.notify)}>
+          {data.notify ? t('Matikan pengingat', 'Turn reminders off') : t('Aktifkan pengingat', 'Turn reminders on')}
+        </button>
+      </div>
+    );
+  } else {
+    return null;
+  }
+
+  return (
+    <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}>
+      <section className="modal" role="dialog" aria-modal="true" aria-labelledby="aux-modal-title">
+        <header className="modal-head">
+          <h2 id="aux-modal-title">{title}</h2>
+          <button className="close-btn" onClick={close} aria-label={t('Tutup', 'Close')}>✕</button>
+        </header>
+        <div className="modal-body">{content}</div>
+      </section>
+    </div>
+  );
+}
 
 export default function App() {
   const { page, modal, data, ready } = usePFI();
@@ -45,6 +119,7 @@ export default function App() {
         <BottomNav />
       </div>
       {modal && modal.type === 'auth' && <AuthModal />}
+      <AuxiliaryModal />
       <div
         className="toast"
         style={{ display: data.toast ? 'flex' : 'none' }}
