@@ -1,6 +1,8 @@
 import { supabase } from './supabase.js';
 
-const API_BASE = import.meta.env.VITE_API_URL || '';
+// API is same-origin on Cloudflare Workers. Set VITE_API_URL only when the API
+// is intentionally hosted on a separate origin.
+const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
 async function getToken() {
   const { data: { session } } = await supabase.auth.getSession();
@@ -9,28 +11,37 @@ async function getToken() {
 
 export async function api(path, method = 'GET', body = null) {
   const token = await getToken();
-  const headers = {
-    'Content-Type': 'application/json',
-  };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const headers = { Accept: 'application/json' };
+  if (body !== null && body !== undefined) headers['Content-Type'] = 'application/json';
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: body === null || body === undefined ? undefined : JSON.stringify(body),
+    credentials: 'same-origin',
   });
 
   if (res.status === 401) {
-    // Token expired or invalid
-    const { error } = await supabase.auth.signOut();
+    await supabase.auth.signOut();
     throw new Error('Sesi kadaluarsa, silakan masuk kembali.');
   }
 
   const contentType = res.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) {
-    return res.json();
+  const payload = contentType.includes('application/json')
+    ? await res.json()
+    : await res.text();
+
+  if (!res.ok) {
+    const message = typeof payload === 'object' && payload?.error
+      ? payload.error
+      : `Permintaan gagal (HTTP ${res.status}).`;
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
   }
-  return res.text();
+
+  return payload;
 }
 
 // Auth helpers
@@ -86,7 +97,11 @@ export async function offlineStore(type, items) {
     const tx = db.transaction(type, 'readwrite');
     const store = tx.objectStore(type);
     for (const item of items) store.put(item);
-    await tx.complete;
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
     db.close();
   } catch (e) {
     console.warn('Offline store failed:', e.message);
@@ -99,7 +114,10 @@ export async function offlineGet(type, id = null) {
     const tx = db.transaction(type, 'readonly');
     const store = tx.objectStore(type);
     const result = id ? store.get(id) : store.getAll();
-    await new Promise((resolve) => (result.onsuccess = resolve));
+    await new Promise((resolve, reject) => {
+      result.onsuccess = resolve;
+      result.onerror = () => reject(result.error);
+    });
     db.close();
     return result.result;
   } catch (e) {
