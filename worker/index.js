@@ -41,6 +41,14 @@ export function canViewPost(post, profile) {
   return Boolean(profile && (profile.id === post.user_id || ['reviewer', 'admin'].includes(profile.role)));
 }
 
+// Only reviewers/admins may moderate, and never their own account or report.
+export function canReviewEntity(entity, item, profile) {
+  if (!item || !profile || !['reviewer', 'admin'].includes(profile.role)) return false;
+  if (entity === 'users') return item.id !== profile.id;
+  if (entity === 'posts') return item.user_id !== profile.id;
+  return false;
+}
+
 function uuid() {
   return crypto.randomUUID();
 }
@@ -507,7 +515,7 @@ export default {
         const item = await env.falaq.prepare(`SELECT * FROM ${table} WHERE id=?`).bind(id).first();
         const column = entity === 'users' ? 'verification' : 'status';
         if (!item || item[column] !== 'pending') return fail(409, 'Pengajuan tidak lagi menunggu tinjauan.');
-        if ((entity === 'users' ? id : item.user_id) === profile.id) return fail(403, 'Petugas tidak dapat menyetujui pengajuannya sendiri.');
+        if (!canReviewEntity(entity, item, profile)) return fail(403, 'Petugas tidak dapat menyetujui pengajuannya sendiri.');
         await env.falaq.batch([
           env.falaq.prepare(`UPDATE ${table} SET ${column}=?,review_note=? WHERE id=?`).bind(decision, note, id),
           env.falaq.prepare('INSERT INTO reviews (id,reviewer,entity,entity_id,decision,note,created) VALUES (?,?,?,?,?,?,?)')
