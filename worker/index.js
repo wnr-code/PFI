@@ -153,7 +153,8 @@ async function profileFor(request, env) {
   ).bind(who.id).first();
 }
 
-async function postView(env, post, userId) {
+async function postView(env, post, profile) {
+  const userId = profile?.id;
   const [photo, likes, comments, liked] = await Promise.all([
     env.falaq.prepare('SELECT id,sha256 FROM photos WHERE post_id = ?').bind(post.id).first(),
     env.falaq.prepare('SELECT COUNT(*) AS n FROM likes WHERE post_id = ?').bind(post.id).first(),
@@ -180,7 +181,7 @@ async function postView(env, post, userId) {
     group: post.group_id || '',
     date: post.created,
     status: post.status,
-    reviewNote: post.review_note,
+    reviewNote: profile && (profile.id === post.user_id || ['reviewer', 'admin'].includes(profile.role)) ? post.review_note : '',
     photo: photo ? `/api/photos/${photo.id}` : null,
     photoHash: photo?.sha256 || null,
     initial: (post.author || 'PFI').split(' ').slice(0, 2).map((part) => part[0]).join(''),
@@ -214,7 +215,7 @@ async function getPosts(request, env, profile) {
           ORDER BY created DESC LIMIT ?
         `).bind(limit).all();
   const result = [];
-  for (const row of rows.results || []) result.push(await postView(env, row, profile?.id));
+  for (const row of rows.results || []) result.push(await postView(env, row, profile));
   return json(result);
 }
 
@@ -411,7 +412,7 @@ export default {
           VALUES (?,?,?,?,?,?,?,?,?,?,?)
         `).bind(id, profile.id, profile.name, type, title, content, city, JSON.stringify(details), groupId, type === 'rukyat' ? 'pending' : '', created).run();
         const row = await env.falaq.prepare('SELECT * FROM posts WHERE id = ?').bind(id).first();
-        return json(await postView(env, row, profile.id), 201);
+        return json(await postView(env, row, profile), 201);
       }
 
       if (url.pathname === '/api/posts' && request.method === 'GET') {
@@ -457,7 +458,7 @@ export default {
           'INSERT INTO comments (id,post_id,user_id,body,created) VALUES (?,?,?,?,?)'
         ).bind(uuid(), post.id, profile.id, value, new Date().toISOString()).run();
         const updated = await env.falaq.prepare('SELECT * FROM posts WHERE id = ?').bind(post.id).first();
-        return json(await postView(env, updated, profile.id), 201);
+        return json(await postView(env, updated, profile), 201);
       }
 
       const groupJoinMatch = url.pathname.match(/^\/api\/groups\/([a-zA-Z0-9_-]+)$/);
@@ -557,7 +558,7 @@ export default {
           env.falaq.prepare("SELECT * FROM posts WHERE type='rukyat' AND status='pending' ORDER BY created").all(),
         ]);
         const postRows = [];
-        for (const post of posts.results || []) postRows.push(await postView(env, post, profile.id));
+        for (const post of posts.results || []) postRows.push(await postView(env, post, profile));
         return json({ accounts: users.results || [], posts: postRows });
       }
 
@@ -622,7 +623,7 @@ export default {
             ? await env.falaq.prepare("SELECT * FROM posts WHERE group_id=? AND (type!='rukyat' OR status='verified' OR user_id=?) ORDER BY created DESC LIMIT 100").bind(groupId, profile.id).all()
             : await env.falaq.prepare("SELECT * FROM posts WHERE group_id=? AND (type!='rukyat' OR status='verified') ORDER BY created DESC LIMIT 100").bind(groupId).all();
         const result = [];
-        for (const post of rows.results || []) result.push(await postView(env, post, profile?.id));
+        for (const post of rows.results || []) result.push(await postView(env, post, profile));
         return json(result);
       }
 
