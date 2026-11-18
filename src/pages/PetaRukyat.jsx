@@ -31,9 +31,14 @@ export default function PetaRukyat() {
     Number.isFinite(Number(r.latitude)) && Number.isFinite(Number(r.longitude))
   ), [reports]);
 
-  const dateLabel = (value) => {
+  const dateLabel = (value, report) => {
     const date = new Date(value);
     if (!Number.isFinite(date.getTime())) return value || '—';
+    const offset = Number(report?.utcOffsetMinutes);
+    if (Number.isFinite(offset)) {
+      const local = new Date(date.getTime() + offset * 60000);
+      return `${local.toISOString().slice(0, 16).replace('T', ' ')} ${report.timeZone || ''}`.trim();
+    }
     return new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'id-ID', {
       dateStyle: 'medium', timeStyle: 'short',
     }).format(date);
@@ -92,7 +97,7 @@ export default function PetaRukyat() {
                     <div>
                       <b style={{ fontSize: 13 }}>{report.title}</b>
                       <div style={{ fontSize: 11, color: '#8fa3b8', marginTop: 3 }}>{report.author} · {report.city}</div>
-                      <div style={{ fontSize: 11, color: '#8fa3b8', marginTop: 3 }}><Clock3 size={12} style={{ verticalAlign: 'middle' }} /> {dateLabel(report.observedAt || report.date)}</div>
+                      <div style={{ fontSize: 11, color: '#8fa3b8', marginTop: 3 }}><Clock3 size={12} style={{ verticalAlign: 'middle' }} /> {dateLabel(report.observedAt || report.date, report)}</div>
                     </div>
                     <span className={`pill ${report.status === 'verified' ? 'verified' : 'pending'}`} style={{ fontSize: 9 }}>
                       {report.status === 'verified' ? t('Terverifikasi', 'Verified') : report.status === 'revision' ? t('Revisi', 'Revision') : t('Menunggu', 'Pending')}
