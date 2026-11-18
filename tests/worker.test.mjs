@@ -99,6 +99,7 @@ test('rukyat metadata requires explicit coordinates and timezone-aware time', ()
   assert.equal(normalizeRukyatDetails({ latitude: '', longitude: '0', observedAt: '2026-11-19T18:30:00+07:00' }), null);
   assert.equal(normalizeRukyatDetails({ latitude: '0', longitude: '0', observedAt: '2026-11-19T18:30:00' }), null);
   assert.equal(normalizeRukyatDetails({ latitude: '0', longitude: '0', observedAt: '2026-11-19T18:30:00+07:00', timeZone: 'WITA' }), null);
+  assert.equal(normalizeRukyatDetails({ latitude: '0', longitude: '0', observedAt: '2026-02-31T18:30:00+07:00', timeZone: 'WIB' }), null);
   assert.equal(normalizeRukyatDetails({ latitude: '91', longitude: '0', observedAt: '2026-11-19T18:30:00Z' }), null);
   assert.equal(normalizeRukyatDetails({ latitude: true, longitude: '0', observedAt: '2026-11-19T18:30:00Z' }), null);
   assert.equal(normalizeRukyatDetails({ latitude: '0', longitude: '0', observedAt: '2026-11-19T18:30:00Z', elevation: '9001' }), null);
@@ -107,6 +108,7 @@ test('rukyat metadata requires explicit coordinates and timezone-aware time', ()
 
 test('sunset calculation uses a real local horizon event and rejects invalid dates', () => {
   assert.equal(sunsetTime('not-a-date', SITES[0]), null);
+  assert.equal(sunsetTime('2026-02-31', SITES[0]), null);
   const sunset = sunsetTime('2026-11-19', SITES[0]);
   assert.ok(sunset instanceof Date);
   assert.ok(Number.isFinite(sunset.getTime()));
