@@ -8,7 +8,7 @@ import { api, offlineGet } from '../lib/api.js';
 import { MapPin, UsersRound, FileText, RefreshCw, Clock3 } from 'lucide-react';
 
 export default function PetaRukyat() {
-  const { t, lang } = usePFI();
+  const { data, t, lang } = usePFI();
   const [layer, setLayer] = useState('reports');
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,16 +16,16 @@ export default function PetaRukyat() {
   const load = async () => {
     try {
       const posts = await api('/api/posts');
-      setReports((posts || []).filter((post) => post.type === 'rukyat'));
+      setReports((posts || []).filter((post) => post.type === 'rukyat' && post.status === 'verified'));
     } catch {
       const cached = await offlineGet('posts');
-      setReports((cached || []).filter((post) => post.type === 'rukyat'));
+      setReports((cached || []).filter((post) => post.type === 'rukyat' && post.status === 'verified'));
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { setReports([]); setLoading(true); load(); }, [data.account?.id]);
 
   const located = useMemo(() => reports.filter((r) =>
     Number.isFinite(Number(r.latitude)) && Number.isFinite(Number(r.longitude))
