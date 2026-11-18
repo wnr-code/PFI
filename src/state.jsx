@@ -19,7 +19,7 @@ const blank = () => ({
   session: null,
   lang: 'id',
   mode: 'pemula',
-  site: 'jakarta',
+  site: 'tasik',
   notify: true,
   posts: [],
   groups: [],
