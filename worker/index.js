@@ -441,7 +441,7 @@ export default {
           await env.falaq.prepare('DELETE FROM likes WHERE post_id = ? AND user_id = ?').bind(post.id, profile.id).run();
         }
         const row = await env.falaq.prepare('SELECT * FROM posts WHERE id = ?').bind(post.id).first();
-        return json(await postView(env, row, profile.id));
+        return json(await postView(env, row, profile));
       }
 
       const commentsMatch = url.pathname.match(/^\/api\/posts\/([a-zA-Z0-9_-]+)\/comments$/);
