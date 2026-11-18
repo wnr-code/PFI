@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePFI } from '../state.jsx';
 import { api } from '../lib/api.js';
 import { User, CreditCard, Share2, LogOut, Bell, ShieldCheck, FileText } from 'lucide-react';
@@ -7,6 +7,7 @@ export default function Profil() {
   const { data, t, logout, tell, update } = usePFI();
   const [evidence, setEvidence] = useState('');
   const [verificationBusy, setVerificationBusy] = useState(false);
+  useEffect(() => { setEvidence(''); }, [data.account?.id]);
 
   const account = data.account;
   const isDemo = !account;
