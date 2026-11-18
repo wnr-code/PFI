@@ -43,7 +43,7 @@ Bagian ini mencatat kondisi awal saat audit dimulai, bukan seluruh kondisi branc
 ## Status validasi dan pekerjaan yang belum selesai
 
 - Tes tambahan telah ditulis untuk otorisasi grup, metadata rukyat, waktu sunset, dan elongasi Bulan.
-- **CI untuk kode pada head `6ddd0f1` berhasil.** GitHub Actions run #225 menyelesaikan `npm ci`, `npm test`, dan `npm run build` dengan sukses. Perubahan dokumentasi sesudahnya belum memiliki run terpisah; hasil ini tetap belum menggantikan integration test D1/R2 atau E2E.
+- **CI untuk head terbaru `8d12a41` berhasil.** GitHub Actions run #245 menyelesaikan `npm ci`, `npm test`, dan `npm run build` dengan sukses. Ini memvalidasi tes unit dan build frontend, tetapi belum menggantikan integration test D1/R2 atau E2E.
 - Belum ada uji integrasi terhadap D1/R2 aktual, OAuth end-to-end, migrasi data SQLite lama, backup/restore, atau uji beban.
 - Fixture sanity-check Syawal 1443 (1 Mei 2022) telah ditambahkan dengan rentang pembanding publik Kemenag; tetap perlu validasi independen yang lebih luas untuk beberapa bulan, lokasi, dan kondisi dekat ambang MABIMS sebelum hasil dipakai sebagai rujukan operasional.
 - Akun admin pertama harus ditetapkan melalui prosedur operator yang terkontrol di D1; tidak ada endpoint self-service untuk menaikkan role. Prosedur bootstrap admin perlu didokumentasikan sebelum produksi.
