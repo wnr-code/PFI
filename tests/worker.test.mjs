@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker, { canViewPost } from '../worker/index.js';
+import worker, { canReviewEntity, canViewPost } from '../worker/index.js';
 
 test('Worker health endpoint reports Cloudflare runtime', async () => {
   const response = await worker.fetch(new Request('https://pfi.test/api/health'), {}, {});
@@ -47,4 +47,19 @@ test('pending rukyat posts are visible only to their owner and reviewers', () =>
 
 test('verified rukyat posts are public', () => {
   assert.equal(canViewPost({ type: 'rukyat', status: 'verified', user_id: 'observer-1' }, null), true);
+});
+
+test('reviewers cannot moderate their own account or rukyat report', () => {
+  const reviewer = { id: 'reviewer-1', role: 'reviewer' };
+  assert.equal(canReviewEntity('users', { id: 'reviewer-1' }, reviewer), false);
+  assert.equal(canReviewEntity('posts', { user_id: 'reviewer-1' }, reviewer), false);
+  assert.equal(canReviewEntity('users', { id: 'observer-1' }, reviewer), true);
+  assert.equal(canReviewEntity('posts', { user_id: 'observer-1' }, reviewer), true);
+});
+
+test('only reviewers and admins may moderate entities', () => {
+  const item = { id: 'observer-1', user_id: 'observer-1' };
+  assert.equal(canReviewEntity('users', item, { id: 'admin-1', role: 'admin' }), true);
+  assert.equal(canReviewEntity('users', item, { id: 'observer-2', role: 'observer' }), false);
+  assert.equal(canReviewEntity('unknown', item, { id: 'admin-1', role: 'admin' }), false);
 });
