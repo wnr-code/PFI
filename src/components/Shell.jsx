@@ -178,8 +178,8 @@ export function Topbar() {
         </button>
         <button
           className="account-control"
-          onClick={() => go('profil')}
-          aria-label={t('Buka profil', 'Open profile')}
+          onClick={() => data.account ? go('profil') : open('auth')}
+          aria-label={data.account ? t('Buka profil', 'Open profile') : t('Masuk atau daftar', 'Sign in or register')}
         >
           <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=PFI" alt="" />
           <b>
