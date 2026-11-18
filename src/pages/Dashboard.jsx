@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { usePFI, go } from '../state.jsx';
-import { lunar, dateFmt, hijriText, SITES } from '../lib/astro.js';
+import { lunar, dateFmt, hijriText, clock, zlabel, phaseNames } from '../lib/astro.js';
 import {
   Moon, Sun, CalendarDays, MapPin, Calculator, Telescope, UsersRound,
   FileText, Share2, Orbit, History, FileDown, ArrowRight,
@@ -12,6 +12,8 @@ export default function Dashboard() {
   const hijri = hijriText(new Date(), loc, lang, false);
 
   const moon = useMemo(() => lunar(new Date()), [loc]);
+  const conjunction = events.find((event) => event.type === 'new');
+  const observation = events.find((event) => event.type === 'rukyat');
 
   const quickActions = [
     { id: 'hisab', label: t('Hisab Awal Bulan', 'New Month Calculation'), icon: Calculator, color: 'text-gold' },
@@ -39,7 +41,7 @@ export default function Dashboard() {
               <Moon size={48} color="#d6ae62" />
             </div>
             <div className="moon-info">
-              <h3>{t('Fase Bulan', 'Moon Phase')} · {moon.phase === 'full' ? t('Purnama', 'Full Moon') : moon.phase === 'new' ? t('Ijtimak', 'New Moon') : t('Fase ' + moon.phase, 'Phase ' + moon.phase)}</h3>
+              <h3>{t('Fase Bulan', 'Moon Phase')} · {phaseNames[moon.phase]?.[lang === 'en' ? 1 : 0] || '—'}</h3>
               <p>{t('Iluminasi', 'Illumination')}: {Math.round(moon.illumination)}% · {t('Usia', 'Age')}: {moon.age?.toFixed?.(1) ?? '—'} {t('hari', 'days')}</p>
             </div>
           </div>
@@ -55,13 +57,13 @@ export default function Dashboard() {
             <div className="result-grid">
               <div className="metric">
                 <span className="label">{t('Ijtimak Berikutnya', 'Next Conjunction')}</span>
-                <b>{t('10 Mar 2025', '10 Mar 2025')}</b>
-                <small>{t('22:00 WIB', '22:00 WIB')}</small>
+                <b>{conjunction ? dateFmt(new Date(conjunction.date), loc, lang, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</b>
+                <small>{conjunction ? `${clock(new Date(conjunction.date), loc)} ${zlabel(loc)}` : '—'}</small>
               </div>
               <div className="metric">
                 <span className="label">{t('Rukyat Hilal', 'Crescent Observation')}</span>
-                <b>{t('11 Mar 2025', '11 Mar 2025')}</b>
-                <small>{t('Sore hari', 'Evening')}</small>
+                <b>{observation ? dateFmt(new Date(observation.date), loc, lang, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</b>
+                <small>{observation ? `${clock(new Date(observation.date), loc)} ${zlabel(loc)}` : '—'}</small>
               </div>
             </div>
           </div>
