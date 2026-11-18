@@ -95,12 +95,19 @@ function openDB() {
   });
 }
 
+// Offline post cache is deliberately public-only: private pending rukyat reports
+// must never survive logout or be exposed to another account on a shared device.
+export function isPublicOfflinePost(post) {
+  return post?.type !== 'rukyat' || post.status === 'verified';
+}
+
 export async function offlineStore(type, items) {
   try {
     const db = await openDB();
     const tx = db.transaction(type, 'readwrite');
     const store = tx.objectStore(type);
-    for (const item of items) store.put(item);
+    const safeItems = type === 'posts' ? items.filter(isPublicOfflinePost) : items;
+    for (const item of safeItems) store.put(item);
     await new Promise((resolve, reject) => {
       tx.oncomplete = resolve;
       tx.onerror = () => reject(tx.error);
@@ -123,6 +130,10 @@ export async function offlineGet(type, id = null) {
       result.onerror = () => reject(result.error);
     });
     db.close();
+    if (type === 'posts') {
+      if (id) return result.result && isPublicOfflinePost(result.result) ? result.result : undefined;
+      return (result.result || []).filter(isPublicOfflinePost);
+    }
     return result.result;
   } catch (e) {
     console.warn('Offline get failed:', e.message);
