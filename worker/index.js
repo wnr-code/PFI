@@ -384,6 +384,7 @@ export default {
         result.engine = 'Astronomy Engine 2.1.19';
 
         const profile = await profileFor(request, env);
+        result.saved = Boolean(profile);
         if (profile) {
           await env.falaq.prepare(
             'INSERT INTO calculations (id,user_id,result,created) VALUES (?,?,?,?)'
