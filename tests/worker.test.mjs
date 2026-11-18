@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker, { canReviewEntity, canViewPost, uploadContentLengthStatus } from '../worker/index.js';
+import worker, { canReviewEntity, canViewGroup, canViewPost, uploadContentLengthStatus } from '../worker/index.js';
 
 test('Worker health endpoint reports Cloudflare runtime', async () => {
   const response = await worker.fetch(new Request('https://pfi.test/api/health'), {}, {});
@@ -71,4 +71,13 @@ test('photo upload validates optional Content-Length safely', () => {
   assert.equal(uploadContentLengthStatus('not-a-number'), 400);
   assert.equal(uploadContentLengthStatus('-1'), 400);
   assert.equal(uploadContentLengthStatus(String(3 * 1024 * 1024 + 65537)), 413);
+});
+
+
+test('group data is restricted to members and authorized reviewers', () => {
+  assert.equal(canViewGroup(null, true), false);
+  assert.equal(canViewGroup({ id: 'observer-1', role: 'observer' }, false), false);
+  assert.equal(canViewGroup({ id: 'observer-1', role: 'observer' }, true), true);
+  assert.equal(canViewGroup({ id: 'reviewer-1', role: 'reviewer' }, false), true);
+  assert.equal(canViewGroup({ id: 'admin-1', role: 'admin' }, false), true);
 });
