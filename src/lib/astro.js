@@ -31,6 +31,9 @@ export function position(body,d,l){const obs=new Observer(l.lat,l.lon,l.elev),e=
 export function sunsetTime(day,l=SITES[0]){if(typeof day!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(day))return null;try{const start=localTime(day,'00:00',l);if(!Number.isFinite(start.getTime()))return null;const result=SearchRiseSet('Sun',new Observer(l.lat,l.lon,l.elev),-1,start,1);return result?.date||null;}catch{return null;}}
 export function starPosition(ra,dec,d,l){const h=Horizon(d,new Observer(l.lat,l.lon,l.elev),ra,dec);return{alt:h.altitude,az:h.azimuth};}
 export function calculateHisab(period,l,method='mabims'){
+ if(method!=='mabims')throw new Error('Metode hisab belum didukung.');
+ if(!period?.start||period.day!==1)throw new Error('Tanggal acuan harus merupakan tanggal 1 bulan Hijriah.');
+ if(!l||!Number.isFinite(l.lat)||!Number.isFinite(l.lon))throw new Error('Lokasi pengamatan tidak valid.');
  const start=localTime(period.start,'00:00',l),conj=SearchMoonPhase(0,new Date(+start-5*DAY),10).date;
  const sunset=SearchRiseSet('Sun',new Observer(l.lat,l.lon,l.elev),-1,conj,2).date;
  const moon=position('Moon',sunset,l),sun=position('Sun',sunset,l),elongation=AngleFromSun('Moon',sunset);
