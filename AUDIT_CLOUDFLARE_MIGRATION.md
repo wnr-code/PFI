@@ -38,7 +38,7 @@ Bagian ini mencatat kondisi awal saat audit dimulai, bukan seluruh kondisi branc
 - Peta rukyat saat ini berupa daftar koordinat dan tautan peta, belum peta interaktif.
 - Preferensi notifikasi sudah tersimpan, tetapi pengiriman push/email otomatis belum diaktifkan.
 - Lokasi hisab yang tersedia masih berupa daftar titik acuan proyek; perlu diverifikasi/ditambah dari data geospasial resmi dan dapat diperluas dengan input koordinat pengamat.
-- Hisab yang tampil menghitung lokasi terpilih; belum menghitung keputusan nasional multi-titik pada seluruh titik observasi MABIMS.
+- Hisab yang tampil menghitung lokasi terpilih; belum menghitung evaluasi nasional multi-titik. Daftar lokasi rukyat Kemenag berubah menurut periode: Kemenag memublikasikan 96 titik untuk awal Ramadan 1447 H dan 117 titik untuk awal Syawal 1447 H. Karena itu jangan mengunci jumlah titik atau menganggap daftar contoh saat ini sebagai daftar resmi. Sumber: [Bimas Islam Kemenag — 96 lokasi Ramadan 1447 H](https://bimasislam.kemenag.go.id/artikel/jelang-ramadan-1447-h-kemenag-gelar-rukyatulhilal-di-96-lokasi), [Kemenag Sulteng — 117 lokasi Syawal 1447 H](https://sulteng.kemenag.go.id/berita/3qxv/16-03-2026-pemantauan-hilal-awal-syawal-1447-h-di-117-titik-ini-lokasinya).
 
 ## Status validasi dan pekerjaan yang belum selesai
 
