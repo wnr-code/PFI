@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { usePFI, go } from '../state.jsx';
-import { api, offlineStore, offlineGet } from '../lib/api.js';
+import { api, apiUrl, offlineStore, offlineGet } from '../lib/api.js';
 import {
   MessageCircle, UsersRound, Search, Send, ImageUp, FileText, MapPin,
   Clock, CheckCircle2, Share2, ChevronRight,
@@ -177,6 +177,7 @@ export default function Komunitas() {
                 </div>
               </div>
               <div className="post-body">{p.body}</div>
+              {p.photo && <img src={apiUrl(p.photo)} alt={t('Lampiran postingan', 'Post attachment')} loading="lazy" style={{ width: '100%', maxHeight: 320, objectFit: 'contain', borderRadius: 8, background: 'var(--surface2)', marginTop: 10 }} />}
               <div className="post-actions">
                 <button className="btn icon" onClick={() => toggleLike(p)} aria-pressed={Boolean(p.liked)}>
                   <CheckCircle2 size={16} /> {p.likes || 0}
