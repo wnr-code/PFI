@@ -49,6 +49,11 @@ export function uploadContentLengthStatus(header) {
   return length > 3 * 1024 * 1024 + 65536 ? 413 : 0;
 }
 
+// Group data is visible only to members and authorized reviewers/admins.
+export function canViewGroup(profile, isMember) {
+  return Boolean(profile && (isMember || ['reviewer', 'admin'].includes(profile.role)));
+}
+
 // Only reviewers/admins may moderate, and never their own account or report.
 export function canReviewEntity(entity, item, profile) {
   if (!item || !profile || !['reviewer', 'admin'].includes(profile.role)) return false;
@@ -548,9 +553,13 @@ export default {
         const groupId = groupMembersMatch[1];
         const group = await env.falaq.prepare('SELECT id,name,description FROM groups WHERE id=?').bind(groupId).first();
         if (!group) return fail(404, 'Kelompok tidak ditemukan.');
+        const membership = await env.falaq.prepare(
+          'SELECT 1 AS yes FROM memberships WHERE group_id=? AND user_id=?'
+        ).bind(groupId, profile.id).first();
+        if (!canViewGroup(profile, Boolean(membership))) return fail(403, 'Anda bukan anggota kelompok ini.');
         const [coord, rows] = await Promise.all([
           env.falaq.prepare('SELECT user_id FROM group_coordinators WHERE group_id=?').bind(groupId).first(),
-          env.falaq.prepare(`SELECT u.id,u.name,u.email,u.org,u.bio,u.role,u.verification,u.review_note,u.created
+          env.falaq.prepare(`SELECT u.id,u.name,u.org,u.bio,u.role,u.verification
             FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.group_id=? ORDER BY u.name`).bind(groupId).all(),
         ]);
         return json({ group: group.id, name: group.name, description: group.description, coordinator: coord?.user_id || null,
@@ -560,9 +569,14 @@ export default {
       const groupPostsMatch = url.pathname.match(/^\/api\/groups\/([a-zA-Z0-9_-]+)\/posts$/);
       if (groupPostsMatch && request.method === 'GET') {
         const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk untuk melihat postingan kelompok.');
         const groupId = groupPostsMatch[1];
         const group = await env.falaq.prepare('SELECT id FROM groups WHERE id=?').bind(groupId).first();
         if (!group) return fail(404, 'Kelompok tidak ditemukan.');
+        const membership = await env.falaq.prepare(
+          'SELECT 1 AS yes FROM memberships WHERE group_id=? AND user_id=?'
+        ).bind(groupId, profile.id).first();
+        if (!canViewGroup(profile, Boolean(membership))) return fail(403, 'Anda bukan anggota kelompok ini.');
         const rows = profile && ['reviewer','admin'].includes(profile.role)
           ? await env.falaq.prepare('SELECT * FROM posts WHERE group_id=? ORDER BY created DESC LIMIT 100').bind(groupId).all()
           : profile
