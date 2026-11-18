@@ -30,7 +30,7 @@ Jalankan `npm ci` lalu `npm run dev` untuk pengembangan lokal.
 Untuk pemeriksaan, jalankan `npm run build` dan `npm test`.
 Jangan pernah menyimpan service-role key, token privat, atau rahasia server ke dalam kode frontend maupun repository.
 
-## Identitas proyek dan dukungan
+## Pengelola dan dukungan
 - GitHub: https://github.com/wnr-code/PFI
 - Maintainer / pengelola repository: [@wnr-code](https://github.com/wnr-code)
 - Dukung pengembangan PFI: https://trakteer.id/lanteraku/tip
