@@ -27,7 +27,7 @@ Bagian ini mencatat kondisi awal saat audit dimulai, bukan seluruh kondisi branc
 - Cache offline hanya menyimpan postingan publik yang bukan milik grup dan laporan rukyat yang sudah terverifikasi. Peta nasional juga hanya menampilkan rukyat terverifikasi.
 - Metadata rukyat mewajibkan koordinat numerik dalam rentang bumi, waktu ISO dengan zona waktu, serta elevasi yang valid; waktu dinormalisasi ke UTC.
 - Upload R2 membatasi ukuran, memeriksa signature JPEG/PNG/WebP, dan menyimpan metadata/hash tanpa membuka objek privat.
-- UI login/registrasi, preferensi, pengajuan verifikasi, like, komentar, dan agenda telah dihubungkan ke endpoint yang tersedia.
+- UI login/registrasi, preferensi, pengajuan verifikasi, antrean moderasi reviewer/admin, like, komentar, foto privat dengan bearer token, dan agenda telah dihubungkan ke endpoint yang tersedia.
 - Hisab saat ini hanya menerima metode MABIMS. Posisi hilal dihitung pada sunset lokal; tinggi memakai koordinat topocentric dengan refraction normal dan elongasi geocentric. Tampilan membedakan pemenuhan kriteria dari klaim hilal benar-benar terlihat.
 - Dashboard memakai peristiwa astronomi dinamis, bukan tanggal contoh lama. Kalender tetap menandai Umm al-Qura sebagai referensi, bukan penetapan resmi Indonesia.
 
@@ -36,7 +36,7 @@ Bagian ini mencatat kondisi awal saat audit dimulai, bukan seluruh kondisi branc
 - Tes tambahan telah ditulis untuk otorisasi grup, metadata rukyat, waktu sunset, dan elongasi Bulan.
 - **CI untuk head terbaru belum terkonfirmasi.** Run sukses yang sebelumnya tercatat berasal dari commit lama; jangan menyatakan branch terbaru lulus build/test sebelum workflow terbaru terlihat sukses.
 - Belum ada uji integrasi terhadap D1/R2 aktual, OAuth end-to-end, migrasi data SQLite lama, backup/restore, atau uji beban.
-- Belum ada fixture pembanding independen yang mencakup beberapa bulan, lokasi, dan batas ambang MABIMS. Ini wajib sebelum hasil hisab dipakai sebagai rujukan operasional.
+- Fixture sanity-check Syawal 1443 (1 Mei 2022) telah ditambahkan dengan rentang pembanding publik Kemenag; tetap perlu validasi independen yang lebih luas untuk beberapa bulan, lokasi, dan kondisi dekat ambang MABIMS sebelum hasil dipakai sebagai rujukan operasional.
 - Rate limiting terdistribusi, observability, backup terjadwal, dan prosedur rollback masih perlu disiapkan.
 
 ## Keputusan arsitektur target
