@@ -50,6 +50,7 @@ export default function Hisab() {
           method: metode,
         });
         setResult(authoritative);
+        if (authoritative.saved) await refresh();
         tell(authoritative.saved
           ? t('Perhitungan selesai dan tersimpan ke riwayat akun.', 'Calculation complete and saved to account history.')
           : t('Perhitungan selesai. Masuk ke akun untuk menyimpan riwayat.', 'Calculation complete. Sign in to save it to account history.'));
@@ -185,18 +186,47 @@ export default function Hisab() {
           </div>
           <div className="card-footer">
             <div style={{ display: 'flex', gap: 10 }}>
-              <button className="btn secondary full" onClick={() => tell(t('PDF akan diunduh (demo).', 'PDF will download (demo).'))}>
-                <FileDown size={16} /> {t('Unduh PDF', 'Download PDF')}
+              <button className="btn secondary full" onClick={() => window.print()}>
+                <FileDown size={16} /> {t('Cetak / Simpan PDF', 'Print / Save PDF')}
               </button>
               <button className="btn secondary full" onClick={() => {
                 const txt = `Hisab ${bulanLabel}: Tinggi ${formatAngle(result.moon?.alt)}°, Elongasi ${formatAngle(result.elongation)}°, ${result.meets ? 'Kriteria MABIMS terpenuhi' : 'Kriteria MABIMS belum terpenuhi'}`;
-                navigator.clipboard?.writeText(txt).then(() => tell(t('Disalin ke clipboard.', 'Copied to clipboard.')));
+                if (navigator.clipboard?.writeText) {
+                  navigator.clipboard.writeText(txt)
+                    .then(() => tell(t('Disalin ke clipboard.', 'Copied to clipboard.')))
+                    .catch(() => tell(t('Tidak dapat menyalin teks.', 'Unable to copy text.')));
+                } else {
+                  tell(t('Clipboard tidak didukung browser ini.', 'Clipboard is not supported by this browser.'));
+                }
               }}>
                 <Share2 size={16} /> {t('Bagikan', 'Share')}
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {data.calculations?.length > 0 && (
+        <section className="card" style={{ marginTop: 18 }}>
+          <div className="card-header">
+            <h2>{t('Riwayat Hisab', 'Calculation History')}</h2>
+            <span className="pill">{data.calculations.length}</span>
+          </div>
+          <div className="card-body">
+            {data.calculations.slice(0, 10).map((item) => (
+              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
+                <div>
+                  <b>{BULAN_HIJRIAH[(item.period?.month || 1) - 1]} {item.period?.year || ''}</b>
+                  <small style={{ display: 'block', color: '#8fa3b8' }}>{item.loc?.city || '—'} · {item.created ? formatTime(item.created) : '—'} UTC</small>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <b>{item.meets ? t('Memenuhi', 'Met') : t('Belum', 'Not met')}</b>
+                  <small style={{ display: 'block', color: '#8fa3b8' }}>{formatAngle(item.moon?.alt)}° / {formatAngle(item.elongation)}°</small>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
     </div>
   );
