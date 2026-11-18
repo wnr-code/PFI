@@ -1,7 +1,8 @@
 import React, {
-  createContext, useContext, useEffect, useState, useRef, useCallback,
+  createContext, useContext, useEffect, useState, useRef, useCallback, useMemo,
 } from 'react';
 import { supabase, isAuthConfigured } from './lib/supabase.js';
+import { agenda, SITES } from './lib/astro.js';
 import {
   authApi, api, offlineStore, offlineGet,
 } from './lib/api.js';
@@ -165,6 +166,12 @@ export function Provider({ children }) {
         : [...d[field], value],
     }));
 
+  const loc = useMemo(
+    () => SITES.find((site) => site.id === data.site) || SITES[0],
+    [data.site]
+  );
+  const events = useMemo(() => agenda(new Date(), loc), [loc]);
+
   const t = (id, en) => (data.lang === 'en' ? (en ?? id) : id);
 
   const value = {
@@ -173,6 +180,8 @@ export function Provider({ children }) {
     toggle,
     route,
     lang: data.lang,
+    loc,
+    events,
     setLang: (l) => update({ lang: l }),
     mode: data.mode,
     setMode: (m) => update({ mode: m }),
