@@ -41,6 +41,14 @@ export function canViewPost(post, profile) {
   return Boolean(profile && (profile.id === post.user_id || ['reviewer', 'admin'].includes(profile.role)));
 }
 
+// Validate the optional transport length before parsing multipart form data.
+export function uploadContentLengthStatus(header) {
+  if (header === null) return 0; // Some runtimes do not expose Content-Length.
+  const length = Number(header);
+  if (!Number.isSafeInteger(length) || length < 1) return 400;
+  return length > 3 * 1024 * 1024 + 65536 ? 413 : 0;
+}
+
 // Only reviewers/admins may moderate, and never their own account or report.
 export function canReviewEntity(entity, item, profile) {
   if (!item || !profile || !['reviewer', 'admin'].includes(profile.role)) return false;
@@ -173,9 +181,18 @@ async function uploadPostPhoto(request, env, postId) {
   ).bind(postId).first();
   if (existing) return fail(409, 'Laporan ini sudah memiliki lampiran foto.');
 
-  const contentLength = Number(request.headers.get('content-length') || 0);
-  if (contentLength > 3 * 1024 * 1024 + 65536) return fail(413, 'Ukuran foto maksimal 3 MB.');
-  const form = await request.formData();
+  const lengthStatus = uploadContentLengthStatus(request.headers.get('content-length'));
+  if (lengthStatus === 400) return fail(400, 'Header ukuran unggahan tidak valid.');
+  if (lengthStatus === 413) return fail(413, 'Ukuran foto maksimal 3 MB.');
+  if (!env.r2falaq || typeof env.r2falaq.put !== 'function') {
+    return fail(503, 'Penyimpanan foto belum dikonfigurasi.');
+  }
+  let form;
+  try {
+    form = await request.formData();
+  } catch {
+    return fail(400, 'Formulir unggahan foto tidak valid.');
+  }
   const file = form.get('photo');
   if (!file || typeof file.arrayBuffer !== 'function') return fail(400, 'Pilih satu berkas foto terlebih dahulu.');
   if (file.size < 1 || file.size > 3 * 1024 * 1024) return fail(413, 'Ukuran foto maksimal 3 MB.');
