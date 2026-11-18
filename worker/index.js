@@ -41,6 +41,17 @@ export function canViewPost(post, profile) {
   return Boolean(profile && (profile.id === post.user_id || ['reviewer', 'admin'].includes(profile.role)));
 }
 
+async function canAccessPost(env, post, profile) {
+  if (!canViewPost(post, profile)) return false;
+  if (!post?.group_id) return true;
+  if (!profile) return false;
+  if (['reviewer', 'admin'].includes(profile.role)) return true;
+  const membership = await env.falaq.prepare(
+    'SELECT 1 AS yes FROM memberships WHERE group_id=? AND user_id=?'
+  ).bind(post.group_id, profile.id).first();
+  return Boolean(membership);
+}
+
 // Validate the optional transport length before parsing multipart form data.
 export function uploadContentLengthStatus(header) {
   if (header === null) return 0; // Some runtimes do not expose Content-Length.
@@ -155,12 +166,15 @@ async function getPosts(request, env, profile) {
     : profile
       ? await env.falaq.prepare(`
           SELECT * FROM posts
-          WHERE type != 'rukyat' OR status = 'verified' OR user_id = ?
+          WHERE (group_id IS NULL OR EXISTS (
+            SELECT 1 FROM memberships m WHERE m.group_id=posts.group_id AND m.user_id=?
+          ))
+          AND (type != 'rukyat' OR status = 'verified' OR user_id = ?)
           ORDER BY created DESC LIMIT ?
-        `).bind(profile.id, limit).all()
+        `).bind(profile.id, profile.id, limit).all()
       : await env.falaq.prepare(`
           SELECT * FROM posts
-          WHERE type != 'rukyat' OR status = 'verified'
+          WHERE group_id IS NULL AND (type != 'rukyat' OR status = 'verified')
           ORDER BY created DESC LIMIT ?
         `).bind(limit).all();
   const result = [];
@@ -234,7 +248,7 @@ async function uploadPostPhoto(request, env, postId) {
 
 async function getPhoto(request, env, id) {
   const meta = await env.falaq.prepare(
-    `SELECT ph.mime,ph.object_key,ph.size_bytes,p.user_id,p.status
+    `SELECT ph.mime,ph.object_key,ph.size_bytes,p.user_id,p.status,p.type,p.group_id
      FROM photos ph JOIN posts p ON p.id = ph.post_id
      WHERE ph.id = ?`
   ).bind(id).first();
@@ -246,8 +260,8 @@ async function getPhoto(request, env, id) {
   const isReviewer = profile && ['reviewer', 'admin'].includes(profile.role);
   const isOwner = profile && profile.id === meta.user_id;
   const isVerified = meta.status === 'verified';
-  if (!isVerified && !isOwner && !isReviewer) {
-    return fail(profile ? 403 : 401, 'Foto laporan ini belum dipublikasikan.');
+  if (!await canAccessPost(env, meta, profile)) {
+    return fail(profile ? 403 : 401, 'Foto atau laporan ini tidak dapat diakses.');
   }
 
   const object = await env.r2falaq.get(meta.object_key);
@@ -393,7 +407,7 @@ export default {
         const profile = await profileFor(request, env);
         if (!profile) return fail(401, 'Silakan masuk untuk menyukai postingan.');
         const post = await env.falaq.prepare('SELECT * FROM posts WHERE id = ?').bind(likeMatch[1]).first();
-        if (!post || !canViewPost(post, profile)) return fail(404, 'Postingan tidak ditemukan.');
+        if (!post || !await canAccessPost(env, post, profile)) return fail(404, 'Postingan tidak ditemukan.');
         const body = await request.json().catch(() => null);
         if (body?.liked === true) {
           await env.falaq.prepare('INSERT OR IGNORE INTO likes (post_id,user_id) VALUES (?,?)').bind(post.id, profile.id).run();
@@ -413,7 +427,7 @@ export default {
         const body = await request.json().catch(() => null);
         const value = typeof body?.text === 'string' ? body.text.trim() : '';
         if (!value || value.length > 1400) return fail(400, 'Komentar wajib diisi dan maksimal 1.400 karakter.');
-        if (!canViewPost(post, profile)) return fail(404, 'Postingan tidak ditemukan.');
+        if (!await canAccessPost(env, post, profile)) return fail(404, 'Postingan tidak ditemukan.');
         await env.falaq.prepare(
           'INSERT INTO comments (id,post_id,user_id,body,created) VALUES (?,?,?,?,?)'
         ).bind(uuid(), post.id, profile.id, value, new Date().toISOString()).run();
