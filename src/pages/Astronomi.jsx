@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { usePFI, go } from '../state.jsx';
-import { lunar, position, SITES, zlabel } from '../lib/astro.js';
+import { lunar, position, sunsetTime, clock, SITES, zlabel } from '../lib/astro.js';
 import {
   Moon, Sun, Calendar, Clock, MapPin, Play, Compass, Eclipse, RefreshCw,
 } from 'lucide-react';
@@ -13,33 +13,34 @@ const TABS = [
 
 export default function Astronomi() {
   const { data, t, tell } = usePFI();
-  const [tab, setTab] = useState('simulasi');
   const [tanggal, setTanggal] = useState(() => {
     const now = new Date();
     return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
   });
-  const [waktu, setWaktu] = useState('18:00');
   const [siteId, setSiteId] = useState(() => SITES.some((item) => item.id === data.site) ? data.site : 'tasik');
 
   const site = SITES.find((s) => s.id === siteId) || SITES[0];
-  const offset = `${site.offset >= 0 ? '+' : '-'}${String(Math.abs(site.offset)).padStart(2, '0')}:00`;
-  const observationDate = useMemo(() => new Date(`${tanggal}T${waktu}:00${offset}`), [tanggal, waktu, offset]);
-  const moon = useMemo(() => lunar(observationDate), [observationDate]);
+  // MABIMS criteria are evaluated at local sunset, not at an arbitrary clock time.
+  const observationDate = useMemo(() => sunsetTime(tanggal, site), [tanggal, site]);
+  const moon = useMemo(() => observationDate ? lunar(observationDate) : null, [observationDate]);
 
   const simulasi = useMemo(() => {
+    if (!observationDate) return null;
     try {
       const pos = position('Moon', observationDate, site);
       return {
-        alt: pos.alt?.toFixed?.(2) ?? 0,
-        az: pos.az?.toFixed?.(2) ?? 0,
-        ra: pos.ra?.toFixed?.(2) ?? 0,
-        dec: pos.dec?.toFixed?.(2) ?? 0,
-        dist: pos.dist?.toFixed?.(0) ?? 0,
+        alt: pos.alt,
+        az: pos.az,
+        ra: pos.ra,
+        dec: pos.dec,
+        dist: pos.dist,
       };
-    } catch (e) {
-      return { alt: 0, az: 0, ra: 0, dec: 0, dist: 0 };
+    } catch {
+      return null;
     }
   }, [observationDate, site]);
+  const meets = Number.isFinite(simulasi?.alt) && simulasi.alt >= 3 &&
+    Number.isFinite(moon?.elongation) && moon.elongation >= 6.4;
 
   return (
     <div className="page-wrap">
@@ -60,12 +61,11 @@ export default function Astronomi() {
               <input type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} />
             </div>
             <div className="field">
-              <label>{t('Waktu', 'Time')}</label>
-              <select value={waktu} onChange={(e) => setWaktu(e.target.value)}>
-                {[17, 18, 19, 20, 21].map((h) => (
-                  <option key={h} value={`${h}:00`}>{h.toString().padStart(2, '0')}:00 {zlabel(site)}</option>
-                ))}
-              </select>
+              <label>{t('Waktu terbenam Matahari', 'Local sunset')}</label>
+              <div className="result-box">
+                <b>{observationDate ? `${clock(observationDate, site)} ${zlabel(site)}` : '—'}</b>
+                <small>{t('Dihitung dari koordinat lokasi', 'Calculated for selected coordinates')}</small>
+              </div>
             </div>
             <div className="field">
               <label>{t('Lokasi', 'Location')}</label>
@@ -76,14 +76,7 @@ export default function Astronomi() {
               </select>
             </div>
           </div>
-          <div style={{ marginTop: 18 }}>
-            <button
-              className="btn primary full"
-              onClick={() => tell(t('Simulasi dijalankan.', 'Simulation run.'))}
-            >
-              <Play size={18} /> {t('Jalankan Simulasi', 'Run Simulation')}
-            </button>
-          </div>
+
         </div>
       </div>
 
@@ -95,23 +88,23 @@ export default function Astronomi() {
           <div className="result-grid" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
             <div className="metric">
               <span className="label">{t('Tinggi Hilal', 'Crescent Height')}</span>
-              <b>{simulasi.alt}°</b>
+              <b>{simulasi ? simulasi.alt.toFixed(2) : '—'}°</b>
               <small>{t('di atas horizon', 'above horizon')}</small>
             </div>
             <div className="metric">
               <span className="label">{t('Azimut', 'Azimuth')}</span>
-              <b>{simulasi.az}°</b>
+              <b>{simulasi ? simulasi.az.toFixed(2) : '—'}°</b>
               <small>{t('arah kompas', 'compass direction')}</small>
             </div>
             <div className="metric">
               <span className="label">{t('Elongasi', 'Elongation')}</span>
-              <b>{moon.elongation?.toFixed?.(1) ?? '—'}°</b>
+              <b>{moon?.elongation?.toFixed?.(1) ?? '—'}°</b>
               <small>{t('jarak dari matahari', 'from sun')}</small>
             </div>
             <div className="metric">
               <span className="label">{t('Visibilitas', 'Visibility')}</span>
-              <b>{Number(simulasi.alt) >= 3 && Number(moon.elongation) >= 6.4 ? t('Memenuhi kriteria', 'Criteria met') : t('Belum memenuhi', 'Criteria not met')}</b>
-              <small>{Number(simulasi.alt) >= 3 && Number(moon.elongation) >= 6.4 ? '✓' : '✗'}</small>
+              <b>{meets ? t('Memenuhi kriteria', 'Criteria met') : t('Belum memenuhi', 'Criteria not met')}</b>
+              <small>{meets ? '✓' : '✗'}</small>
             </div>
           </div>
 
