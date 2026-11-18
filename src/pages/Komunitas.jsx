@@ -46,6 +46,9 @@ export default function Komunitas() {
   useEffect(() => {
     let cancelled = false;
     setPosts([]);
+    setNewPost('');
+    setCommentDraft('');
+    setExpandedPostId(null);
     setLoading(true);
     (async () => {
       try {
