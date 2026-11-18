@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker, { canReviewEntity, canViewGroup, canViewPost, uploadContentLengthStatus } from '../worker/index.js';
+import worker, { canReviewEntity, canViewGroup, canViewPost, normalizeRukyatDetails, uploadContentLengthStatus } from '../worker/index.js';
 
 test('Worker health endpoint reports Cloudflare runtime', async () => {
   const response = await worker.fetch(new Request('https://pfi.test/api/health'), {}, {});
@@ -80,4 +80,21 @@ test('group data is restricted to members and authorized reviewers', () => {
   assert.equal(canViewGroup({ id: 'observer-1', role: 'observer' }, true), true);
   assert.equal(canViewGroup({ id: 'reviewer-1', role: 'reviewer' }, false), true);
   assert.equal(canViewGroup({ id: 'admin-1', role: 'admin' }, false), true);
+});
+
+
+test('rukyat metadata requires explicit coordinates and timezone-aware time', () => {
+  const valid = normalizeRukyatDetails({
+    latitude: '-7.407', longitude: '108.142',
+    observedAt: '2026-11-19T18:30:00+07:00',
+    elevation: '', weather: 'Cerah', instrument: 'Teleskop',
+  });
+  assert.equal(valid.latitude, -7.407);
+  assert.equal(valid.longitude, 108.142);
+  assert.equal(valid.observedAt, '2026-11-19T11:30:00.000Z');
+  assert.equal(valid.elevation, null);
+  assert.equal(normalizeRukyatDetails({ latitude: '', longitude: '0', observedAt: '2026-11-19T18:30:00+07:00' }), null);
+  assert.equal(normalizeRukyatDetails({ latitude: '0', longitude: '0', observedAt: '2026-11-19T18:30:00' }), null);
+  assert.equal(normalizeRukyatDetails({ latitude: '91', longitude: '0', observedAt: '2026-11-19T18:30:00Z' }), null);
+  assert.equal(normalizeRukyatDetails({ latitude: '0', longitude: '0', observedAt: '2026-11-19T18:30:00Z', elevation: '9001' }), null);
 });
