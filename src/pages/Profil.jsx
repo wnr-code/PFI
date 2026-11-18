@@ -1,16 +1,57 @@
 import React, { useState } from 'react';
-import { usePFI, go } from '../state.jsx';
+import { usePFI } from '../state.jsx';
+import { api } from '../lib/api.js';
 import { User, CreditCard, Share2, LogOut, Bell, ShieldCheck, FileText } from 'lucide-react';
 
 export default function Profil() {
-  const { data, t, lang, logout, tell, update } = usePFI();
-  const [showDonasi, setShowDonasi] = useState(false);
+  const { data, t, logout, tell, update } = usePFI();
+  const [evidence, setEvidence] = useState('');
+  const [verificationBusy, setVerificationBusy] = useState(false);
 
   const account = data.account;
   const isDemo = !account;
 
-  const handleDonasi = () => {
-    tell('Donasi akan diarahkan ke halaman pembayaran (demo).');
+  const submitVerification = async (event) => {
+    event.preventDefault();
+    if (evidence.trim().length < 20 || evidence.trim().length > 1000) {
+      tell(t('Keterangan bukti harus 20–1.000 karakter.', 'Evidence description must be 20–1,000 characters.'));
+      return;
+    }
+    setVerificationBusy(true);
+    try {
+      await api('/api/verification', 'POST', { evidence: evidence.trim() });
+      update((current) => ({
+        account: { ...current.account, verification: 'pending', reviewNote: '' },
+      }));
+      setEvidence('');
+      tell(t('Pengajuan verifikasi berhasil dikirim.', 'Verification request submitted.'));
+    } catch (error) {
+      tell(error.message || t('Pengajuan verifikasi gagal.', 'Verification request failed.'));
+    } finally {
+      setVerificationBusy(false);
+    }
+  };
+
+  const toggleNotifications = async () => {
+    const notify = !data.notify;
+    update({ notify });
+    try {
+      await api('/api/preferences', 'PUT', { notify });
+    } catch (error) {
+      update({ notify: !notify });
+      tell(error.message || t('Preferensi gagal disimpan.', 'Unable to save preference.'));
+    }
+  };
+
+  const changeLanguage = async () => {
+    const lang = data.lang === 'id' ? 'en' : 'id';
+    update({ lang });
+    try {
+      await api('/api/preferences', 'PUT', { lang });
+    } catch (error) {
+      update({ lang: data.lang });
+      tell(error.message || t('Bahasa gagal disimpan.', 'Unable to save language.'));
+    }
   };
 
   return (
@@ -67,17 +108,12 @@ export default function Profil() {
             </div>
             <div className="card-body">
               <p>{t('Donasi Anda membantu mengembangkan aplikasi PFI sebagai jaringan pengamat hilal seluruh Indonesia.', 'Your donation helps develop PFI as a crescent watch network across Indonesia.')}</p>
-              <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-                <button className="btn secondary full" onClick={handleDonasi}>
-                  <CreditCard size={18} /> {t('Donasi via QRIS', 'Donate via QRIS')}
-                </button>
-                <button className="btn secondary full" onClick={handleDonasi}>
-                  <FileText size={18} /> {t('Rekening Bank', 'Bank Transfer')}
-                </button>
-              </div>
-              <div style={{ marginTop: 16, padding: 12, background: 'rgba(214,174,98,0.05)', borderRadius: 6, fontSize: 11, color: '#8fa3b8' }}>
-                {t('Rekening: BCA 1234567890 a/n Pusat Falak Indonesia', 'Account: BCA 1234567890 a/n Pusat Falak Indonesia')}
-              </div>
+              <p style={{ marginTop: 12, fontSize: 12, color: '#8fa3b8' }}>
+                {t('Dukungan pengembangan PFI dapat diberikan melalui halaman resmi Trakteer.', 'Support PFI development through its official Trakteer page.')}
+              </p>
+              <a className="btn secondary full" href="https://trakteer.id/lanteraku/tip" target="_blank" rel="noreferrer">
+                <CreditCard size={18} /> {t('Dukung PFI melalui Trakteer', 'Support PFI via Trakteer')}
+              </a>
             </div>
           </div>
 
@@ -91,7 +127,7 @@ export default function Profil() {
                   <b>{t('Peringatan Agenda', 'Event Reminders')}</b>
                   <div style={{ fontSize: 11, color: '#8fa3b8' }}>{t('Aktifkan pengingat agenda astronomi', 'Enable astronomical event reminders')}</div>
                 </div>
-                <button style={{ width: 44, height: 24, background: data.notify ? 'var(--gold)' : 'var(--line)', borderRadius: 12, position: 'relative' }}>
+                <button onClick={toggleNotifications} aria-pressed={Boolean(data.notify)} style={{ width: 44, height: 24, background: data.notify ? 'var(--gold)' : 'var(--line)', borderRadius: 12, position: 'relative' }}>
                   <div style={{ position: 'absolute', top: 2, left: data.notify ? 22 : 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left .2s' }} />
                 </button>
               </div>
@@ -100,17 +136,35 @@ export default function Profil() {
                   <b>{t('Bahasa', 'Language')}</b>
                   <div style={{ fontSize: 11, color: '#8fa3b8' }}>{data.lang === 'id' ? 'Indonesia' : 'English'}</div>
                 </div>
-                <button className="btn secondary" onClick={() => update({ lang: data.lang === 'id' ? 'en' : 'id' })}>
+                <button className="btn secondary" onClick={changeLanguage}>
                   {t('Ubah', 'Change')}
                 </button>
               </div>
             </div>
           </div>
 
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div className="card-header"><h2>{t('Verifikasi Pengamat', 'Observer Verification')}</h2></div>
+            <div className="card-body">
+              {account.verification === 'verified' ? (
+                <p>{t('Akun pengamat Anda telah terverifikasi.', 'Your observer account is verified.')}</p>
+              ) : account.verification === 'pending' ? (
+                <p>{t('Pengajuan sedang menunggu pemeriksaan petugas.', 'Your request is awaiting reviewer assessment.')}</p>
+              ) : (
+                <form onSubmit={submitVerification} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {account.reviewNote && <p style={{ color: '#d6ae62', fontSize: 12 }}>{t('Catatan petugas:', 'Reviewer note:')} {account.reviewNote}</p>}
+                  <label className="field">
+                    <span>{t('Jelaskan pengalaman atau bukti kompetensi falak (20–1.000 karakter)', 'Describe your falak experience or credentials (20–1,000 characters)')}</span>
+                    <textarea value={evidence} onChange={(event) => setEvidence(event.target.value)} minLength={20} maxLength={1000} rows={4} required />
+                  </label>
+                  <button className="btn secondary full" type="submit" disabled={verificationBusy}>
+                    <ShieldCheck size={16} /> {verificationBusy ? t('Mengirim…', 'Submitting…') : t('Ajukan Verifikasi', 'Request Verification')}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn secondary full" onClick={() => tell(t('Fitur belum tersedia (demo).', 'Feature not available (demo).'))}>
-              <ShieldCheck size={16} /> {t('Ajukan Verifikasi', 'Request Verification')}
-            </button>
             <button className="btn secondary full" onClick={logout}>
               <LogOut size={16} /> {t('Keluar', 'Sign out')}
             </button>
