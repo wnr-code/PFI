@@ -124,8 +124,8 @@ export default function Profil() {
             <div className="card-body">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderBottom: '1px solid var(--line)' }}>
                 <div>
-                  <b>{t('Peringatan Agenda', 'Event Reminders')}</b>
-                  <div style={{ fontSize: 11, color: '#8fa3b8' }}>{t('Aktifkan pengingat agenda astronomi', 'Enable astronomical event reminders')}</div>
+                  <b>{t('Preferensi Notifikasi', 'Notification Preferences')}</b>
+                  <div style={{ fontSize: 11, color: '#8fa3b8' }}>{t('Simpan preferensi pengingat agenda; pengiriman otomatis belum aktif', 'Save agenda reminder preference; automatic delivery is not active yet')}</div>
                 </div>
                 <button onClick={toggleNotifications} aria-pressed={Boolean(data.notify)} style={{ width: 44, height: 24, background: data.notify ? 'var(--gold)' : 'var(--line)', borderRadius: 12, position: 'relative' }}>
                   <div style={{ position: 'absolute', top: 2, left: data.notify ? 22 : 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left .2s' }} />
