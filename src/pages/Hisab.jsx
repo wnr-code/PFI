@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { usePFI, go } from '../state.jsx';
 import {
-  calculateHisab, hijri, isoDay, localTime, SITES, num,
+  calculateHisab, hijri, periods, SITES, num,
 } from '../lib/astro.js';
 import { api } from '../lib/api.js';
 import {
-  Calendar, MapPin, Settings, Sun, Moon, Compass, FileDown, Share2,
+  Calendar, MapPin, Settings, Sun, Moon, Compass, FileDown, Share2, Calculator,
   ArrowRight, CheckCircle2, Info, History,
 } from 'lucide-react';
 
@@ -24,7 +24,6 @@ const BULAN_HIJRIAH_EN = [
 export default function Hisab() {
   const { data, t, lang, loc, tell, update } = usePFI();
   const [bulan, setBulan] = useState(8); // Ramadan default
-  [9]; // Syawal
   const [siteId, setSiteId] = useState(data.site || 'jakarta');
   const [metode, setMetode] = useState('mabims');
   const [result, setResult] = useState(null);
@@ -35,20 +34,17 @@ export default function Hisab() {
   const hitung = async () => {
     setBusy(true);
     try {
-      const start = localTime('2026-01-01', '12:00', site);
-      const h = hijri(start, site);
-      const r = calculateHisab(
-        { start, ...h, month: bulan + 1 },
-        site,
-        metode
-      );
+      const period = periods(new Date(), site)
+        .filter((item) => item.month === bulan + 1)
+        .sort((a, b) => a.start.localeCompare(b.start))[0];
+      if (!period) throw new Error('Awal bulan Hijriah yang dipilih belum ditemukan dalam rentang kalender.');
+      const r = calculateHisab(period, site, metode);
       setResult(r);
       try {
         await api('/api/hisab', 'POST', {
           site: siteId,
-          start: '2026-01-01',
+          start: period.start,
           method: metode,
-          result: r,
         });
       } catch (e) {
         // offline: store locally
@@ -133,17 +129,17 @@ export default function Hisab() {
             <div className="result-grid">
               <div className="result-box">
                 <span className="label">{t('Waktu Ijtimak', 'Conjunction Time')}</span>
-                <b>{formatTime(result.iJt ?? result.conjunction)}</b>
+                <b>{formatTime(result.conj)}</b>
                 <small>{t('UTC', 'UTC')}</small>
               </div>
               <div className="result-box">
                 <span className="label">{t('Tinggi Hilal', 'Crescent Height')}</span>
-                <b>{formatAngle(result.alt)}°</b>
+                <b>{formatAngle(result.moon?.alt)}°</b>
                 <small>{t('pada terbenam matahari', 'at sunset')}</small>
               </div>
               <div className="result-box">
                 <span className="label">{t('Elongasi', 'Elongation')}</span>
-                <b>{formatAngle(result.elong)}°</b>
+                <b>{formatAngle(result.elongation)}°</b>
                 <small>{t('jarak bulan-matahari', 'moon-sun distance')}</small>
               </div>
               <div className="result-box">
@@ -153,12 +149,12 @@ export default function Hisab() {
               </div>
               <div className="result-box">
                 <span className="label">{t('Azimut Hilal', 'Crescent Azimuth')}</span>
-                <b>{formatAngle(result.az)}°</b>
+                <b>{formatAngle(result.moon?.az)}°</b>
                 <small>{t('arah mata kompas', 'compass direction')}</small>
               </div>
               <div className="result-box">
                 <span className="label">{t('Visibilitas', 'Visibility')}</span>
-                <b>{result.visible ? t('Terlihat', 'Visible') : t('Tidak terlihat', 'Not Visible')}</b>
+                <b>{result.meets ? t('Terlihat', 'Visible') : t('Tidak terlihat', 'Not Visible')}</b>
                 <small>{result.visible ? '✓' : '✗'}</small>
               </div>
             </div>
