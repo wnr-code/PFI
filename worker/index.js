@@ -339,7 +339,7 @@ export default {
       const photoMatch = url.pathname.match(/^\/api\/photos\/([a-zA-Z0-9_-]+)$/);
       if (photoMatch && request.method === 'GET') return await getPhoto(env, photoMatch[1]);
 
-      const likeMatch = url.pathname.match(/^\/api\/posts\/([a-zA-Z0-9_-]+)\\/like$/);
+      const likeMatch = url.pathname.match(/^\/api\/posts\/([a-zA-Z0-9_-]+)\/like$/);
       if (likeMatch && request.method === 'POST') {
         const profile = await profileFor(request, env);
         if (!profile) return fail(401, 'Silakan masuk untuk menyukai postingan.');
@@ -355,7 +355,7 @@ export default {
         return json(await postView(env, row, profile.id));
       }
 
-      const commentsMatch = url.pathname.match(/^\/api\/posts\/([a-zA-Z0-9_-]+)\\/comments$/);
+      const commentsMatch = url.pathname.match(/^\/api\/posts\/([a-zA-Z0-9_-]+)\/comments$/);
       if (commentsMatch && request.method === 'POST') {
         const profile = await profileFor(request, env);
         if (!profile) return fail(401, 'Silakan masuk untuk berkomentar.');
