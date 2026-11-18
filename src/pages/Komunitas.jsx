@@ -59,6 +59,7 @@ export default function Komunitas() {
     setCommentDraft('');
     setExpandedPostId(null);
     setSelectedGroupId('');
+    setGroupDetails({});
     setLoading(true);
     (async () => {
       try {
@@ -131,6 +132,7 @@ export default function Komunitas() {
       const membership = await api(`/api/groups/${group.id}`, 'POST', { join: !joined });
       update({ groups: membership.groups || [] });
       if (joined && selectedGroupId === group.id) setSelectedGroupId('');
+      if (joined) setGroupDetails((current) => { const next = { ...current }; delete next[group.id]; return next; });
       const [nextPosts, nextGroups] = await Promise.all([
         api('/api/posts'),
         api('/api/groups'),
