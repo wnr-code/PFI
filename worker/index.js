@@ -253,7 +253,7 @@ export default {
         const site = SITES.find((item) => item.id === body.site);
         if (!site) return fail(400, 'Lokasi pengamatan tidak dikenal.');
         const start = body.start;
-        if (typeof start !== 'string' || !/^\d{4}-\\d{2}-\\d{2}$/.test(start) || start < '1900-01-01' || start > '2099-12-31') {
+        if (typeof start !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(start) || start < '1900-01-01' || start > '2099-12-31') {
           return fail(400, 'Tanggal di luar rentang.');
         }
         const date = localTime(start, '12:00', site);
@@ -577,7 +577,7 @@ export default {
         const content = typeof body?.body === 'string' ? body.body.trim() : '';
         const date = typeof body?.date === 'string' ? body.date : '';
         const location = typeof body?.location === 'string' ? body.location.trim() : '';
-        if (!title || title.length > 130 || content.length < 3 || content.length > 1000 || location.length > 100 || !/^\d{4}-\\d{2}-\\d{2}$/.test(date) || date < '1900-01-01' || date > '2099-12-31') return fail(400, 'Data agenda tidak valid.');
+        if (!title || title.length > 130 || content.length < 3 || content.length > 1000 || location.length > 100 || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date < '1900-01-01' || date > '2099-12-31') return fail(400, 'Data agenda tidak valid.');
         const member = await env.falaq.prepare('SELECT 1 AS yes FROM memberships WHERE group_id=? AND user_id=?').bind(groupId, profile.id).first();
         if (!member) return fail(403, 'Anda bukan anggota kelompok ini.');
         const coord = await env.falaq.prepare('SELECT 1 AS yes FROM group_coordinators WHERE group_id=? AND user_id=?').bind(groupId, profile.id).first();
