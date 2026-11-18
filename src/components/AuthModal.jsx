@@ -3,7 +3,7 @@ import { usePFI } from '../state.jsx';
 import { Mail, Lock, Send, MailOpen, UserCheck } from 'lucide-react';
 
 export function AuthModal() {
-  const { close, tell, t, auth, lang } = usePFI();
+  const { close, tell, t, auth, isAuthConfigured } = usePFI();
   const [mode, setMode] = useState('login');
   const [form, setForm] = useState({ email: '', password: '', name: '', org: '' });
   const [busy, setBusy] = useState(false);
@@ -40,7 +40,8 @@ export function AuthModal() {
     setErr('');
     setBusy(true);
     try {
-      await auth.signInWithGoogle();
+      const { error } = await auth.signInWithGoogle();
+      if (error) throw error;
     } catch (e) {
       setErr(e.message || 'Login dengan Google gagal.');
     } finally {
@@ -81,32 +82,50 @@ export function AuthModal() {
           </button>
           {isDemo && (
             <p className="demo-note">
-              {t('Konfigurasi Supabase belum lengkap. Gunakan tombol di bawah untuk masuk demo.', 'Supabase not configured. Use demo login below.')}
+              {t('Konfigurasi Supabase belum lengkap. Login dan pendaftaran belum dapat digunakan.', 'Supabase is not configured. Sign-in and registration are unavailable.')}
             </p>
           )}
 
           {!isDemo && (
             <form onSubmit={submit}>
               <div className="field">
-                <label>{mode === 'login' ? t('Email', 'Email') : t('Nama lengkap', 'Full name')}</label>
+                <label>{t('Email', 'Email')}</label>
                 <input
-                  type={mode === 'login' ? 'email' : 'text'}
+                  type="email"
                   value={form.email}
                   onChange={change('email')}
-                  placeholder={mode === 'login' ? 'anda@email.com' : 'Nama Anda'}
+                  placeholder="anda@email.com"
+                  autoComplete="email"
+                  required
                 />
               </div>
-              {!mode === 'login' && (
-                <div className="field">
-                  <label>{t('Organisasi (opsional)', 'Organization (optional)')}</label>
-                  <input value={form.org} onChange={change('org')} placeholder="Contoh: LAPAN" />
-                </div>
+              {mode !== 'login' && (
+                <>
+                  <div className="field">
+                    <label>{t('Nama lengkap', 'Full name')}</label>
+                    <input
+                      type="text"
+                      value={form.name}
+                      onChange={change('name')}
+                      placeholder="Nama Anda"
+                      autoComplete="name"
+                      required
+                    />
+                  </div>
+                  <div className="field">
+                    <label>{t('Organisasi (opsional)', 'Organization (optional)')}</label>
+                    <input value={form.org} onChange={change('org')} placeholder="Contoh: LAPAN" />
+                  </div>
+                </>
               )}
               <div className="field">
                 <label>{t('Kata sandi', 'Password')}</label>
                 <input
                   type="password"
                   value={form.password}
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  minLength={10}
+                  required
                   onChange={change('password')}
                   placeholder="Minimal 10 karakter"
                 />
