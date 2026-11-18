@@ -124,7 +124,7 @@ export function AuthModal() {
                   type="password"
                   value={form.password}
                   autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                  minLength={10}
+                  minLength={mode === 'login' ? undefined : 10}
                   required
                   onChange={change('password')}
                   placeholder="Minimal 10 karakter"
