@@ -123,6 +123,8 @@ test('lunar phase data exposes a finite geocentric elongation', () => {
 
 test('Shawwal 1443 hisab remains within the published 1 May 2022 Indonesian reference envelope', () => {
   const aceh = SITES.find((site) => site.id === 'aceh');
+  assert.throws(() => calculateHisab({ start: '2022-05-02', day: 1 }, aceh, 'geometri'));
+  assert.throws(() => calculateHisab({ start: '2022-05-02', day: 2 }, aceh, 'mabims'));
   const result = calculateHisab(
     { start: '2022-05-02', year: 1443, month: 10, day: 1 },
     aceh,
