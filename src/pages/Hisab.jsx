@@ -153,7 +153,7 @@ export default function Hisab() {
               </div>
               <div className="result-box">
                 <span className="label">{t('Visibilitas', 'Visibility')}</span>
-                <b>{result.meets ? t('Terlihat', 'Visible') : t('Tidak terlihat', 'Not Visible')}</b>
+                <b>{result.meets ? t('Memenuhi kriteria', 'Criteria met') : t('Belum memenuhi', 'Criteria not met')}</b>
                 <small>{result.meets ? '✓' : '✗'}</small>
               </div>
             </div>
