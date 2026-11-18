@@ -86,7 +86,14 @@ export function Provider({ children }) {
             verification: 'none',
           }
         : null;
-      setData((d) => ({ ...d, account, session }));
+      setData((d) => ({
+        ...d,
+        account,
+        session,
+        ...(d.account?.id !== account?.id
+          ? { posts: [], groups: [], agendas: [], calculations: [] }
+          : {}),
+      }));
 
       // Authorization roles and verification status must come from D1 via the
       // Worker, never from editable Supabase user metadata.
