@@ -147,7 +147,7 @@ export function AuthModal() {
           </p>
 
           <p className="demo-footer">
-            {t('Demo mode: data disimpan lokal dan akan hilang saat halaman ditutup.', 'Demo mode: data stored locally and will be cleared on close.')}
+            {t('Autentikasi memakai Supabase; profil dan hak akses dikelola oleh server PFI.', 'Authentication uses Supabase; profile and access roles are managed by the PFI server.')}
           </p>
         </div>
       </section>
