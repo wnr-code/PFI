@@ -145,6 +145,7 @@ async function profileFor(request, env) {
       email = excluded.email,
       name = CASE WHEN users.name = '' THEN excluded.name ELSE users.name END,
       updated = datetime('now')
+    WHERE users.email != excluded.email OR users.name = ''
   `).bind(who.id, who.email, who.name).run();
 
   return await env.falaq.prepare(
