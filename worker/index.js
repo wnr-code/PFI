@@ -493,6 +493,35 @@ export default {
         return json({ groups: (memberships.results || []).map((row) => row.group_id) });
       }
 
+      if (url.pathname === '/api/groups' && request.method === 'POST') {
+        const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk untuk membuat kelompok.');
+        if (profile.role !== 'admin') return fail(403, 'Hanya admin yang dapat membuat kelompok.');
+        const body = await request.json().catch(() => null);
+        const name = typeof body?.name === 'string' ? body.name.trim() : '';
+        const description = typeof body?.description === 'string' ? body.description.trim() : '';
+        if (name.length < 3 || name.length > 80 || description.length > 500) {
+          return fail(400, 'Nama kelompok harus 3–80 karakter dan deskripsi maksimal 500 karakter.');
+        }
+        const id = name.normalize('NFKD').replace(/[\\u0300-\\u036f]/g, '')
+          .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50);
+        if (!id) return fail(400, 'Nama kelompok tidak dapat dijadikan ID.');
+        const created = new Date().toISOString();
+        try {
+          await env.falaq.batch([
+            env.falaq.prepare('INSERT INTO groups (id,name,description,created) VALUES (?,?,?,?)')
+              .bind(id, name, description, created),
+            env.falaq.prepare('INSERT INTO memberships (group_id,user_id) VALUES (?,?)')
+              .bind(id, profile.id),
+            env.falaq.prepare('INSERT INTO group_coordinators (group_id,user_id,appointed) VALUES (?,?,?)')
+              .bind(id, profile.id, created),
+          ]);
+        } catch {
+          return fail(409, 'ID kelompok sudah digunakan. Gunakan nama kelompok yang berbeda.');
+        }
+        return json({ id, name, description, members: 1 }, 201);
+      }
+
       if (url.pathname === '/api/groups' && request.method === 'GET') {
         const rows = await env.falaq.prepare(`
           SELECT g.id,g.name,g.description,COUNT(m.user_id) AS members
