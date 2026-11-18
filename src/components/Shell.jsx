@@ -1,3 +1,6 @@
+// PFI — Pusat Falak Indonesia | Maintainer: @wnr-code
+// Repository: https://github.com/wnr-code/PFI | Support: https://trakteer.id/lanteraku/tip
+// AI-assisted development; maintained and reviewed by the project maintainer.
 import React, { useState } from 'react';
 import { usePFI, go } from '../state.jsx';
 import {
@@ -129,8 +132,12 @@ export function Sidebar() {
         </button>
         <div className="side-foot">
           <i />
-          {t('Ruang observasi digital', 'Digital observatory')}
+          <span>{t('Ruang observasi digital', 'Digital observatory')}</span>
           <span>v1.0</span>
+          <div style={{ display: 'flex', gap: 10, marginTop: 8, fontSize: 11 }}>
+            <a href="https://github.com/wnr-code/PFI" target="_blank" rel="noreferrer" aria-label="GitHub PFI">GitHub</a>
+            <a href="https://trakteer.id/lanteraku/tip" target="_blank" rel="noreferrer" aria-label="Dukung PFI di Trakteer">Dukung PFI</a>
+          </div>
         </div>
       </div>
     </aside>
