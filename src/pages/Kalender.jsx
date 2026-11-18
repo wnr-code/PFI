@@ -8,7 +8,7 @@ const MONTHS = [
 ];
 const DAYS = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
 
-function hijriLabel(date, locale = 'id-ID') {
+function localISO(date = new Date()) {\n  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');\n}\n\nfunction hijriLabel(date, locale = 'id-ID') {
   try {
     return new Intl.DateTimeFormat(locale + '-u-ca-islamic-umalqura', {
       day: 'numeric', month: 'short',
@@ -28,7 +28,7 @@ export default function Kalender() {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
-  const [selected, setSelected] = useState(() => new Date().toISOString().slice(0, 10));
+  const [selected, setSelected] = useState(() => localISO());
 
   const cells = useMemo(() => {
     const first = new Date(month.getFullYear(), month.getMonth(), 1);
