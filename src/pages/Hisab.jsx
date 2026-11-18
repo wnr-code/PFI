@@ -39,18 +39,22 @@ export default function Hisab() {
         .sort((a, b) => a.start.localeCompare(b.start))[0];
       if (!period) throw new Error('Awal bulan Hijriah yang dipilih belum ditemukan dalam rentang kalender.');
       const r = calculateHisab(period, site, metode);
-      setResult(r);
       try {
-        await api('/api/hisab', 'POST', {
+        const authoritative = await api('/api/hisab', 'POST', {
           site: siteId,
           start: period.start,
           method: metode,
         });
+        setResult(authoritative);
+        tell(t('Perhitungan selesai dan tersimpan.', 'Calculation complete and saved.'));
       } catch (e) {
-        // offline: store locally
-        console.warn('API hisab gagal, simpan lokal:', e.message);
+        // Only a network failure may fall back to the local engine. HTTP errors
+        // mean the server rejected the request and must be shown to the user.
+        if (Number.isInteger(e.status)) throw e;
+        console.warn('API hisab tidak terjangkau; memakai perhitungan lokal:', e.message);
+        setResult(r);
+        tell(t('Perhitungan lokal selesai. Hasil belum tersimpan ke akun.', 'Local calculation complete. Result has not been saved to your account.'));
       }
-      tell(t('Perhitungan selesai.', 'Calculation complete.'));
     } catch (e) {
       tell(e.message || 'Perhitungan gagal.');
     } finally {
