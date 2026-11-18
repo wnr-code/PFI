@@ -24,7 +24,7 @@ const BULAN_HIJRIAH_EN = [
 export default function Hisab() {
   const { data, t, lang, loc, tell, update } = usePFI();
   const [bulan, setBulan] = useState(8); // Ramadan default
-  const [siteId, setSiteId] = useState(data.site || 'jakarta');
+  const [siteId, setSiteId] = useState(data.site || 'tasik');
   const [metode, setMetode] = useState('mabims');
   const [result, setResult] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -99,11 +99,10 @@ export default function Hisab() {
             </div>
             <div className="field">
               <label>{t('Metode Hisab', 'Calculation Method')}</label>
+              <small>{t('Saat ini metode MABIMS yang sudah tersedia dan divalidasi pada API.', 'MABIMS is currently the implemented and API-validated method.')}</small>
               <select value={metode} onChange={(e) => setMetode(e.target.value)}>
                 <option value="mabims">MABIMS (tinggi ≥ 3°, elongasi ≥ 6,4°)</option>
-                <option value="geometri">Geometri (posisi geometris)</option>
-                <option value="nu">NU (Nahdlatul Ulama)</option>
-                <option value="muhammadiyah">Muhammadiyah</option>
+
               </select>
             </div>
           </div>
