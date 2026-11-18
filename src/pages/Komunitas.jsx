@@ -46,6 +46,9 @@ export default function Komunitas() {
   const [groupsLoading, setGroupsLoading] = useState(true);
   const [groupBusyId, setGroupBusyId] = useState(null);
   const [selectedGroupId, setSelectedGroupId] = useState('');
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupDescription, setNewGroupDescription] = useState('');
+  const [groupCreating, setGroupCreating] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -90,6 +93,29 @@ export default function Komunitas() {
     if (tab === 'diskusi') return posts.filter((p) => p.type === 'diskusi');
     return posts;
   }, [posts, tab]);
+
+  const createGroup = async (event) => {
+    event.preventDefault();
+    if (data.account?.role !== 'admin') return;
+    setGroupCreating(true);
+    try {
+      const created = await api('/api/groups', 'POST', {
+        name: newGroupName.trim(),
+        description: newGroupDescription.trim(),
+      });
+      update({ groups: [...new Set([...(data.groups || []), created.id])] });
+      const nextGroups = await api('/api/groups');
+      setGroups(nextGroups);
+      setSelectedGroupId(created.id);
+      setNewGroupName('');
+      setNewGroupDescription('');
+      tell(t('Kelompok berhasil dibuat. Anda menjadi koordinator.', 'Group created. You are its coordinator.'));
+    } catch (error) {
+      tell(error.message || t('Kelompok gagal dibuat.', 'Unable to create group.'));
+    } finally {
+      setGroupCreating(false);
+    }
+  };
 
   const joinGroup = async (group) => {
     if (!data.account) {
@@ -188,6 +214,15 @@ export default function Komunitas() {
           <span className="pill">{groups.length}</span>
         </div>
         <div className="card-body">
+          {data.account?.role === 'admin' && (
+            <form onSubmit={createGroup} style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+              <input value={newGroupName} onChange={(event) => setNewGroupName(event.target.value)} minLength={3} maxLength={80} placeholder={t('Nama kelompok baru', 'New group name')} required />
+              <textarea value={newGroupDescription} onChange={(event) => setNewGroupDescription(event.target.value)} maxLength={500} rows={2} placeholder={t('Deskripsi kelompok (opsional)', 'Group description (optional)')} />
+              <button className="btn secondary" type="submit" disabled={groupCreating || newGroupName.trim().length < 3}>
+                {groupCreating ? t('Membuat…', 'Creating…') : t('Buat kelompok', 'Create group')}
+              </button>
+            </form>
+          )}
           {groupsLoading ? (
             <p>{t('Memuat kelompok…', 'Loading groups…')}</p>
           ) : groups.length === 0 ? (
