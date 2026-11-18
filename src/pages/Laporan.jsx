@@ -233,8 +233,9 @@ export default function Laporan() {
               </div>
               <b>{p.title}</b>
               <div className="post-body">{p.body}</div>
+              {p.reviewNote && <p style={{ color: '#d6ae62', fontSize: 12 }}>{t('Catatan petugas:', 'Reviewer note:')} {p.reviewNote}</p>}
               <div className="post-actions">
-                <button className="btn icon" onClick={() => go(`komunitas/${p.id}`)}><ChevronRight size={14} /></button>
+                <button className="btn icon" onClick={() => go('komunitas')}><ChevronRight size={14} /></button>
               </div>
             </div>
           ))}
