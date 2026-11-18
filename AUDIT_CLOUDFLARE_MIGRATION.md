@@ -33,7 +33,7 @@ Bagian ini mencatat kondisi awal saat audit dimulai, bukan seluruh kondisi branc
 
 ## Fitur UI yang masih perlu diselesaikan
 
-- UI sudah mendukung bergabung/keluar dan diskusi privat kelompok. Direktori anggota, penunjukan koordinator, pembuatan/pengelolaan kelompok, dan moderasi khusus kelompok masih perlu diselesaikan.
+- UI sudah mendukung pembuatan kelompok oleh admin, bergabung/keluar, dan diskusi privat kelompok. Direktori anggota, penunjukan koordinator melalui UI, agenda kelompok, dan moderasi khusus kelompok masih perlu diselesaikan.
 - Pembuatan dan pengelolaan agenda kelompok belum memiliki formulir UI lengkap.
 - Peta rukyat saat ini berupa daftar koordinat dan tautan peta, belum peta interaktif.
 - Preferensi notifikasi sudah tersimpan, tetapi pengiriman push/email otomatis belum diaktifkan.
