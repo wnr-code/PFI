@@ -23,6 +23,8 @@ export default function Komunitas() {
 
   useEffect(() => {
     let cancelled = false;
+    setPosts([]);
+    setLoading(true);
     (async () => {
       try {
         const p = await api('/api/posts');
@@ -36,7 +38,7 @@ export default function Komunitas() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [data.account?.id]);
 
   const filtered = useMemo(() => {
     if (tab === 'rukyat') return posts.filter((p) => p.type === 'rukyat');
