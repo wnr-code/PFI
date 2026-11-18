@@ -62,7 +62,7 @@ export default function Hisab() {
   const formatTime = (v) => {
     if (!v) return '—';
     return new Date(v).toLocaleTimeString(lang === 'id' ? 'id-ID' : 'en-GB', {
-      hour: '2-digit', minute: '2-digit', hour12: false,
+      timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: false,
     });
   };
 
@@ -154,13 +154,13 @@ export default function Hisab() {
               <div className="result-box">
                 <span className="label">{t('Visibilitas', 'Visibility')}</span>
                 <b>{result.meets ? t('Terlihat', 'Visible') : t('Tidak terlihat', 'Not Visible')}</b>
-                <small>{result.visible ? '✓' : '✗'}</small>
+                <small>{result.meets ? '✓' : '✗'}</small>
               </div>
             </div>
 
             <div style={{ marginTop: 16, padding: 14, background: 'var(--surface2)', border: '1px solid var(--line)', borderRadius: 8 }}>
               <h3 style={{ fontSize: 13, marginBottom: 8, color: '#d6ae62' }}>{t('Kesimpulan', 'Conclusion')}</h3>
-              <p style={{ fontSize: 13, lineHeight: 1.6, color: '#c7d1df' }}>{result.visible ? t('Kondisi matahari terbenam mencukupi untuk pengamatan hilal. Namun, penetapan resmi awal bulan adalah wewenang sidang isbat.', 'Sunset conditions sufficient for crescent observation. Official determination is authority of isbat session.') : t('Kondisi matahari terbenam kurang mencukupi untuk pengamatan hilal berdasarkan metode yang dipilih.', 'Sunset conditions insufficient for crescent observation based on selected method.')}</p>
+              <p style={{ fontSize: 13, lineHeight: 1.6, color: '#c7d1df' }}>{result.meets ? t('Kriteria visibilitas MABIMS terpenuhi secara hisab. Hasil ini bukan bukti hilal benar-benar terlihat dan bukan penetapan resmi awal bulan.', 'The MABIMS visibility criteria are met by calculation. This does not prove an actual sighting or constitute an official month declaration.') : t('Kriteria visibilitas MABIMS belum terpenuhi secara hisab. Hasil ini bukan keputusan resmi awal bulan.', 'The MABIMS visibility criteria are not met by calculation. This is not an official month determination.')}</p>
               <p style={{ fontSize: 11, color: '#747f8e', marginTop: 8 }}>
                 {t('Hasil perhitungan adalah data astronomis, bukan keputusan resmi awal bulan. Setiap lembaga (MUI, NU, Muhammadiyah, dll.) memiliki metoda perhitungan sendiri.', 'Calculation results are astronomical data, not official new month determination. Each institution (MUI, NU, Muhammadiyah, etc.) has its own calculation method.')}
               </p>
@@ -172,7 +172,7 @@ export default function Hisab() {
                 <FileDown size={16} /> {t('Unduh PDF', 'Download PDF')}
               </button>
               <button className="btn secondary full" onClick={() => {
-                const txt = `Hisab ${bulanLabel}: Tinggi ${formatAngle(result.alt)}°, Elongasi ${formatAngle(result.elong)}°, ${result.visible ? 'Terlihat' : 'Tidak terlihat'}`;
+                const txt = `Hisab ${bulanLabel}: Tinggi ${formatAngle(result.moon?.alt)}°, Elongasi ${formatAngle(result.elongation)}°, ${result.meets ? 'Kriteria MABIMS terpenuhi' : 'Kriteria MABIMS belum terpenuhi'}`;
                 navigator.clipboard?.writeText(txt).then(() => tell(t('Disalin ke clipboard.', 'Copied to clipboard.')));
               }}>
                 <Share2 size={16} /> {t('Bagikan', 'Share')}
