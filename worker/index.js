@@ -225,12 +225,25 @@ export default {
             elevation: Number.isFinite(Number(details.elevation)) ? Number(details.elevation) : null,
           };
         }
+        // Validate optional group membership target before writing so invalid IDs
+        // return a client error instead of surfacing as an opaque D1 failure.
+        let groupId = null;
+        if (body.groupId) {
+          groupId = String(body.groupId).slice(0, 80);
+          const group = await env.falaq.prepare('SELECT id FROM groups WHERE id = ?').bind(groupId).first();
+          if (!group) return fail(400, 'Kelompok tujuan tidak ditemukan.');
+          const membership = await env.falaq.prepare(
+            'SELECT 1 AS yes FROM memberships WHERE group_id = ? AND user_id = ?'
+          ).bind(groupId, profile.id).first();
+          if (!membership && profile.role !== 'admin') return fail(403, 'Anda belum menjadi anggota kelompok ini.');
+        }
+
         const id = uuid();
         const created = new Date().toISOString();
         await env.falaq.prepare(`
           INSERT INTO posts (id,user_id,author,type,title,body,city,details,group_id,status,created)
           VALUES (?,?,?,?,?,?,?,?,?,?,?)
-        `).bind(id, profile.id, profile.name, type, title, content, city, JSON.stringify(details), body.groupId || null, type === 'rukyat' ? 'pending' : '', created).run();
+        `).bind(id, profile.id, profile.name, type, title, content, city, JSON.stringify(details), groupId, type === 'rukyat' ? 'pending' : '', created).run();
         const row = await env.falaq.prepare('SELECT * FROM posts WHERE id = ?').bind(id).first();
         return json(await postView(env, row, profile.id), 201);
       }
