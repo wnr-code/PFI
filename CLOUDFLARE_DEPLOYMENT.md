@@ -58,3 +58,18 @@ Worker memvalidasi access token dengan endpoint Supabase Auth `/auth/v1/user`, l
 ## Catatan konfigurasi frontend
 
 File `.env.production` berisi URL dan publishable key Supabase untuk proses build Vite. Publishable/anon key memang bukan secret, tetapi jangan pernah memasukkan service-role key atau credential privat ke variabel `VITE_*`. API memakai same-origin URL secara default.
+
+
+## Laporan rukyat terstruktur (tambahan tahap 1)
+
+Worker menerima `POST /api/posts` untuk pengguna yang token Supabase-nya valid. Untuk `type=rukyat`, judul, isi, kota, lintang, bujur, dan waktu pengamatan wajib valid. Cuaca, instrumen, kondisi visibilitas, serta elevasi disimpan sebagai metadata JSON pada kolom `posts.details`. Laporan baru berstatus `pending`; endpoint moderasi belum tersedia sehingga status tidak dapat diubah melalui Worker tahap ini.
+
+UI `src/pages/Laporan.jsx` menyediakan formulir pengamatan dan pengisian koordinat melalui izin GPS perangkat. Foto belum dapat diunggah pada tahap ini. UI `src/pages/PetaRukyat.jsx` hanya menampilkan koordinat dari laporan yang benar-benar tersimpan; belum berupa peta interaktif.
+
+### Pemeriksaan yang masih wajib
+
+- Jalankan test dan build dari branch ini.
+- Uji D1 lokal dengan migration `0001_initial.sql`.
+- Uji laporan tanpa token (harus 401), data koordinat invalid (harus 400), dan laporan valid (harus 201).
+- Pastikan waktu yang dikirim adalah ISO UTC dan tampilan mengonversi ke zona waktu perangkat.
+- Jangan deploy ke produksi sampai upload R2, moderasi, semua endpoint lama, dan migrasi data selesai.
