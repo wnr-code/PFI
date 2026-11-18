@@ -14,6 +14,18 @@ async function getToken() {
   return session?.access_token || null;
 }
 
+export async function apiBlob(path) {
+  const token = await getToken();
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const res = await fetch(apiUrl(path), { headers, credentials: 'same-origin' });
+  if (res.status === 401) {
+    await supabase.auth.signOut();
+    throw new Error('Sesi kadaluarsa, silakan masuk kembali.');
+  }
+  if (!res.ok) throw new Error(`Foto tidak dapat dimuat (HTTP ${res.status}).`);
+  return res.blob();
+}
+
 export async function api(path, method = 'GET', body = null) {
   const token = await getToken();
   const headers = { Accept: 'application/json' };
