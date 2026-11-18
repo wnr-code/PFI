@@ -96,5 +96,6 @@ test('rukyat metadata requires explicit coordinates and timezone-aware time', ()
   assert.equal(normalizeRukyatDetails({ latitude: '', longitude: '0', observedAt: '2026-11-19T18:30:00+07:00' }), null);
   assert.equal(normalizeRukyatDetails({ latitude: '0', longitude: '0', observedAt: '2026-11-19T18:30:00' }), null);
   assert.equal(normalizeRukyatDetails({ latitude: '91', longitude: '0', observedAt: '2026-11-19T18:30:00Z' }), null);
+  assert.equal(normalizeRukyatDetails({ latitude: true, longitude: '0', observedAt: '2026-11-19T18:30:00Z' }), null);
   assert.equal(normalizeRukyatDetails({ latitude: '0', longitude: '0', observedAt: '2026-11-19T18:30:00Z', elevation: '9001' }), null);
 });
