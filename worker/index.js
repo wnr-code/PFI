@@ -82,6 +82,14 @@ export function normalizeRukyatDetails(details) {
   const timestampPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/;
   if (!timestampPattern.test(observedAt) || !Number.isFinite(Date.parse(observedAt))) return null;
 
+  const zoneOffsets = { WIB: 420, WITA: 480, WIT: 540 };
+  const timeZone = details.timeZone;
+  const offsetMatch = observedAt.match(/([+-])(\d{2}):(\d{2})$/);
+  if (!Object.hasOwn(zoneOffsets, timeZone) || !offsetMatch) return null;
+  const sign = offsetMatch[1] === '-' ? -1 : 1;
+  const utcOffsetMinutes = sign * (Number(offsetMatch[2]) * 60 + Number(offsetMatch[3]));
+  if (utcOffsetMinutes !== zoneOffsets[timeZone]) return null;
+
   let elevation = null;
   if (details.elevation !== null && details.elevation !== undefined && String(details.elevation).trim() !== '') {
     if (!['number', 'string'].includes(typeof details.elevation)) return null;
