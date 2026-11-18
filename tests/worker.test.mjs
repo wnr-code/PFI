@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker, { canReviewEntity, canViewGroup, canViewPost, normalizeRukyatDetails, uploadContentLengthStatus } from '../worker/index.js';
+import { SITES, clock, lunar, sunsetTime } from '../src/lib/astro.js';
 
 test('Worker health endpoint reports Cloudflare runtime', async () => {
   const response = await worker.fetch(new Request('https://pfi.test/api/health'), {}, {});
@@ -98,4 +99,20 @@ test('rukyat metadata requires explicit coordinates and timezone-aware time', ()
   assert.equal(normalizeRukyatDetails({ latitude: '91', longitude: '0', observedAt: '2026-11-19T18:30:00Z' }), null);
   assert.equal(normalizeRukyatDetails({ latitude: true, longitude: '0', observedAt: '2026-11-19T18:30:00Z' }), null);
   assert.equal(normalizeRukyatDetails({ latitude: '0', longitude: '0', observedAt: '2026-11-19T18:30:00Z', elevation: '9001' }), null);
+});
+
+
+test('sunset calculation uses a real local horizon event and rejects invalid dates', () => {
+  assert.equal(sunsetTime('not-a-date', SITES[0]), null);
+  const sunset = sunsetTime('2026-11-19', SITES[0]);
+  assert.ok(sunset instanceof Date);
+  assert.ok(Number.isFinite(sunset.getTime()));
+  const localHour = Number(clock(sunset, SITES[0]).slice(0, 2));
+  assert.ok(localHour >= 16 && localHour <= 19);
+});
+
+test('lunar phase data exposes a finite geocentric elongation', () => {
+  const result = lunar(new Date('2026-11-19T12:00:00.000Z'));
+  assert.ok(Number.isFinite(result.elongation));
+  assert.ok(result.elongation >= 0 && result.elongation <= 180);
 });
