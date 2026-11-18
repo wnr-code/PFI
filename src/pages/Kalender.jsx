@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { usePFI, go } from '../state.jsx';
+import { usePFI } from '../state.jsx';
+import { zone } from '../lib/astro.js';
 import { CalendarDays, ChevronLeft, ChevronRight, MoonStar, MapPin, Clock, Info } from 'lucide-react';
 
 const MONTHS = [
@@ -8,18 +9,21 @@ const MONTHS = [
 ];
 const DAYS = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
 
-function localISO(date = new Date()) {
-  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+function localISO(date = new Date(), loc) {
+  const local = new Date(date.getTime() + (loc?.offset || 7) * 3600000);
+  return local.toISOString().slice(0, 10);
 }
 
-function hijriLabel(date, locale = 'id-ID') {
+function hijriLabel(date, locale = 'id-ID', loc) {
   try {
     return new Intl.DateTimeFormat(locale + '-u-ca-islamic-umalqura', {
-      day: 'numeric', month: 'short',
+      timeZone: zone(loc), day: 'numeric', month: 'short',
     }).format(date);
   } catch {
     try {
-      return new Intl.DateTimeFormat('en-u-ca-islamic', { day: 'numeric', month: 'short' }).format(date);
+      return new Intl.DateTimeFormat('en-u-ca-islamic', {
+        timeZone: zone(loc), day: 'numeric', month: 'short',
+      }).format(date);
     } catch {
       return '';
     }
@@ -27,39 +31,43 @@ function hijriLabel(date, locale = 'id-ID') {
 }
 
 export default function Kalender() {
-  const { data, t, lang } = usePFI();
+  const { data, t, lang, loc } = usePFI();
   const [month, setMonth] = useState(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
+    const today = localISO(new Date(), loc).split('-').map(Number);
+    return new Date(Date.UTC(today[0], today[1] - 1, 1, 12));
   });
-  const [selected, setSelected] = useState(() => localISO());
+  const [selected, setSelected] = useState(() => localISO(new Date(), loc));
 
   const cells = useMemo(() => {
-    const first = new Date(month.getFullYear(), month.getMonth(), 1);
-    const offset = (first.getDay() + 6) % 7;
-    const count = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+    const year = month.getUTCFullYear();
+    const monthIndex = month.getUTCMonth();
+    const first = new Date(Date.UTC(year, monthIndex, 1, 12));
+    const offset = (first.getUTCDay() + 6) % 7;
+    const count = new Date(Date.UTC(year, monthIndex + 1, 0, 12)).getUTCDate();
     const total = Math.ceil((offset + count) / 7) * 7;
+    const todayISO = localISO(new Date(), loc);
     return Array.from({ length: total }, (_, i) => {
       const day = i - offset + 1;
       if (day < 1 || day > count) return null;
-      const date = new Date(month.getFullYear(), month.getMonth(), day);
+      const date = new Date(Date.UTC(year, monthIndex, day, 12) - loc.offset * 3600000);
+      const iso = [year, String(monthIndex + 1).padStart(2, '0'), String(day).padStart(2, '0')].join('-');
       return {
         day,
-        iso: [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(day).padStart(2, '0')].join('-'),
-        hijri: hijriLabel(date, lang === 'en' ? 'en' : 'id-ID'),
-        today: date.toDateString() === new Date().toDateString(),
+        iso,
+        hijri: hijriLabel(date, lang === 'en' ? 'en' : 'id-ID', loc),
+        today: iso === todayISO,
       };
     });
-  }, [month, lang]);
+  }, [month, lang, loc]);
 
   const agendas = useMemo(() => (data.agendas || []).filter((item) => {
     const date = String(item.date || '').slice(0, 10);
     return date === selected;
   }), [data.agendas, selected]);
 
-  const selectedDate = new Date(selected + 'T12:00:00');
-  const moveMonth = (delta) => setMonth((current) => new Date(current.getFullYear(), current.getMonth() + delta, 1));
-  const monthTitle = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'id-ID', { month: 'long', year: 'numeric' }).format(month);
+  const selectedDate = new Date(`${selected}T12:00:00Z`);
+  const moveMonth = (delta) => setMonth((current) => new Date(Date.UTC(current.getUTCFullYear(), current.getUTCMonth() + delta, 1, 12)));
+  const monthTitle = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'id-ID', { timeZone: zone(loc), month: 'long', year: 'numeric' }).format(month);
 
   return (
     <div className="page-wrap">
@@ -73,8 +81,8 @@ export default function Kalender() {
         <div className="calendar-hero-orbit" aria-hidden="true"><MoonStar size={34} /></div>
         <div className="calendar-hero-copy">
           <span>{t('TANGGAL HIJRIAH HARI INI', 'TODAY IN THE HIJRI CALENDAR')}</span>
-          <strong>{hijriLabel(new Date(), lang === 'en' ? 'en' : 'id-ID')}</strong>
-          <small>{new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'id-ID', { dateStyle: 'full' }).format(new Date())}</small>
+          <strong>{hijriLabel(new Date(), lang === 'en' ? 'en' : 'id-ID', loc)}</strong>
+          <small>{new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'id-ID', { timeZone: zone(loc), dateStyle: 'full' }).format(new Date())}</small>
         </div>
       </section>
 
@@ -109,7 +117,7 @@ export default function Kalender() {
         <div className="card-header">
           <div>
             <h2>{t('Agenda pada tanggal terpilih','Agenda on selected date')}</h2>
-            <p className="calendar-subtitle">{new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'id-ID', { dateStyle: 'long' }).format(selectedDate)}</p>
+            <p className="calendar-subtitle">{new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'id-ID', { timeZone: zone(loc), dateStyle: 'long' }).format(selectedDate)}</p>
           </div>
           <CalendarDays size={20} className="text-gold" />
         </div>
