@@ -26,7 +26,7 @@ export function hijriText(d,l,lang='id',withDay=true){const h=hijri(d,l);return 
 export function periods(now,l){const out=[];for(let i=-35;i<355;i++){const d=new Date(+now+i*DAY),h=hijri(d,l);if(h.day===1)out.push({start:isoDay(d,l),...h});}return out;}
 export const phaseNames=[['Bulan Baru','New Moon'],['Sabit Awal','Waxing Crescent'],['Perbani Awal','First Quarter'],['Cembung Awal','Waxing Gibbous'],['Bulan Purnama','Full Moon'],['Cembung Akhir','Waning Gibbous'],['Perbani Akhir','Last Quarter'],['Sabit Akhir','Waning Crescent']];
 export function phaseIndex(angle){return angle<5||angle>=355?0:angle<84?1:angle<96?2:angle<175?3:angle<185?4:angle<264?5:angle<276?6:7;}
-export function lunar(d){const angle=MoonPhase(d),i=Illumination('Moon',d);return{angle,phase:phaseIndex(angle),illumination:100*i.phase_fraction,age:(+d-SearchMoonPhase(0,d,-32).date)/DAY,distance:i.geo_dist*KM_PER_AU};}
+export function lunar(d){const angle=MoonPhase(d),i=Illumination('Moon',d);return{angle,phase:phaseIndex(angle),elongation:AngleFromSun('Moon',d),illumination:100*i.phase_fraction,age:(+d-SearchMoonPhase(0,d,-32).date)/DAY,distance:i.geo_dist*KM_PER_AU};}
 export function position(body,d,l){const obs=new Observer(l.lat,l.lon,l.elev),e=Equator(body,d,obs,true,true),h=Horizon(d,obs,e.ra,e.dec,'normal');return {alt:h.altitude,az:h.azimuth,dec:e.dec,ra:e.ra,dist:e.dist*KM_PER_AU};}
 export function sunsetTime(day,l=SITES[0]){const start=localTime(day,'00:00',l),result=SearchRiseSet('Sun',new Observer(l.lat,l.lon,l.elev),-1,start,1);return result?.date||null;}
 export function starPosition(ra,dec,d,l){const h=Horizon(d,new Observer(l.lat,l.lon,l.elev),ra,dec);return{alt:h.altitude,az:h.azimuth};}
