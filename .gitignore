@@ -11,3 +11,7 @@ test-results/
 *.sqlite-shm
 *.sqlite-wal
 .env
+
+# Local environment files; configure deployment values in Cloudflare Dashboard
+.env.*
+!.env.example
