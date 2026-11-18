@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker, { canReviewEntity, canViewPost } from '../worker/index.js';
+import worker, { canReviewEntity, canViewPost, uploadContentLengthStatus } from '../worker/index.js';
 
 test('Worker health endpoint reports Cloudflare runtime', async () => {
   const response = await worker.fetch(new Request('https://pfi.test/api/health'), {}, {});
@@ -62,4 +62,13 @@ test('only reviewers and admins may moderate entities', () => {
   assert.equal(canReviewEntity('users', item, { id: 'admin-1', role: 'admin' }), true);
   assert.equal(canReviewEntity('users', item, { id: 'observer-2', role: 'observer' }), false);
   assert.equal(canReviewEntity('unknown', item, { id: 'admin-1', role: 'admin' }), false);
+});
+
+test('photo upload validates optional Content-Length safely', () => {
+  assert.equal(uploadContentLengthStatus(null), 0);
+  assert.equal(uploadContentLengthStatus('1024'), 0);
+  assert.equal(uploadContentLengthStatus(''), 400);
+  assert.equal(uploadContentLengthStatus('not-a-number'), 400);
+  assert.equal(uploadContentLengthStatus('-1'), 400);
+  assert.equal(uploadContentLengthStatus(String(3 * 1024 * 1024 + 65537)), 413);
 });
