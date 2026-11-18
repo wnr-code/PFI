@@ -192,6 +192,45 @@ export default {
         return json(result, 200);
       }
 
+      if (url.pathname === '/api/posts' && request.method === 'POST') {
+        const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk untuk mengirim laporan.');
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== 'object') return fail(400, 'Data laporan tidak valid.');
+        const type = body.type;
+        if (!['rukyat','diskusi','tanya'].includes(type)) return fail(400, 'Jenis laporan tidak valid.');
+        const title = String(body.title || '').trim().slice(0, 120);
+        const content = String(body.body || '').trim().slice(0, 5000);
+        const city = String(body.city || '').trim().slice(0, 100);
+        if (!title || !content || !city) return fail(400, 'Judul, isi laporan, dan lokasi wajib diisi.');
+        let details = {};
+        if (body.details && typeof body.details === 'object' && !Array.isArray(body.details)) details = body.details;
+        if (type === 'rukyat') {
+          const lat = Number(details.latitude);
+          const lon = Number(details.longitude);
+          if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lon) || lon < -180 || lon > 180) {
+            return fail(400, 'Koordinat lintang dan bujur wajib valid untuk laporan rukyat.');
+          }
+          if (!details.observedAt || Number.isNaN(Date.parse(details.observedAt))) return fail(400, 'Waktu pengamatan wajib diisi.');
+          details = {
+            latitude: lat, longitude: lon,
+            observedAt: String(details.observedAt),
+            weather: String(details.weather || '').slice(0, 80),
+            instrument: String(details.instrument || '').slice(0, 120),
+            visibility: String(details.visibility || '').slice(0, 80),
+            elevation: Number.isFinite(Number(details.elevation)) ? Number(details.elevation) : null,
+          };
+        }
+        const id = uuid();
+        const created = new Date().toISOString();
+        await env.falaq.prepare(`
+          INSERT INTO posts (id,user_id,author,type,title,body,city,details,group_id,status,created)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?)
+        `).bind(id, profile.id, profile.name, type, title, content, city, JSON.stringify(details), body.groupId || null, type === 'rukyat' ? 'pending' : '', created).run();
+        const row = await env.falaq.prepare('SELECT * FROM posts WHERE id = ?').bind(id).first();
+        return json(await postView(env, row, profile.id), 201);
+      }
+
       if (url.pathname === '/api/posts' && request.method === 'GET') {
         const profile = await profileFor(request, env);
         return await getPosts(request, env, profile);
