@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { usePFI, go } from '../state.jsx';
-import { lunar, position, dateFmt, SITES } from '../lib/astro.js';
+import { lunar, position, SITES, zlabel } from '../lib/astro.js';
 import {
   Moon, Sun, Calendar, Clock, MapPin, Play, Compass, Eclipse, RefreshCw,
 } from 'lucide-react';
@@ -12,18 +12,23 @@ const TABS = [
 ];
 
 export default function Astronomi() {
-  const { data, t, lang, loc } = usePFI();
+  const { data, t, tell } = usePFI();
   const [tab, setTab] = useState('simulasi');
-  [new Date().toISOString().slice(0, 10)];
+  const [tanggal, setTanggal] = useState(() => {
+    const now = new Date();
+    return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
+  });
   const [waktu, setWaktu] = useState('18:00');
-  const [siteId, setSiteId] = useState(data.site || 'jakarta');
+  const [siteId, setSiteId] = useState(() => SITES.some((item) => item.id === data.site) ? data.site : 'tasik');
 
   const site = SITES.find((s) => s.id === siteId) || SITES[0];
-  const moon = useMemo(() => lunar(new Date(`${waktu}:00+07:00`)), [waktu, siteId]);
+  const offset = `${site.offset >= 0 ? '+' : '-'}${String(Math.abs(site.offset)).padStart(2, '0')}:00`;
+  const observationDate = useMemo(() => new Date(`${tanggal}T${waktu}:00${offset}`), [tanggal, waktu, offset]);
+  const moon = useMemo(() => lunar(observationDate), [observationDate]);
 
   const simulasi = useMemo(() => {
     try {
-      const pos = position(new Date(`${waktu}:00+07:00`), site);
+      const pos = position('Moon', observationDate, site);
       return {
         alt: pos.alt?.toFixed?.(2) ?? 0,
         az: pos.az?.toFixed?.(2) ?? 0,
@@ -34,7 +39,7 @@ export default function Astronomi() {
     } catch (e) {
       return { alt: 0, az: 0, ra: 0, dec: 0, dist: 0 };
     }
-  }, [waktu, siteId]);
+  }, [observationDate, site]);
 
   return (
     <div className="page-wrap">
@@ -52,13 +57,13 @@ export default function Astronomi() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
             <div className="field">
               <label>{t('Tanggal', 'Date')}</label>
-              <input type="date" defaultValue="2026-02-17" />
+              <input type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} />
             </div>
             <div className="field">
               <label>{t('Waktu', 'Time')}</label>
               <select value={waktu} onChange={(e) => setWaktu(e.target.value)}>
                 {[17, 18, 19, 20, 21].map((h) => (
-                  <option key={h} value={`${h}:00`}>{h.toString().padStart(2, '0')}:00 WIB</option>
+                  <option key={h} value={`${h}:00`}>{h.toString().padStart(2, '0')}:00 {zlabel(site)}</option>
                 ))}
               </select>
             </div>
@@ -105,8 +110,8 @@ export default function Astronomi() {
             </div>
             <div className="metric">
               <span className="label">{t('Visibilitas', 'Visibility')}</span>
-              <b>{Number(simulasi.alt) >= 3 ? t('Cukup Baik', 'Good') : t('Kurang Baik', 'Poor')}</b>
-              <small>{Number(simulasi.alt) >= 3 ? '✓' : '✗'}</small>
+              <b>{Number(simulasi.alt) >= 3 && Number(moon.elongation) >= 6.4 ? t('Memenuhi kriteria', 'Criteria met') : t('Belum memenuhi', 'Criteria not met')}</b>
+              <small>{Number(simulasi.alt) >= 3 && Number(moon.elongation) >= 6.4 ? '✓' : '✗'}</small>
             </div>
           </div>
 
