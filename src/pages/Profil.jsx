@@ -94,7 +94,7 @@ export default function Profil() {
                   <span className="label">{t('Verifikasi', 'Verification')}</span>
                   <b>
                     <span className={`pill ${account.verification === 'verified' ? 'verified' : 'pending'}`} style={{ fontSize: 9, padding: '4px 8px' }}>
-                      {account.verification === 'verified' ? t('Terverifikasi', 'Verified') : account.verification === 'pending' ? t('Menunggu', 'Pending') : t('Belum', 'None')}
+                      {account.verification === 'verified' ? t('Terverifikasi', 'Verified') : account.verification === 'pending' ? t('Menunggu', 'Pending') : account.verification === 'revision' ? t('Perlu revisi', 'Revision required') : t('Belum', 'None')}
                     </span>
                   </b>
                 </div>
