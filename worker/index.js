@@ -78,7 +78,7 @@ export function normalizeRukyatDetails(details) {
       !Number.isFinite(longitude) || longitude < -180 || longitude > 180) return null;
 
   const observedAt = typeof details.observedAt === 'string' ? details.observedAt.trim() : '';
-  const timestampPattern = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(?::\\d{2}(?:\\.\\d{1,3})?)?(?:Z|[+-]\\d{2}:\\d{2})$/;
+  const timestampPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/;
   if (!timestampPattern.test(observedAt) || !Number.isFinite(Date.parse(observedAt))) return null;
 
   let elevation = null;
@@ -290,9 +290,6 @@ async function getPhoto(request, env, id) {
   // Unverified field-observation photos are private. Never rely on an
   // unguessable photo ID as an authorization mechanism.
   const profile = await profileFor(request, env);
-  const isReviewer = profile && ['reviewer', 'admin'].includes(profile.role);
-  const isOwner = profile && profile.id === meta.user_id;
-  const isVerified = meta.status === 'verified';
   if (!await canAccessPost(env, meta, profile)) {
     return fail(profile ? 403 : 401, 'Foto atau laporan ini tidak dapat diakses.');
   }
