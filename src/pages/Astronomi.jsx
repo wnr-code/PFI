@@ -50,7 +50,7 @@ export default function Astronomi() {
     <div className="page-wrap">
       <div className="page-head">
         <div className="eyebrow"><i /> {t('ASTRONOMI / SIMULASI HILAL', 'ASTRONOMY / CRESCENT SIMULATION')}</div>
-        <h1>{t('Simulasi posisi hilal saat matahari terbenam', 'Crescent position simulation after sunset')}</h1>
+        <h1>{t('Simulasi posisi hilal saat matahari terbenam', 'Crescent position simulation at local sunset')}</h1>
         <p>{t('Lihat ketinggian, azimut, dan pemenuhan kriteria MABIMS pada waktu terbenam Matahari. Verifikasi koordinat serta elevasi lokasi acuan sebelum digunakan di lapangan.', 'View crescent height, azimuth, and MABIMS criteria at local sunset. Verify reference-site coordinates and elevation before field use.')}</p>
       </div>
 
