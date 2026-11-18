@@ -98,7 +98,7 @@ function openDB() {
 // Offline post cache is deliberately public-only: private pending rukyat reports
 // must never survive logout or be exposed to another account on a shared device.
 export function isPublicOfflinePost(post) {
-  return post?.type !== 'rukyat' || post.status === 'verified';
+  return !post?.group && (post?.type !== 'rukyat' || post.status === 'verified');
 }
 
 export async function offlineStore(type, items) {
