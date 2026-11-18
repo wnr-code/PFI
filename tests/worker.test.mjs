@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker from '../worker/index.js';
+import worker, { canViewPost } from '../worker/index.js';
 
 test('Worker health endpoint reports Cloudflare runtime', async () => {
   const response = await worker.fetch(new Request('https://pfi.test/api/health'), {}, {});
@@ -33,4 +33,18 @@ test('hisab rejects an unknown observation site before accessing D1', async () =
 test('unported API endpoints fail explicitly with 501', async () => {
   const response = await worker.fetch(new Request('https://pfi.test/api/not-yet-migrated'), {}, {});
   assert.equal(response.status, 501);
+});
+
+
+test('pending rukyat posts are visible only to their owner and reviewers', () => {
+  const post = { type: 'rukyat', status: 'pending', user_id: 'observer-1' };
+  assert.equal(canViewPost(post, null), false);
+  assert.equal(canViewPost(post, { id: 'observer-2', role: 'observer' }), false);
+  assert.equal(canViewPost(post, { id: 'observer-1', role: 'observer' }), true);
+  assert.equal(canViewPost(post, { id: 'reviewer-1', role: 'reviewer' }), true);
+  assert.equal(canViewPost(post, { id: 'admin-1', role: 'admin' }), true);
+});
+
+test('verified rukyat posts are public', () => {
+  assert.equal(canViewPost({ type: 'rukyat', status: 'verified', user_id: 'observer-1' }, null), true);
 });
