@@ -8,7 +8,11 @@ const MONTHS = [
 ];
 const DAYS = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
 
-function localISO(date = new Date()) {\n  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');\n}\n\nfunction hijriLabel(date, locale = 'id-ID') {
+function localISO(date = new Date()) {
+  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+}
+
+function hijriLabel(date, locale = 'id-ID') {
   try {
     return new Intl.DateTimeFormat(locale + '-u-ca-islamic-umalqura', {
       day: 'numeric', month: 'short',
