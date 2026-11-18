@@ -6,7 +6,8 @@ import { supabase } from './supabase.js';
 
 // API is same-origin on Cloudflare Workers. Set VITE_API_URL only when the API
 // is intentionally hosted on a separate origin.
-const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+export const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+export const apiUrl = (path) => `${API_BASE}${path}`;
 
 async function getToken() {
   const { data: { session } } = await supabase.auth.getSession();
@@ -19,7 +20,7 @@ export async function api(path, method = 'GET', body = null) {
   if (body !== null && body !== undefined && !(body instanceof FormData)) headers['Content-Type'] = 'application/json';
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(apiUrl(path), {
     method,
     headers,
     body: body === null || body === undefined ? undefined : (body instanceof FormData ? body : JSON.stringify(body)),
