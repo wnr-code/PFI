@@ -90,8 +90,8 @@ export default function Laporan() {
         const attachment = new FormData();
         attachment.append('photo', form.photo);
         try {
-          await api(`/api/posts/${created.id}/photo`, 'POST', attachment);
-          saved = { ...created, photo: `/api/photos/${created.id}` };
+          const uploaded = await api(`/api/posts/${created.id}/photo`, 'POST', attachment);
+          saved = { ...created, photo: uploaded.photo };
         } catch (uploadError) {
           setPosts((current) => [created, ...current]);
           setForm((f) => ({ ...f, title: '', body: '', latitude: '', longitude: '', elevation: '', photo: null }));
@@ -186,6 +186,7 @@ export default function Laporan() {
             <label className="field" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span>{t('Foto pengamatan (opsional, maks. 3 MB)', 'Observation photo (optional, max 3 MB)')}</span>
               <input
+                key={form.photo ? form.photo.name : "empty-photo-input"}
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={(e) => update('photo', e.target.files?.[0] || null)}
