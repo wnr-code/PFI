@@ -99,10 +99,10 @@ export function Provider({ children }) {
             groups: serverSession.groups || [],
             calculations: serverSession.history || [],
             prefs: serverSession.prefs || {},
-            lang: serverSession.prefs?.lang || d.lang,
-            mode: serverSession.prefs?.mode || d.mode,
-            site: serverSession.prefs?.site || d.site,
-            notify: serverSession.prefs?.notify ?? d.notify,
+            lang: ['id', 'en'].includes(serverSession.prefs?.lang) ? serverSession.prefs.lang : d.lang,
+            mode: ['pemula', 'profesional'].includes(serverSession.prefs?.mode) ? serverSession.prefs.mode : d.mode,
+            site: SITES.some((site) => site.id === serverSession.prefs?.site) ? serverSession.prefs.site : d.site,
+            notify: typeof serverSession.prefs?.notify === 'boolean' ? serverSession.prefs.notify : d.notify,
           }));
         } catch {
           // Keep the conservative observer fallback if the profile API is unavailable.
