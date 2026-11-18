@@ -46,6 +46,7 @@ Bagian ini mencatat kondisi awal saat audit dimulai, bukan seluruh kondisi branc
 - **CI untuk head terbaru belum terkonfirmasi.** Run sukses yang sebelumnya tercatat berasal dari commit lama; jangan menyatakan branch terbaru lulus build/test sebelum workflow terbaru terlihat sukses.
 - Belum ada uji integrasi terhadap D1/R2 aktual, OAuth end-to-end, migrasi data SQLite lama, backup/restore, atau uji beban.
 - Fixture sanity-check Syawal 1443 (1 Mei 2022) telah ditambahkan dengan rentang pembanding publik Kemenag; tetap perlu validasi independen yang lebih luas untuk beberapa bulan, lokasi, dan kondisi dekat ambang MABIMS sebelum hasil dipakai sebagai rujukan operasional.
+- Akun admin pertama harus ditetapkan melalui prosedur operator yang terkontrol di D1; tidak ada endpoint self-service untuk menaikkan role. Prosedur bootstrap admin perlu didokumentasikan sebelum produksi.
 - Rate limiting terdistribusi, observability, backup terjadwal, dan prosedur rollback masih perlu disiapkan.
 
 ## Keputusan arsitektur target
