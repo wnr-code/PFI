@@ -80,12 +80,29 @@ export function Provider({ children }) {
             id: session.user.id,
             name: session.user.user_metadata?.name ?? session.user.email,
             email: session.user.email,
-            role: session.user.user_metadata?.role ?? 'observer',
-            org: session.user.user_metadata?.org ?? '',
-            verification: session.user.user_metadata?.verification ?? 'none',
+            role: 'observer',
+            org: '',
+            verification: 'none',
           }
         : null;
       setData((d) => ({ ...d, account, session }));
+
+      // Authorization roles and verification status must come from D1 via the
+      // Worker, never from editable Supabase user metadata.
+      if (session?.user) {
+        try {
+          const serverSession = await api('/api/session');
+          setData((d) => ({
+            ...d,
+            account: serverSession.account || account,
+            groups: serverSession.groups || [],
+            calculations: serverSession.history || [],
+            prefs: serverSession.prefs || {},
+          }));
+        } catch {
+          // Keep the conservative observer fallback if the profile API is unavailable.
+        }
+      }
 
       // Fetch posts from API (with offline fallback)
       try {
