@@ -180,7 +180,7 @@ export default function Hisab() {
               <h3 style={{ fontSize: 13, marginBottom: 8, color: '#d6ae62' }}>{t('Kesimpulan', 'Conclusion')}</h3>
               <p style={{ fontSize: 13, lineHeight: 1.6, color: '#c7d1df' }}>{result.meets ? t('Kriteria MABIMS terpenuhi secara hisab pada lokasi yang dipilih. Ini bukan evaluasi seluruh titik Indonesia, bukan bukti hilal benar-benar terlihat, dan bukan penetapan resmi awal bulan.', 'The MABIMS criteria are met at the selected location only. This is not a nationwide multi-site assessment, does not prove an actual sighting, and is not an official month declaration.') : t('Kriteria MABIMS belum terpenuhi pada lokasi yang dipilih. Ini bukan evaluasi seluruh titik Indonesia dan bukan keputusan resmi awal bulan.', 'The MABIMS criteria are not met at the selected location. This is not a nationwide multi-site assessment or an official month determination.')}</p>
               <p style={{ fontSize: 11, color: '#747f8e', marginTop: 8 }}>
-                {t('Hasil perhitungan adalah data astronomis, bukan keputusan resmi awal bulan. Setiap lembaga (MUI, NU, Muhammadiyah, dll.) memiliki metoda perhitungan sendiri.', 'Calculation results are astronomical data, not official new month determination. Each institution (MUI, NU, Muhammadiyah, etc.) has its own calculation method.')}
+                {t('Hasil perhitungan adalah data astronomis, bukan keputusan resmi awal bulan. Metode dan kriteria yang digunakan oleh organisasi atau otoritas dapat berbeda.', 'Calculation results are astronomical data, not official new month determination. Methods and criteria used by different organizations or authorities may differ.')}
               </p>
             </div>
           </div>
