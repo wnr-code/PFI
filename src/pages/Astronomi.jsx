@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { usePFI, go } from '../state.jsx';
-import { lunar, position, sunsetTime, clock, SITES, zlabel } from '../lib/astro.js';
+import { lunar, position, sunsetTime, clock, isoDay, SITES, zlabel } from '../lib/astro.js';
 import {
   Moon, Sun, Calendar, Clock, MapPin, Play, Compass, Eclipse, RefreshCw,
 } from 'lucide-react';
@@ -14,8 +14,8 @@ const TABS = [
 export default function Astronomi() {
   const { data, t, tell } = usePFI();
   const [tanggal, setTanggal] = useState(() => {
-    const now = new Date();
-    return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
+    const initialSite = SITES.find((item) => item.id === data.site) || SITES[0];
+    return isoDay(new Date(), initialSite);
   });
   const [siteId, setSiteId] = useState(() => SITES.some((item) => item.id === data.site) ? data.site : 'tasik');
 
