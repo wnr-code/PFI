@@ -24,7 +24,7 @@ const BULAN_HIJRIAH_EN = [
 export default function Hisab() {
   const { data, t, lang, loc, tell, update } = usePFI();
   const [bulan, setBulan] = useState(8); // Ramadan default
-  const [siteId, setSiteId] = useState(data.site || 'tasik');
+  const [siteId, setSiteId] = useState(() => SITES.some((item) => item.id === data.site) ? data.site : 'tasik');
   const [metode, setMetode] = useState('mabims');
   const [result, setResult] = useState(null);
   const [busy, setBusy] = useState(false);
