@@ -503,7 +503,7 @@ export default {
         if (name.length < 3 || name.length > 80 || description.length > 500) {
           return fail(400, 'Nama kelompok harus 3–80 karakter dan deskripsi maksimal 500 karakter.');
         }
-        const id = name.normalize('NFKD').replace(/[\\u0300-\\u036f]/g, '')
+        const id = name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
           .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50);
         if (!id) return fail(400, 'Nama kelompok tidak dapat dijadikan ID.');
         const created = new Date().toISOString();
