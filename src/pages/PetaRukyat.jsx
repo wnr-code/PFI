@@ -1,3 +1,7 @@
+// PFI — Pusat Falak Indonesia | Maintainer: @wnr-code
+// Repository: https://github.com/wnr-code/PFI
+// Project support: https://trakteer.id/lanteraku/tip
+// AI-assisted implementation; reviewed and maintained by the project maintainer.
 import React, { useMemo, useState, useEffect } from 'react';
 import { usePFI } from '../state.jsx';
 import { api, offlineGet } from '../lib/api.js';
