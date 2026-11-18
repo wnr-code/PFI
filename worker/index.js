@@ -65,6 +65,39 @@ export function canViewGroup(profile, isMember) {
   return Boolean(profile && (isMember || ['reviewer', 'admin'].includes(profile.role)));
 }
 
+// Normalize observation metadata before it enters the scientific record.
+// Coordinates must be explicit; timestamps must carry a timezone/UTC offset.
+export function normalizeRukyatDetails(details) {
+  if (!details || typeof details !== 'object' || Array.isArray(details)) return null;
+  if (details.latitude === null || details.latitude === undefined || String(details.latitude).trim() === '' ||
+      details.longitude === null || details.longitude === undefined || String(details.longitude).trim() === '') return null;
+
+  const latitude = Number(details.latitude);
+  const longitude = Number(details.longitude);
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
+      !Number.isFinite(longitude) || longitude < -180 || longitude > 180) return null;
+
+  const observedAt = typeof details.observedAt === 'string' ? details.observedAt.trim() : '';
+  const timestampPattern = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(?::\\d{2}(?:\\.\\d{1,3})?)?(?:Z|[+-]\\d{2}:\\d{2})$/;
+  if (!timestampPattern.test(observedAt) || !Number.isFinite(Date.parse(observedAt))) return null;
+
+  let elevation = null;
+  if (details.elevation !== null && details.elevation !== undefined && String(details.elevation).trim() !== '') {
+    elevation = Number(details.elevation);
+    if (!Number.isFinite(elevation) || elevation < -500 || elevation > 9000) return null;
+  }
+
+  return {
+    latitude,
+    longitude,
+    observedAt: new Date(observedAt).toISOString(),
+    weather: String(details.weather || '').slice(0, 80),
+    instrument: String(details.instrument || '').slice(0, 120),
+    visibility: String(details.visibility || '').slice(0, 80),
+    elevation,
+  };
+}
+
 // Only reviewers/admins may moderate, and never their own account or report.
 export function canReviewEntity(entity, item, profile) {
   if (!item || !profile || !['reviewer', 'admin'].includes(profile.role)) return false;
@@ -351,20 +384,11 @@ export default {
         let details = {};
         if (body.details && typeof body.details === 'object' && !Array.isArray(body.details)) details = body.details;
         if (type === 'rukyat') {
-          const lat = Number(details.latitude);
-          const lon = Number(details.longitude);
-          if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lon) || lon < -180 || lon > 180) {
-            return fail(400, 'Koordinat lintang dan bujur wajib valid untuk laporan rukyat.');
+          const normalized = normalizeRukyatDetails(details);
+          if (!normalized) {
+            return fail(400, 'Koordinat wajib valid, waktu harus menyertakan zona waktu, dan ketinggian harus berada dalam rentang -500 hingga 9.000 meter.');
           }
-          if (!details.observedAt || Number.isNaN(Date.parse(details.observedAt))) return fail(400, 'Waktu pengamatan wajib diisi.');
-          details = {
-            latitude: lat, longitude: lon,
-            observedAt: String(details.observedAt),
-            weather: String(details.weather || '').slice(0, 80),
-            instrument: String(details.instrument || '').slice(0, 120),
-            visibility: String(details.visibility || '').slice(0, 80),
-            elevation: Number.isFinite(Number(details.elevation)) ? Number(details.elevation) : null,
-          };
+          details = normalized;
         }
         // Validate optional group membership target before writing so invalid IDs
         // return a client error instead of surfacing as an opaque D1 failure.
