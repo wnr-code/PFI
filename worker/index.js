@@ -127,6 +127,60 @@ async function getPosts(request, env, profile) {
   return json(result);
 }
 
+async function uploadPostPhoto(request, env, postId) {
+  const profile = await profileFor(request, env);
+  if (!profile) return fail(401, 'Silakan masuk untuk mengunggah foto.');
+
+  const post = await env.falaq.prepare(
+    'SELECT id,user_id FROM posts WHERE id = ?'
+  ).bind(postId).first();
+  if (!post) return fail(404, 'Laporan tidak ditemukan.');
+  if (post.user_id !== profile.id && profile.role !== 'admin') {
+    return fail(403, 'Anda tidak memiliki izin untuk melampirkan foto pada laporan ini.');
+  }
+
+  const existing = await env.falaq.prepare(
+    'SELECT id FROM photos WHERE post_id = ?'
+  ).bind(postId).first();
+  if (existing) return fail(409, 'Laporan ini sudah memiliki lampiran foto.');
+
+  const contentLength = Number(request.headers.get('content-length') || 0);
+  if (contentLength > 3 * 1024 * 1024 + 65536) return fail(413, 'Ukuran foto maksimal 3 MB.');
+  const form = await request.formData();
+  const file = form.get('photo');
+  if (!file || typeof file.arrayBuffer !== 'function') return fail(400, 'Pilih satu berkas foto terlebih dahulu.');
+  if (file.size < 1 || file.size > 3 * 1024 * 1024) return fail(413, 'Ukuran foto maksimal 3 MB.');
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const starts = (...values) => values.every((value, index) => bytes[index] === value);
+  let mime = '';
+  if (starts(0xff, 0xd8, 0xff)) mime = 'image/jpeg';
+  else if (starts(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)) mime = 'image/png';
+  else if (bytes.length >= 12 &&
+    String.fromCharCode(...bytes.slice(0, 4)) === 'RIFF' &&
+    String.fromCharCode(...bytes.slice(8, 12)) === 'WEBP') mime = 'image/webp';
+  if (!mime) return fail(415, 'Format foto harus JPEG, PNG, atau WebP.');
+
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  const sha256 = [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, '0')).join('');
+  const id = uuid();
+  const objectKey = `posts/${postId}/${id}`;
+  await env.r2falaq.put(objectKey, bytes, {
+    httpMetadata: { contentType: mime, cacheControl: 'public, max-age=86400' },
+    customMetadata: { postId, uploadedBy: profile.id, sha256 },
+  });
+
+  try {
+    await env.falaq.prepare(
+      'INSERT INTO photos (id,post_id,mime,sha256,object_key,size_bytes,created) VALUES (?,?,?,?,?,?,?)'
+    ).bind(id, postId, mime, sha256, objectKey, bytes.byteLength, new Date().toISOString()).run();
+  } catch (error) {
+    await env.r2falaq.delete(objectKey);
+    throw error;
+  }
+  return json({ id, photo: `/api/photos/${id}`, mime, size: bytes.byteLength, sha256 }, 201);
+}
+
 async function getPhoto(env, id) {
   const meta = await env.falaq.prepare(
     'SELECT mime,object_key,size_bytes FROM photos WHERE id = ?'
@@ -251,6 +305,11 @@ export default {
       if (url.pathname === '/api/posts' && request.method === 'GET') {
         const profile = await profileFor(request, env);
         return await getPosts(request, env, profile);
+      }
+
+      const postPhotoMatch = url.pathname.match(/^\/api\/posts\/([a-zA-Z0-9_-]+)\/photo$/);
+      if (postPhotoMatch && request.method === 'POST') {
+        return await uploadPostPhoto(request, env, postPhotoMatch[1]);
       }
 
       const photoMatch = url.pathname.match(/^\/api\/photos\/([a-zA-Z0-9_-]+)$/);
