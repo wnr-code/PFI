@@ -58,14 +58,14 @@ export default function Komunitas() {
       return;
     }
     try {
-      await api('/api/posts', 'POST', {
+      const created = await api('/api/posts', 'POST', {
         type: postType,
         title: newPost.slice(0, 60),
         body: newPost,
-        city: 'Tasikmalaya',
+        city: loc.city,
       });
+      setPosts((current) => [created, ...current]);
       setNewPost('');
-      await refresh();
       tell(t('Postingan berhasil dibuat.', 'Post created.'));
     } catch (e) {
       tell(e.message || 'Gagal membuat postingan.');
