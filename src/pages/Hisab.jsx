@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { usePFI, go } from '../state.jsx';
 import {
-  calculateHisab, hijri, periods, SITES, num,
+  calculateHisab, hijri, periods, SITES, num, clock, zlabel,
 } from '../lib/astro.js';
 import { api } from '../lib/api.js';
 import {
@@ -74,6 +74,7 @@ export default function Hisab() {
     });
   };
 
+  const formatLocalTime = (value) => value ? `${clock(new Date(value), site)} ${zlabel(site)}` : '—';
   const bulanLabel = lang === 'id' ? BULAN_HIJRIAH[bulan] : BULAN_HIJRIAH_EN[bulan];
 
   return (
@@ -140,6 +141,11 @@ export default function Hisab() {
                 <small>{t('UTC', 'UTC')}</small>
               </div>
               <div className="result-box">
+                <span className="label">{t('Terbenam Matahari', 'Local Sunset')}</span>
+                <b>{formatLocalTime(result.sunset)}</b>
+                <small>{site.city} · {zlabel(site)}</small>
+              </div>
+              <div className="result-box">
                 <span className="label">{t('Tinggi Hilal', 'Crescent Height')}</span>
                 <b>{formatAngle(result.moon?.alt)}°</b>
                 <small>{t('pada terbenam matahari', 'at sunset')}</small>
@@ -168,7 +174,7 @@ export default function Hisab() {
 
             <div style={{ marginTop: 16, padding: 14, background: 'var(--surface2)', border: '1px solid var(--line)', borderRadius: 8 }}>
               <h3 style={{ fontSize: 13, marginBottom: 8, color: '#d6ae62' }}>{t('Kesimpulan', 'Conclusion')}</h3>
-              <p style={{ fontSize: 13, lineHeight: 1.6, color: '#c7d1df' }}>{result.meets ? t('Kriteria visibilitas MABIMS terpenuhi secara hisab. Hasil ini bukan bukti hilal benar-benar terlihat dan bukan penetapan resmi awal bulan.', 'The MABIMS visibility criteria are met by calculation. This does not prove an actual sighting or constitute an official month declaration.') : t('Kriteria visibilitas MABIMS belum terpenuhi secara hisab. Hasil ini bukan keputusan resmi awal bulan.', 'The MABIMS visibility criteria are not met by calculation. This is not an official month determination.')}</p>
+              <p style={{ fontSize: 13, lineHeight: 1.6, color: '#c7d1df' }}>{result.meets ? t('Kriteria MABIMS terpenuhi secara hisab pada lokasi yang dipilih. Ini bukan evaluasi seluruh titik Indonesia, bukan bukti hilal benar-benar terlihat, dan bukan penetapan resmi awal bulan.', 'The MABIMS criteria are met at the selected location only. This is not a nationwide multi-site assessment, does not prove an actual sighting, and is not an official month declaration.') : t('Kriteria MABIMS belum terpenuhi pada lokasi yang dipilih. Ini bukan evaluasi seluruh titik Indonesia dan bukan keputusan resmi awal bulan.', 'The MABIMS criteria are not met at the selected location. This is not a nationwide multi-site assessment or an official month determination.')}</p>
               <p style={{ fontSize: 11, color: '#747f8e', marginTop: 8 }}>
                 {t('Hasil perhitungan adalah data astronomis, bukan keputusan resmi awal bulan. Setiap lembaga (MUI, NU, Muhammadiyah, dll.) memiliki metoda perhitungan sendiri.', 'Calculation results are astronomical data, not official new month determination. Each institution (MUI, NU, Muhammadiyah, etc.) has its own calculation method.')}
               </p>
