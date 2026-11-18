@@ -10,7 +10,6 @@ const TABS = [
   { id: 'beranda', label: 'Beranda', icon: UsersRound },
   { id: 'diskusi', label: 'Diskusi', icon: MessageCircle },
   { id: 'rukyat', label: 'Rukyat', icon: FileText },
-  { id: 'berita', label: 'Berita', icon: Share2 },
 ];
 
 export default function Komunitas() {
