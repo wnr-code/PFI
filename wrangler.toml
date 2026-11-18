@@ -18,17 +18,13 @@ migrations_dir = "migrations"
 binding = "r2falaq"
 bucket_name = "pfi-falaq-r2"
 
-# Preview D1 akan diarahkan ke database donate setelah database_id dikonfirmasi.
-# Jangan isi database_id dengan ID perkiraan karena dapat menghubungkan database yang salah.
 [previews]
-
 [[previews.d1_databases]]
 binding = "falaq"
-database_name = "pfi-falaq"
-database_id = "0ae91ae2-8bec-474f-b72d-1b793f951d4a"
+database_name = "donate"
+database_id = "68eda2c9-d4ff-45f7-919c-7305bec297f3"
 
 # Preview memakai bucket R2 forumcgs.
-# Pastikan bucket ini memang bucket yang ditujukan untuk data Preview.
 [[previews.r2_buckets]]
 binding = "r2falaq"
 bucket_name = "forumcgs"
