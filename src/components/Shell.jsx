@@ -3,7 +3,7 @@ import { usePFI, go } from '../state.jsx';
 import {
   House, Calculator, Orbit, UsersRound, UserRound, MapPinned, Files,
   Bell, ChevronRight, MapPin, ChevronDown, GraduationCap, FlaskConical,
-  ChevronsUpDown, LayoutDashboard, CreditCard, Share2, LogOut,
+  ChevronsUpDown, LayoutDashboard, CreditCard, Share2, LogOut, CalendarDays,
 } from 'lucide-react';
 
 export const navMain = [
