@@ -102,12 +102,15 @@ export default function Astronomi() {
               <small>{t('jarak dari matahari', 'from sun')}</small>
             </div>
             <div className="metric">
-              <span className="label">{t('Visibilitas', 'Visibility')}</span>
+              <span className="label">{t('Kriteria MABIMS', 'MABIMS Criteria')}</span>
               <b>{meets ? t('Memenuhi kriteria', 'Criteria met') : t('Belum memenuhi', 'Criteria not met')}</b>
               <small>{meets ? '✓' : '✗'}</small>
             </div>
           </div>
 
+          <p style={{ marginTop: 14, fontSize: 11, lineHeight: 1.6, color: '#8fa3b8' }}>
+            {t('Kriteria 3° dan 6,4° dihitung pada saat Matahari terbenam. Memenuhi kriteria tidak menjamin hilal pasti terlihat; cuaca, transparansi atmosfer, dan kondisi ufuk tetap berpengaruh. Penetapan resmi mengikuti keputusan pemerintah.', 'The 3° and 6.4° thresholds are evaluated at sunset. Meeting them does not guarantee an actual sighting; weather, atmospheric transparency, and horizon conditions still matter. Official month declarations follow the competent authority.')}
+          </p>
           <div style={{ marginTop: 20, height: 200, background: 'var(--surface2)', border: '1px solid var(--line)', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ fontSize: 11, color: '#8fa3b8', textAlign: 'center', padding: 10 }}>
               {t('Diagram ketinggian hilal (ilustrasi)', 'Crescent height diagram (illustration)')}
