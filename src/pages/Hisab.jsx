@@ -105,6 +105,7 @@ export default function Hisab() {
                   </option>
                 ))}
               </select>
+              <small>{t('Titik acuan proyek; cocokkan koordinat dan elevasi dengan data lapangan sebelum digunakan untuk keputusan operasional.', 'Project reference site; verify coordinates and elevation against field data before operational use.')}</small>
             </div>
             <div className="field">
               <label>{t('Metode Hisab', 'Calculation Method')}</label>
