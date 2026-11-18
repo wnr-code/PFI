@@ -56,10 +56,7 @@ export default function Laporan() {
       } else if (!cancelled) {
         setModeration(null);
       }
-      try {
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      if (!cancelled) setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [data.account?.id, data.account?.role]);
