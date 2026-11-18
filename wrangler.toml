@@ -27,6 +27,12 @@ binding = "falaq"
 database_name = "pfi-falaq"
 database_id = "0ae91ae2-8bec-474f-b72d-1b793f951d4a"
 
+# Preview memakai bucket R2 Production yang sama sesuai keputusan maintainer.
+# PERINGATAN: unggahan/penghapusan dari Preview memengaruhi berkas Production.
+[[previews.r2_buckets]]
+binding = "r2falaq"
+bucket_name = "pfi-falaq-r2"
+
 # Set these as Worker secrets/vars in Cloudflare Dashboard, not as VITE_*
 # frontend values. SUPABASE_ANON_KEY is a public/publishable key but is kept
 # server-side here so the Worker can validate access tokens with Supabase Auth.
