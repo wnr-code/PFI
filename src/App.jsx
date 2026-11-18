@@ -72,7 +72,7 @@ function AuxiliaryModal() {
     content = (
       <div>
         <p style={{ color: 'var(--muted, #8fa3b8)', fontSize: 13, marginBottom: 14 }}>
-          {t('Pengaturan pengingat agenda astronomi.', 'Astronomical agenda reminder settings.')}
+          {t('Preferensi pengingat disimpan di akun; pengiriman notifikasi otomatis belum diaktifkan.', 'Reminder preference is saved to your account; automatic notification delivery is not enabled yet.')}
         </p>
         <button className="btn secondary full" onClick={() => savePreference('notify', !data.notify)}>
           {data.notify ? t('Matikan pengingat', 'Turn reminders off') : t('Aktifkan pengingat', 'Turn reminders on')}
