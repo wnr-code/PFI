@@ -1,0 +1,47 @@
+import { Observer, Equator, Horizon, MoonPhase, SearchMoonPhase, Illumination, AngleFromSun, SearchRiseSet, SearchAltitude, SearchHourAngle, SearchLunarEclipse, SearchGlobalSolarEclipse, KM_PER_AU } from 'astronomy-engine';
+export const DAY=86400000;
+export const SITES=[
+ {id:'tasik',city:'Tasikmalaya',region:'Jawa Barat',site:'Bukit Panyangrayan',lat:-7.407,lon:108.142,elev:698,offset:7},
+ {id:'lembang',city:'Lembang',region:'Jawa Barat',site:'Dataran Tinggi Lembang',lat:-6.825,lon:107.616,elev:1310,offset:7},
+ {id:'sukabumi',city:'Sukabumi',region:'Jawa Barat',site:'Pantai Palabuhanratu',lat:-6.986,lon:106.543,elev:12,offset:7},
+ {id:'aceh',city:'Lhoknga',region:'Aceh',site:'Pantai Lhoknga',lat:5.477,lon:95.231,elev:10,offset:7},
+ {id:'yogya',city:'Yogyakarta',region:'DI Yogyakarta',site:'Pantai Parangkusumo',lat:-8.024,lon:110.325,elev:8,offset:7},
+ {id:'surabaya',city:'Surabaya',region:'Jawa Timur',site:'Pesisir Kenjeran',lat:-7.238,lon:112.795,elev:5,offset:7},
+ {id:'mataram',city:'Mataram',region:'Nusa Tenggara Barat',site:'Pantai Ampenan',lat:-8.57,lon:116.071,elev:10,offset:8},
+ {id:'makassar',city:'Makassar',region:'Sulawesi Selatan',site:'Pantai Losari',lat:-5.144,lon:119.407,elev:8,offset:8},
+ {id:'biak',city:'Biak',region:'Papua',site:'Pesisir Biak',lat:-1.189,lon:136.081,elev:10,offset:9}
+];
+export const zone=l=>({7:'Asia/Jakarta',8:'Asia/Makassar',9:'Asia/Jayapura'})[l?.offset||7];
+export const zlabel=l=>({7:'WIB',8:'WITA',9:'WIT'})[l?.offset||7];
+export const num=(n,lang='id',digits=1)=>Number(n).toLocaleString(lang==='en'?'en-GB':'id-ID',{maximumFractionDigits:digits,minimumFractionDigits:digits});
+export const dateFmt=(d,l=SITES[0],lang='id',opts={day:'numeric',month:'long',year:'numeric'})=>new Intl.DateTimeFormat(lang==='en'?'en-GB':'id-ID',{timeZone:zone(l),...opts}).format(new Date(d));
+export const clock=(d,l=SITES[0])=>new Intl.DateTimeFormat('en-GB',{timeZone:zone(l),hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(d));
+export const isoDay=(d,l=SITES[0])=>new Date(+new Date(d)+l.offset*3600000).toISOString().slice(0,10);
+export const localTime=(day,time,l=SITES[0])=>new Date(`${day}T${time}:00+${String(l.offset).padStart(2,'0')}:00`);
+export const HIJRI=['Muharam','Safar','Rabiul Awal','Rabiul Akhir','Jumadil Awal','Jumadil Akhir','Rajab','Syaban','Ramadan','Syawal','Zulkaidah','Zulhijah'];
+export const HIJRI_EN=['Muharram','Safar','Rabi I','Rabi II','Jumada I','Jumada II','Rajab',"Sha'ban",'Ramadan','Shawwal',"Dhu al-Qadah",'Dhu al-Hijjah'];
+const hFormats=new Map();
+export function hijri(d,l=SITES[0]){const tz=zone(l);if(!hFormats.has(tz))hFormats.set(tz,new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn',{timeZone:tz,year:'numeric',month:'numeric',day:'numeric'}));const p=Object.fromEntries(hFormats.get(tz).formatToParts(new Date(d)).map(x=>[x.type,x.value]));return{day:+p.day,month:+p.month,year:+p.year};}
+export function hijriText(d,l,lang='id',withDay=true){const h=hijri(d,l);return `${withDay?h.day+' ':''}${(lang==='en'?HIJRI_EN:HIJRI)[h.month-1]} ${h.year} H`;}
+export function periods(now,l){const out=[];for(let i=-35;i<355;i++){const d=new Date(+now+i*DAY),h=hijri(d,l);if(h.day===1)out.push({start:isoDay(d,l),...h});}return out;}
+export const phaseNames=[['Bulan Baru','New Moon'],['Sabit Awal','Waxing Crescent'],['Perbani Awal','First Quarter'],['Cembung Awal','Waxing Gibbous'],['Bulan Purnama','Full Moon'],['Cembung Akhir','Waning Gibbous'],['Perbani Akhir','Last Quarter'],['Sabit Akhir','Waning Crescent']];
+export function phaseIndex(angle){return angle<5||angle>=355?0:angle<84?1:angle<96?2:angle<175?3:angle<185?4:angle<264?5:angle<276?6:7;}
+export function lunar(d){const angle=MoonPhase(d),i=Illumination('Moon',d);return{angle,phase:phaseIndex(angle),illumination:100*i.phase_fraction,age:(+d-SearchMoonPhase(0,d,-32).date)/DAY,distance:i.geo_dist*KM_PER_AU};}
+export function position(body,d,l){const obs=new Observer(l.lat,l.lon,l.elev),e=Equator(body,d,obs,true,true),h=Horizon(d,obs,e.ra,e.dec,'normal');return {alt:h.altitude,az:h.azimuth,dec:e.dec,ra:e.ra,dist:e.dist*KM_PER_AU};}
+export function starPosition(ra,dec,d,l){const h=Horizon(d,new Observer(l.lat,l.lon,l.elev),ra,dec);return{alt:h.altitude,az:h.azimuth};}
+export function calculateHisab(period,l,method='mabims'){
+ const start=localTime(period.start,'00:00',l),conj=SearchMoonPhase(0,new Date(+start-5*DAY),10).date;
+ const sunset=SearchRiseSet('Sun',new Observer(l.lat,l.lon,l.elev),-1,conj,2).date;
+ const moon=position('Moon',sunset,l),sun=position('Sun',sunset,l),elongation=AngleFromSun('Moon',sunset);
+ return{id:crypto.randomUUID(),created:new Date().toISOString(),period,loc:l,method,conj:conj.toISOString(),sunset:sunset.toISOString(),moon,sun,elongation,age:(sunset-conj)/3600000,meets:moon.alt>=3&&elongation>=6.4};
+}
+export function qibla(l){const r=Math.PI/180,y1=l.lat*r,y2=21.4225*r,dl=(39.8262-l.lon)*r;return{angle:(Math.atan2(Math.sin(dl),Math.cos(y1)*Math.tan(y2)-Math.sin(y1)*Math.cos(dl))/r+360)%360,km:6371*Math.acos(Math.sin(y1)*Math.sin(y2)+Math.cos(y1)*Math.cos(y2)*Math.cos(dl))};}
+export function prayers(day,l){const start=localTime(day,'00:00',l),o=new Observer(l.lat,l.lon,l.elev),dhuhr=SearchHourAngle('Sun',o,0,start).time.date,dec=position('Sun',dhuhr,l).dec,asrAlt=Math.atan(1/(1+Math.tan(Math.abs(l.lat-dec)*Math.PI/180)))*180/Math.PI;return[
+ ['Subuh','Fajr',SearchAltitude('Sun',o,1,start,1,-20)?.date],['Terbit','Sunrise',SearchRiseSet('Sun',o,1,start,1)?.date],['Zuhur','Dhuhr',dhuhr],['Asar','Asr',SearchAltitude('Sun',o,-1,dhuhr,1,asrAlt)?.date],['Magrib','Maghrib',SearchRiseSet('Sun',o,-1,start,1)?.date],['Isya','Isha',SearchAltitude('Sun',o,-1,start,1,-18)?.date]];}
+export function eclipses(date){const lunar=SearchLunarEclipse(date),solar=SearchGlobalSolarEclipse(date);return[{body:'Moon',kind:lunar.kind,date:lunar.peak.date,obscuration:lunar.obscuration},{body:'Sun',kind:solar.kind,date:solar.peak.date,obscuration:solar.obscuration}].sort((a,b)=>a.date-b.date);}
+export const eventTypes={full:['Fase Bulan','Moon phase'],new:['Ijtimak','Conjunction'],rukyat:['Rukyat','Observation'],quarter:['Fase Bulan','Moon phase']};
+function event(type,d,l,title,en,desc,descEn){return{id:`${type}-${d.toISOString().slice(0,16)}-${l.id}`,type,date:d.toISOString(),title,en,desc,descEn,loc:l};}
+function newEvents(d,l){const monthDate=new Date(+d+3*DAY),h=hijri(monthDate,l),n=HIJRI[h.month-1],ne=HIJRI_EN[h.month-1],r=SearchRiseSet('Sun',new Observer(l.lat,l.lon,l.elev),-1,d,2).date;return [event('new',d,l,`Ijtimak ${n} ${h.year} H`,`${ne} ${h.year} conjunction`,'Saat bujur ekliptika Bulan dan Matahari berimpit. Ijtimak bukan penetapan awal bulan.','The Sun and Moon share the same ecliptic longitude. This is not an official month declaration.'),event('rukyat',r,l,`Rukyatul Hilal ${n}`,`${ne} crescent watch`,'Usulan waktu pengamatan hilal pada terbenam Matahari pertama setelah ijtimak. Bukan jadwal kegiatan resmi.','A suggested observing time at the first sunset following conjunction, not an official event.')];}
+function fullEvent(d,l){return event('full',d,l,'Bulan Purnama','Full Moon','Puncak fase purnama, ketika sisi Bulan yang menghadap Bumi hampir seluruhnya diterangi Matahari.','The full Moon is nearly fully illuminated as seen from Earth.');}
+export function agenda(now,l){const c=SearchMoonPhase(0,now,32).date,p=SearchMoonPhase(180,now,32).date;return [fullEvent(p,l),...newEvents(c,l)].sort((a,b)=>new Date(a.date)-new Date(b.date));}
+export function monthEvents(y,m,l){const start=localTime(`${y}-${String(m+1).padStart(2,'0')}-01`,'00:00',l),last=new Date(Date.UTC(y,m+1,1)-l.offset*3600000),arr=[];for(const phase of [0,90,180,270]){let d=SearchMoonPhase(phase,new Date(+start-2*DAY),32).date;while(d<last){arr.push(...(phase===0?newEvents(d,l):phase===180?[fullEvent(d,l)]:[event('quarter',d,l,phase===90?'Perbani Awal':'Perbani Akhir',phase===90?'First Quarter':'Last Quarter','Separuh piringan Bulan tampak terang dari Bumi.','Half of the lunar disc is illuminated as seen from Earth.')]));d=SearchMoonPhase(phase,new Date(+d+2*DAY),32).date;}}return arr.filter(e=>new Date(e.date)>=start&&new Date(e.date)<last).sort((a,b)=>new Date(a.date)-new Date(b.date));}
