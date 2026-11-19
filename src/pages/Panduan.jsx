@@ -99,7 +99,7 @@ export default function Panduan() {
           const Icon = section.icon;
           const points = english ? section.pointsEn : section.points;
           return (
-            <section className="card guide-card" key={section.title}>
+            <section className="card guide-card" id={["keanggotaan","bergabung","laporan-rukyat","verifikasi"][index]} key={section.title}>
               <div className="guide-card-heading">
                 <div className="guide-number">{String(index + 1).padStart(2, '0')}</div>
                 <div className="guide-card-icon"><Icon size={20} /></div>
