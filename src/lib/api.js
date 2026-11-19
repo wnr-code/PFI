@@ -4,9 +4,10 @@
 // AI-assisted implementation; reviewed and maintained by the project maintainer.
 import { supabase } from './supabase.js';
 
-// API is same-origin on Cloudflare Workers. Set VITE_API_URL only when the API
-// is intentionally hosted on a separate origin.
-export const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+// PFI frontend and API run on the same Cloudflare Worker in both
+// Production and Preview. Always use the current origin so Preview never
+// accidentally sends API writes to the Production hostname via a build var.
+export const API_BASE = '';
 export const apiUrl = (path) => `${API_BASE}${path}`;
 
 async function getToken() {
