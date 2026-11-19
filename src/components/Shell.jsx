@@ -10,7 +10,7 @@ import { usePFI, go } from '../state.jsx';
 import {
   House, Calculator, Orbit, UsersRound, UserRound, MapPinned, Files,
   Bell, ChevronRight, MapPin, ChevronDown, GraduationCap, FlaskConical,
-  ChevronsUpDown, LayoutDashboard, BookOpen, CreditCard, Share2, LogOut,
+  ChevronsUpDown, LayoutDashboard, BookOpen, CreditCard, Share2, LogOut, LogIn,
 } from 'lucide-react';
 import { SITES } from '../lib/astro.js';
 
@@ -184,12 +184,14 @@ export function Topbar() {
           onClick={() => data.account ? go('profil') : open('auth')}
           aria-label={data.account ? t('Buka profil', 'Open profile') : t('Masuk dengan Google', 'Sign in with Google')}
         >
-          <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=PFI" alt="" />
+          {data.account
+            ? <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=PFI" alt="" />
+            : <LogIn size={17} aria-hidden="true" />}
           <b>
             {data.account
               ? data.account.name.split(' ')[0] +
                 (data.account.name.split(' ')[1] ? ' ' + data.account.name.split(' ')[1][0] + '.' : '')
-              : t('Akun Saya', 'My Account')}
+              : t('Masuk', 'Sign in')}
           </b>
           <ChevronDown size={12} />
         </button>
