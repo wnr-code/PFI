@@ -107,11 +107,18 @@ export function Provider({ children }) {
         ? (await authApi.getIdentitySession()).data
         : { session: authEventSession };
       const identityToken = identity.session?.access_token || null;
-      const serverSession = await api('/api/session', 'GET', null, identityToken);
+      let serverSession;
+      const retryDelays = identityToken ? [0, 300, 900] : [0];
+      for (const delay of retryDelays) {
+        if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+        if (sequence !== refreshSequence.current) return;
+        serverSession = await api('/api/session', 'GET', null, identityToken);
+        if (serverSession?.account || !identityToken) break;
+      }
       if (sequence !== refreshSequence.current) return;
       const account = serverSession?.account ?? null;
       if (identity.session && !account) {
-        throw new Error('Identitas Google berhasil, tetapi profil PFI tidak dapat dimuat. Silakan coba masuk kembali.');
+        throw new Error('Login Google berhasil, tetapi profil PFI belum tersedia setelah dicoba ulang. Silakan coba sekali lagi.');
       }
       const prefs = serverSession?.prefs && typeof serverSession.prefs === 'object' ? serverSession.prefs : {};
       setData((d) => ({
@@ -124,7 +131,7 @@ export function Provider({ children }) {
 
       // Fetch posts from API (with offline fallback)
       try {
-        const posts = await api('/api/posts');
+        const posts = await api('/api/posts', 'GET', null, identityToken);
         await offlineStore('posts', posts);
         if (sequence === refreshSequence.current) setData((d) => ({ ...d, posts }));
       } catch (e) {

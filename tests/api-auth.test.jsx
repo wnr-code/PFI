@@ -9,6 +9,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../src/lib/supabase.js', () => ({
+  clearPersistedIdentity: vi.fn(),
   initializeIdentity: vi.fn(async () => null),
   supabase: { auth: {
     getSession: vi.fn(async () => ({ data: { session: { access_token: 'google-identity-token' } } })),
@@ -17,7 +18,7 @@ vi.mock('../src/lib/supabase.js', () => ({
 }));
 
 import { api, authApi } from '../src/lib/api.js';
-import { supabase } from '../src/lib/supabase.js';
+import { clearPersistedIdentity, supabase } from '../src/lib/supabase.js';
 
 describe('Cloudflare API identity boundary', () => {
   beforeEach(() => { globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } })); });
@@ -58,6 +59,7 @@ describe('Cloudflare API identity boundary', () => {
     globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ error: 'invalid token' }), { status: 401, headers: { 'content-type': 'application/json' } }));
     await expect(api('/api/preferences', 'PUT', { site: 'tasik' })).rejects.toMatchObject({ code: 'AUTH_SESSION_EXPIRED' });
     expect(supabase.auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(clearPersistedIdentity).toHaveBeenCalled();
     expect(expired).toHaveBeenCalledOnce();
   });
 

@@ -13,6 +13,10 @@ export const isAuthConfigured = () => Boolean(url && anonKey && /^https:\/\//.te
 
 // Supabase is identity-only. Application data is never read from or written to Supabase.
 const fallbackUrl = 'https://identity-not-configured.invalid';
+export const identityStorageKey = 'pfi.google.identity';
+export function clearPersistedIdentity() {
+  try { globalThis.localStorage?.removeItem(identityStorageKey); } catch { /* storage can be blocked */ }
+}
 export const supabase = createClient(url || fallbackUrl, anonKey || 'identity-not-configured', {
   auth: {
     persistSession: true,
@@ -21,7 +25,7 @@ export const supabase = createClient(url || fallbackUrl, anonKey || 'identity-no
     // its Cloudflare session, preventing a race on slower mobile browsers.
     detectSessionInUrl: false,
     flowType: 'pkce',
-    storageKey: 'pfi.google.identity',
+    storageKey: identityStorageKey,
   },
 });
 

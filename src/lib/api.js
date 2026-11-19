@@ -5,7 +5,7 @@
  * Maintainer: @wnr-code — https://github.com/wnr-code
  * Dukung pengembang: https://trakteer.id/lanteraku/tip
  */
-import { initializeIdentity, supabase } from './supabase.js';
+import { clearPersistedIdentity, initializeIdentity, supabase } from './supabase.js';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -37,6 +37,7 @@ export async function api(path, method = 'GET', body = null, identityToken = nul
     // Expired/revoked bearer tokens must immediately clear the persisted
     // identity session so every part of the UI returns to signed-out state.
     await supabase.auth.signOut({ scope: 'local' }).catch(() => null);
+    clearPersistedIdentity();
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('pfi:auth-expired'));
     const error = new Error('Sesi Google berakhir. Silakan masuk kembali.');
     error.code = 'AUTH_SESSION_EXPIRED';
@@ -60,9 +61,16 @@ export const authApi = {
   signOut: async () => {
     // PFI uses bearer tokens only; ending the local identity session is enough
     // and remains reliable even when the provider's global revoke is unavailable.
-    const { error } = await supabase.auth.signOut({ scope: 'local' });
+    let signOutError = null;
+    try {
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      signOutError = error;
+    } finally {
+      // Guarantee that reload cannot restore a session after explicit logout.
+      clearPersistedIdentity();
+    }
     // Missing session means the desired signed-out state is already reached.
-    if (error && error.name !== 'AuthSessionMissingError') throw error;
+    if (signOutError && signOutError.name !== 'AuthSessionMissingError') throw signOutError;
   },
   getIdentitySession: async () => {
     await initializeIdentity();

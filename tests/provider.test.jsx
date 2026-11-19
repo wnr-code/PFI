@@ -49,4 +49,22 @@ describe('PFI provider lifecycle', () => {
     render(<Provider><Status /></Provider>);
     await waitFor(() => expect(screen.getByText(/^ready\|Tasikmalaya\|.*\|pengamat@example\.com$/)).toBeTruthy());
   });
+
+  it('retries a temporarily unavailable profile without discarding Google login', async () => {
+    window.scrollTo = vi.fn();
+    authApi.getIdentitySession.mockResolvedValueOnce({ data: { session: { access_token: 'fresh-token' } } });
+    let sessionRequests = 0;
+    api.mockImplementation(async (path) => {
+      if (path !== '/api/session') return [];
+      sessionRequests += 1;
+      if (sessionRequests < 3) return { account: null };
+      return { account: { id: 'google-user-2', name: 'Pengamat Baru', email: 'baru@example.com' }, prefs: {} };
+    });
+    render(<Provider><Status /></Provider>);
+    await waitFor(
+      () => expect(screen.getByText(/^ready\|Tasikmalaya\|.*\|baru@example\.com$/)).toBeTruthy(),
+      { timeout: 2500 }
+    );
+    expect(sessionRequests).toBe(3);
+  });
 });
