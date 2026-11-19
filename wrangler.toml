@@ -3,35 +3,58 @@
 # GitHub: https://github.com/wnr-code/PFI
 # Maintainer: @wnr-code — https://github.com/wnr-code
 # Dukung pengembang: https://trakteer.id/lanteraku/tip
-# Cloudflare Pages + Workers configuration for PFI (Pusat Falaq Indonesia)
-# D1 Database: pfi-falaq
-# R2 Bucket: pfi-falaq-r2
 
 name = "pfi"
-compatibility_date = "2026-01-01"
-compatibility_flags = ["nodejs_compat"]
+main = "worker/index.js"
+compatibility_date = "2026-11-19"
 
-# Pages project settings
-[pages]
-# Build command untuk Pages
-build_command = "npm run build"
-# Output folder dari esbuild build
-build_output_dir = "dist"
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+not_found_handling = "single-page-application"
 
-# D1 database binding
 [[d1_databases]]
-binding = "falaq"          # Nama variabel di Worker: env.falaq
+binding = "falaq"
 database_name = "pfi-falaq"
-database_id = "0ae91ae2-8bec-474f-b72d-1b793f951d4a"  # Disederhanakan dari dashboard Cloudflare Anda
+database_id = "0ae91ae2-8bec-474f-b72d-1b793f951d4a"
+migrations_dir = "migrations"
 
-# R2 bucket binding
 [[r2_buckets]]
-binding = "r2falaq"        # Nama variabel di Worker: env.r2falaq
+binding = "r2falaq"
 bucket_name = "pfi-falaq-r2"
 
-# Public frontend configuration. The anon key identifies the Supabase Auth project;
-# it does not grant access to application data, which remains in Cloudflare D1/R2.
+# Supabase dipakai hanya untuk validasi identitas Google. URL dan publishable key
+# memang bersifat publik; tidak ada service-role key atau akses data aplikasi.
 [vars]
-VITE_SUPABASE_URL = "https://boennhvuoptogvcocbpx.supabase.co"
-VITE_SUPABASE_ANON_KEY = "sb_publishable_hM2Sdb3-WgLzc6-tgKc9Yg_wRyEHMtW"
-VITE_API_URL = "https://pfi.cgs.my.id"
+SUPABASE_URL = "https://boennhvuoptogvcocbpx.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_hM2Sdb3-WgLzc6-tgKc9Yg_wRyEHMtW"
+
+[previews]
+[[previews.d1_databases]]
+binding = "falaq"
+database_name = "sanbok-pfi"
+database_id = "b43a00c7-7ba9-4b9a-95be-a2770ab8e3ae"
+
+# Preview memakai bucket R2 forumcgs.
+[[previews.r2_buckets]]
+binding = "r2falaq"
+bucket_name = "forumcgs"
+
+# SUPABASE_URL dan SUPABASE_ANON_KEY harus disetel sebagai Worker secrets/vars
+# pada Cloudflare Dashboard untuk Production dan Preview.
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+persist = true
+
+[observability.traces]
+enabled = false
+head_sampling_rate = 1
+persist = true
