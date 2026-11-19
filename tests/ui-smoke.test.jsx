@@ -46,6 +46,7 @@ import Komunitas from '../src/pages/Komunitas.jsx';
 import Profil from '../src/pages/Profil.jsx';
 import PetaRukyat from '../src/pages/PetaRukyat.jsx';
 import Laporan from '../src/pages/Laporan.jsx';
+import Kamus from '../src/pages/Kamus.jsx';
 import { AuthModal } from '../src/components/AuthModal.jsx';
 import { Topbar } from '../src/components/Shell.jsx';
 
@@ -56,8 +57,15 @@ describe('PFI UI smoke tests in Happy DOM', () => {
   it('renders the dashboard with current astronomy data', () => {
     render(<Dashboard />);
     expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/ilmu falaq/i);
-    expect(screen.getAllByText(/Fase Bulan/i).length).toBeGreaterThan(0);
-    expect(screen.getByRole('heading', { name: /Kamus istilah Falaq/i })).toBeTruthy();
+    expect(screen.getByText(/Fase Bulan/i)).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: /Kamus istilah Falaq/i })).toBeFalsy();
+  });
+
+  it('keeps the glossary on its own searchable page', () => {
+    render(<Kamus />);
+    expect(screen.getByRole('heading', { level: 1, name: /Kamus Falaq/i })).toBeTruthy();
+    expect(screen.getByRole('searchbox', { name: /Cari istilah Falaq/i })).toBeTruthy();
+    expect(screen.getByText('Hilal')).toBeTruthy();
   });
 
   it('keeps the 3D globe and 2D map in separate renderer hosts', () => {

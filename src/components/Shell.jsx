@@ -10,7 +10,7 @@ import { usePFI, go } from '../state.jsx';
 import {
   House, Calculator, Orbit, UsersRound, UserRound, MapPinned, Files,
   Bell, ChevronRight, MapPin, ChevronDown, GraduationCap, FlaskConical,
-  ChevronsUpDown, LayoutDashboard, CreditCard, Share2, LogOut,
+  ChevronsUpDown, LayoutDashboard, BookOpen, CreditCard, Share2, LogOut,
 } from 'lucide-react';
 import { SITES } from '../lib/astro.js';
 
@@ -25,6 +25,7 @@ export const navMain = [
 export const navMore = [
   ['peta', 'Peta Rukyat', 'Observation Map', MapPinned],
   ['laporan', 'Pusat Laporan', 'Report Centre', Files],
+  ['kamus', 'Kamus Falaq', 'Falaq Glossary', BookOpen],
 ];
 
 function Observatory() {
@@ -161,6 +162,14 @@ export function Topbar() {
             {SITES.map((item) => <option key={item.id} value={item.id}>{item.city}</option>)}
           </select>
         </label>
+        <button
+          className="bell-button help-button"
+          aria-label={t('Buka Kamus Falaq', 'Open Falaq glossary')}
+          title={t('Kamus Falaq', 'Falaq glossary')}
+          onClick={() => go('kamus')}
+        >
+          <BookOpen size={17}/>
+        </button>
         <button
           className="bell-button"
           aria-label={t('Notifikasi', 'Notifications')}

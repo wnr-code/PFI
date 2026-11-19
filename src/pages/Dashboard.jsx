@@ -7,7 +7,6 @@
  */
 import React, { useMemo } from 'react';
 import { usePFI, go } from '../state.jsx';
-import Glossary from '../components/Glossary.jsx';
 import { lunar, dateFmt, hijriText, phaseNames, clock, zlabel } from '../lib/astro.js';
 import {
   Moon, CalendarDays, MapPin, Calculator, Telescope, UsersRound,
@@ -88,8 +87,6 @@ export default function Dashboard() {
           </div>
         </section>
       </div>
-
-      <Glossary />
 
       <section className="card sky-agenda-card">
         <div className="card-header"><div><span className="section-kicker">{t('KALENDER ASTRONOMI', 'ASTRONOMY CALENDAR')}</span><h2>{t('Agenda langit mendatang', 'Upcoming sky events')}</h2></div><button className="text-action" onClick={() => go('astronomi')}>{t('Lihat semua', 'View all')}<ArrowRight size={15} /></button></div>
