@@ -166,11 +166,18 @@ export default function PetaRukyat() {
     loadScript(LEAFLET_SCRIPT, 'L').then((L) => {
       if (cancelled || !mapHost.current || mapInstance.current) return;
       const map = L.map(mapHost.current, { zoomControl: true, scrollWheelZoom: true }).setView([-2.5, 118], 4.5);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      // OpenStreetMap standard tiles: no CARTO account or API key required.
+      // Respect the public tile service policy and keep attribution visible.
+      const baseTiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        minZoom: 2,
         maxZoom: 19,
-        subdomains: 'abcd',
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-      }).addTo(map);
+        maxNativeZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>',
+      });
+      baseTiles.on('tileerror', () => {
+        if (!cancelled) setLibraryError(t('Sebagian ubin peta gagal dimuat. Periksa koneksi internet atau coba segarkan.', 'Some map tiles failed to load. Check your internet connection or refresh.'));
+      });
+      baseTiles.addTo(map);
       markersLayer.current = L.layerGroup().addTo(map);
       mapInstance.current = map;
       const renderMarkers = () => {
