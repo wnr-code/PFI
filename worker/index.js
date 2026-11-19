@@ -35,6 +35,16 @@ function fail(status, message) {
   return json({ error: message }, status);
 }
 
+// Accept both Worker runtime names and the existing Vite-prefixed names.
+// These values must be configured as runtime bindings in Cloudflare Preview;
+// build-time frontend variables alone are not exposed to the Worker.
+function supabaseRuntimeConfig(env) {
+  return {
+    url: String(env.SUPABASE_URL || env.VITE_SUPABASE_URL || '').trim(),
+    anonKey: String(env.SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY || '').trim(),
+  };
+}
+
 // Pending rukyat reports are private to their owner and authorized reviewers.
 export function canViewPost(post, profile) {
   if (post?.type !== 'rukyat' || post.status === 'verified') return true;
@@ -184,15 +194,16 @@ async function identity(request, env) {
   const value = request.headers.get('authorization') || '';
   const match = value.match(/^Bearer\s+(.+)$/i);
   if (!match) return null;
-  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+  const auth = supabaseRuntimeConfig(env);
+  if (!auth.url || !auth.anonKey) {
     throw new Error('Supabase identity verification is not configured.');
   }
 
   // Ask Supabase Auth to validate the access token. Never trust user metadata
   // or decode a JWT without verifying its signature.
-  const response = await fetch(new URL('/auth/v1/user', env.SUPABASE_URL), {
+  const response = await fetch(new URL('/auth/v1/user', auth.url), {
     headers: {
-      apikey: env.SUPABASE_ANON_KEY,
+      apikey: auth.anonKey,
       authorization: `Bearer ${match[1]}`,
     },
   });
@@ -413,7 +424,10 @@ export default {
         } catch (error) {
           console.error('PFI health check failed:', error?.message || error);
         }
-        const authConfigured = Boolean(env.SUPABASE_URL && env.SUPABASE_ANON_KEY);
+        const auth = supabaseRuntimeConfig(env);
+        const authConfigured = Boolean(auth.url && auth.anonKey);
+        const authentication = authConfigured ? 'configured'
+          : auth.url ? 'missing_key' : auth.anonKey ? 'missing_url' : 'missing_configuration';
         const storageConfigured = Boolean(
           env.r2falaq && typeof env.r2falaq.put === 'function' && typeof env.r2falaq.get === 'function'
         );
@@ -424,7 +438,7 @@ export default {
           runtime: 'cloudflare-workers',
           database,
           schema: { ready: schemaReady, missingTables },
-          authentication: authConfigured ? 'configured' : 'missing_configuration',
+          authentication,
           photoStorage: storageConfigured ? 'configured' : 'missing_binding',
           migrationPhase: 1,
         }, ready ? 200 : 503);
