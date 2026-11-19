@@ -719,3 +719,11 @@ select,input,textarea{font-size:15px;line-height:1.5}
  .pfi-live-detail{margin:0 10px 12px;padding:14px}
 }
 @media(prefers-reduced-motion:reduce){.pfi-live-status i{animation:none}}
+
+
+/* Animated map pins — markers always represent verified PFI reports */
+.pfi-map-pulse-marker{background:transparent!important;border:0!important}
+.pfi-map-pulse-marker .pfi-map-pulse-ring{position:absolute;left:3px;top:3px;width:20px;height:20px;border:1px solid rgba(255,211,124,.8);border-radius:50%;background:rgba(245,185,66,.16);animation:pfiMapPulse 2s ease-out infinite}
+.pfi-map-pulse-marker .pfi-map-pulse-core{position:absolute;left:9px;top:9px;width:8px;height:8px;border:1.5px solid #fff1cb;border-radius:50%;background:#f5b942;box-shadow:0 0 12px 3px rgba(245,185,66,.72)}
+@keyframes pfiMapPulse{0%{transform:scale(.45);opacity:.95}100%{transform:scale(1.8);opacity:0}}
+@media(prefers-reduced-motion:reduce){.pfi-map-pulse-marker .pfi-map-pulse-ring{animation:none}}
