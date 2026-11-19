@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { usePFI } from '../state.jsx';
+import { api } from '../lib/api.js';
 import { ArrowLeft, BookOpen, CheckCircle2, Info, ShieldCheck, ClipboardCopy, ClipboardCheck, Building2 } from 'lucide-react';
 
 const GUIDES = {
@@ -59,25 +60,70 @@ const GUIDES = {
  }
 };
 
-function InstitutionPrepForm({t,lang}){
+function InstitutionPrepForm({t,lang,account,tell}){
  const english=lang==='en';
- const [form,setForm]=useState({institution:'',type:'',region:'',representative:'',position:'',contact:'',website:'',purpose:''});
+ const empty={institution:'',type:'',region:'',representative:'',position:'',contact:'',website:'',purpose:''};
+ const [form,setForm]=useState(empty);
  const [draft,setDraft]=useState('');
  const [copied,setCopied]=useState(false);
+ const [application,setApplication]=useState(null);
+ const [loading,setLoading]=useState(false);
+ const [busy,setBusy]=useState(false);
+ const [loadError,setLoadError]=useState('');
  const update=(key,value)=>{setForm(current=>({...current,[key]:value}));setCopied(false);};
+ useEffect(()=>{
+  let active=true;
+  if(!account){setApplication(null);setLoadError('');return ()=>{active=false;};}
+  setLoading(true);setLoadError('');
+  api('/api/institution-applications').then(result=>{
+   if(!active)return;
+   const item=result.application||null;
+   setApplication(item);
+   if(item)setForm({
+    institution:item.institution_name||'',type:item.institution_type||'',region:item.region||'',
+    representative:item.representative_name||'',position:item.representative_position||'',
+    contact:item.official_contact||'',website:item.website||'',purpose:item.purpose||''
+   });
+  }).catch(error=>{if(active)setLoadError(error.message||'Gagal memuat status pengajuan.');})
+   .finally(()=>{if(active)setLoading(false);});
+  return ()=>{active=false;};
+ },[account?.id]);
  const makeDraft=()=>{
   const labels=english
    ? ['Institution name','Institution type','City / region','Representative name','Representative position','Official contact','Website / public profile','Partnership purpose']
    : ['Nama lembaga','Jenis lembaga','Kota / wilayah','Nama perwakilan','Jabatan perwakilan','Kontak resmi','Situs / profil publik','Tujuan kemitraan'];
   const values=[form.institution,form.type,form.region,form.representative,form.position,form.contact,form.website,form.purpose];
-  const result='DRAF PERSIAPAN PENGAJUAN KEMITRAAN PFI\\n'+labels.map((label,i)=>label+': '+(values[i].trim()||'-')).join('\\n')+'\\n\\n'+(english?'This is a preparation draft only. It has not been submitted to PFI.':'Ini hanya draf persiapan. Data belum dikirim atau didaftarkan ke PFI.');
+  const result='DRAF PERSIAPAN PENGAJUAN KEMITRAAN PFI\\n'+labels.map((label,i)=>label+': '+(values[i].trim()||'-')).join('\\n')+'\\n\\n'+(english?'This is a preparation draft only.':'Ini hanya draf persiapan, belum dikirim ke PFI.');
   setDraft(result);setCopied(false);return result;
  };
  const copyDraft=async()=>{
-  const text=draft||makeDraft();
-  try{await navigator.clipboard.writeText(text);setCopied(true);}
-  catch{setCopied(false);}
+  const value=draft||makeDraft();
+  try{await navigator.clipboard.writeText(value);setCopied(true);}
+  catch{setCopied(false);tell(t('Tidak dapat menyalin otomatis. Pilih teks draf lalu salin.','Could not copy automatically. Select the draft text and copy it.'));}
  };
+ const submitApplication=async(event)=>{
+  event.preventDefault();
+  if(!account){tell(t('Masuk ke akun PFI terlebih dahulu untuk mengirim pengajuan.','Sign in to your PFI account before submitting.'));return;}
+  setBusy(true);
+  try{
+   const result=await api('/api/institution-applications','POST',form);
+   setApplication({...form,institution_name:form.institution,institution_type:form.type,
+    representative_name:form.representative,representative_position:form.position,
+    official_contact:form.contact,status:result.status,review_note:''});
+   tell(t('Pengajuan lembaga berhasil dikirim dan menunggu Tim Validasi PFI.','Institution application submitted and is awaiting PFI validation.'));
+  }catch(error){tell(error.message||t('Pengajuan gagal dikirim.','Application submission failed.'));}
+  finally{setBusy(false);}
+ };
+ const types=[
+  ['pesantren_madrasah',t('Pesantren / madrasah','Pesantren / Islamic school')],
+  ['organisasi_kemasyarakatan',t('Organisasi kemasyarakatan','Civil / community organization')],
+  ['perguruan_tinggi',t('Perguruan tinggi','University / college')],
+  ['observatorium_komunitas',t('Observatorium / komunitas astronomi','Observatory / astronomy community')],
+  ['lembaga_pemerintah',t('Lembaga pemerintah','Government institution')],
+  ['lainnya',t('Lainnya','Other')]
+ ];
+ const statusLabel={pending:t('Menunggu pemeriksaan','Awaiting review'),revision:t('Perlu perbaikan','Revision requested'),approved:t('Disetujui','Approved'),rejected:t('Tidak disetujui','Not approved')};
+ const locked=['pending','approved','rejected'].includes(application?.status);
  const fields=[
   ['institution',t('Nama resmi lembaga *','Official institution name *'),'text',120],
   ['type',t('Jenis lembaga *','Institution type *'),'select',0],
@@ -88,27 +134,38 @@ function InstitutionPrepForm({t,lang}){
   ['website',t('Situs atau profil publik (opsional)','Website or public profile (optional)'),'url',180],
   ['purpose',t('Tujuan dan bidang kerja sama (opsional)','Purpose and proposed collaboration (optional)'),'textarea',500],
  ];
- const institutionTypes=[t('Pilih jenis lembaga','Choose institution type'),t('Pesantren / madrasah','Pesantren / Islamic school'),t('Organisasi kemasyarakatan','Civil / community organization'),t('Perguruan tinggi','University / college'),t('Observatorium / komunitas astronomi','Observatory / astronomy community'),t('Lembaga pemerintah','Government institution'),t('Lainnya','Other')];
  return <section className="card institution-prep">
-  <div className="institution-prep-head"><div className="settings-guide-icon"><Building2 size={20}/></div><div><b>{t('Draf Persiapan Pengajuan Lembaga','Institution Application Preparation Draft')}</b><p>{t('Isi data dasar untuk menyiapkan surat atau pesan pengajuan. Formulir ini belum mengirim data ke server PFI.','Enter basic details to prepare an application letter or message. This form does not send data to PFI servers.')}</p></div></div>
-  <form onSubmit={event=>{event.preventDefault();makeDraft();}} className="institution-prep-grid">
-   {fields.map(([key,label,type,max])=><label className={'field institution-field '+(type==='textarea'?'institution-field-wide':'')} key={key}><span>{label}</span>{type==='select'?<select value={form[key]} onChange={event=>update(key,event.target.value)} required><option value="">{institutionTypes[0]}</option>{institutionTypes.slice(1).map(option=><option key={option} value={option}>{option}</option>)}</select>:type==='textarea'?<textarea value={form[key]} maxLength={max} rows={3} onChange={event=>update(key,event.target.value)} placeholder={t('Jelaskan tujuan kerja sama secara singkat…','Briefly describe the proposed collaboration…')}/>:<input type={type} value={form[key]} maxLength={max} required={['institution','region','representative','position','contact'].includes(key)} onChange={event=>update(key,event.target.value)} />}</label>)}
-   <div className="institution-prep-actions"><button className="btn primary" type="submit">{t('Buat draf pengajuan','Prepare application draft')}</button></div>
+  <div className="institution-prep-head"><div className="settings-guide-icon"><Building2 size={20}/></div><div><b>{t('Pengajuan Kemitraan Lembaga','Institution Partnership Application')}</b><p>{t('Ajukan atas nama lembaga dengan persetujuan perwakilan yang berwenang. Pengajuan akan diperiksa oleh Tim Validasi PFI.','Apply on behalf of an institution with authorization from its representative. The PFI Validation Team will review the application.')}</p></div></div>
+  {!account&&<div className="policy-boundary"><Info size={17}/><p>{t('Silakan masuk melalui tombol Masuk di bagian atas aplikasi sebelum mengirim pengajuan. Draf persiapan tetap dapat dibuat tanpa masuk.','Please sign in using the button at the top of the app before submitting. You can still prepare a draft without signing in.')}</p></div>}
+  {loading&&<p className="institution-prep-disclaimer">{t('Memuat status pengajuan…','Loading application status…')}</p>}
+  {loadError&&<p className="institution-prep-disclaimer">{t('Status pengajuan belum dapat dimuat: ','Unable to load application status: ')}{loadError}</p>}
+  {application&&<div className="institution-application-status">
+   <b>{t('Status pengajuan: ','Application status: ')}{statusLabel[application.status]||application.status}</b>
+   {application.review_note&&<p>{t('Catatan Tim Validasi: ','Validation Team note: ')}{application.review_note}</p>}
+   {application.status==='pending'&&<p>{t('Pengajuan sudah tercatat. Tidak perlu mengirim ulang selama menunggu pemeriksaan.','Your application is recorded. Please do not resubmit while it is under review.')}</p>}
+   {application.status==='approved'&&<p>{t('Lembaga telah tercatat sebagai mitra. Penunjukan koordinator dilakukan melalui proses terpisah.','The institution is registered as a partner. Coordinator appointment is handled separately.')}</p>}
+   {application.status==='rejected'&&<p>{t('Pengajuan ini ditutup. Hubungi pengelola PFI untuk klarifikasi sebelum mengajukan kembali.','This application is closed. Contact PFI administrators for clarification before applying again.')}</p>}
+  </div>}
+  <form onSubmit={submitApplication} className="institution-prep-grid">
+   {fields.map(([key,label,type,max])=><label className={'field institution-field '+(type==='textarea'?'institution-field-wide':'')} key={key}><span>{label}</span>{type==='select'?<select value={form[key]} onChange={event=>update(key,event.target.value)} required disabled={locked}><option value="">{t('Pilih jenis lembaga','Choose institution type')}</option>{types.map(([value,name])=><option key={value} value={value}>{name}</option>)}</select>:type==='textarea'?<textarea value={form[key]} maxLength={max} rows={3} onChange={event=>update(key,event.target.value)} placeholder={t('Jelaskan tujuan kerja sama secara singkat…','Briefly describe the proposed collaboration…')} disabled={locked}/>:<input type={type} value={form[key]} maxLength={max} required={['institution','region','representative','position','contact'].includes(key)} onChange={event=>update(key,event.target.value)} disabled={locked}/>}</label>)}
+   <div className="institution-prep-actions">
+    <button className="btn secondary" type="button" onClick={makeDraft}>{t('Buat draf untuk disalin','Prepare copyable draft')}</button>
+    {account&&<button className="btn primary" type="submit" disabled={busy||loading||locked}>{busy?t('Mengirim…','Submitting…'):application?.status==='revision'?t('Kirim perbaikan','Resubmit revisions'):t('Kirim pengajuan resmi','Submit official application')}</button>}
+   </div>
   </form>
   {draft&&<div className="institution-draft-result"><label className="field"><span>{t('Draf untuk disalin','Draft to copy')}</span><textarea readOnly rows={9} value={draft} onFocus={event=>event.target.select()}/></label><button className="btn secondary" type="button" onClick={copyDraft}>{copied?<ClipboardCheck size={16}/>:<ClipboardCopy size={16}/>} {copied?t('Tersalin','Copied'):t('Salin draf','Copy draft')}</button></div>}
-  <p className="institution-prep-disclaimer"><Info size={15}/>{t('Draf hanya berada di halaman ini dan tidak disimpan ke akun. Jangan masukkan nomor identitas, dokumen rahasia, atau data pribadi yang tidak diperlukan. Pengajuan resmi dan penunjukan koordinator belum tersedia sebagai alur otomatis di aplikasi.','The draft exists only on this page and is not saved to your account. Do not enter identity numbers, confidential documents, or unnecessary personal data. Official applications and coordinator appointments are not yet automated in the app.')}</p>
+  <p className="institution-prep-disclaimer"><Info size={15}/>{t('Jangan mengirim dokumen rahasia atau nomor identitas yang tidak diperlukan. Persetujuan kemitraan tidak otomatis menunjuk koordinator atau memberikan peran administrator.','Do not submit confidential documents or unnecessary identity numbers. Partnership approval does not automatically appoint a coordinator or grant administrator access.')}</p>
  </section>;
 }
-
 function PedomanPage({kind}){
- const {t,lang}=usePFI(); const g=GUIDES[kind]; const en=lang==='en';
+ const {t,lang,data,tell}=usePFI(); const g=GUIDES[kind]; const en=lang==='en';
  return <div className="page-wrap pfi-policy-page">
   <a className="policy-back" href="#/pengaturan"><ArrowLeft size={16}/>{t('Kembali ke Pusat Pedoman','Back to Guidelines Centre')}</a>
   <header className="policy-hero"><div className="policy-hero-icon"><BookOpen size={23}/></div><div className="eyebrow"><i/>{t('PEDOMAN PLATFORM PFI','PFI PLATFORM GUIDELINE')}</div><h1>{en?g.en:g.title}</h1><p>{en?g.introEn:g.intro}</p></header>
   <div className="policy-boundary"><Info size={18}/><p>{t('Pedoman ini menjelaskan prosedur internal platform PFI. Pedoman tidak menggantikan aturan lembaga mitra, keputusan pemerintah, atau kewenangan otoritas keagamaan dan pendidikan.','This guideline describes PFI platform procedures. It does not replace partner institution rules, government decisions, or religious and educational authorities.')}</p></div>
   <div className="policy-blocks">{g.blocks.map(([title,body,titleEn,bodyEn],i)=><section className="card policy-block" key={title}><div className="policy-index">{String(i+1).padStart(2,'0')}</div><div><h2>{en?titleEn:title}</h2><p>{en?bodyEn:body}</p></div></section>)}</div>
   {kind==='verification'&&<section className="policy-action"><ShieldCheck size={19}/><div><b>{t('Siap mengajukan verifikasi pengamat?','Ready to request observer verification?')}</b><p>{t('Buka Profil, baca persyaratan di atas, lalu isi formulir verifikasi. Pengajuan akan menunggu petugas yang ditugaskan.','Open Profile, review the requirements above, then complete the verification form. Your request will wait for an assigned reviewer.')}</p><a href="#/profil">{t('Buka Profil dan ajukan','Open Profile to apply')} →</a></div></section>}
-  {kind==='institution'&&<><section className="policy-action"><BookOpen size={19}/><div><b>{t('Lembaga ingin bermitra dengan PFI?','Want your institution to partner with PFI?')}</b><p>{t('Siapkan informasi dasar melalui draf di bawah. Setelah itu, kirimkan melalui kanal resmi PFI yang diumumkan pengelola. Draf ini bukan pendaftaran resmi.','Prepare basic information using the draft below, then send it through an official PFI channel announced by administrators. This draft is not an official application.')}</p></div></section><InstitutionPrepForm t={t} lang={lang}/></>}
+  {kind==='institution'&&<><section className="policy-action"><BookOpen size={19}/><div><b>{t('Lembaga ingin bermitra dengan PFI?','Want your institution to partner with PFI?')}</b><p>{t('Siapkan informasi dasar melalui draf di bawah. Setelah itu, kirimkan melalui kanal resmi PFI yang diumumkan pengelola. Draf ini bukan pendaftaran resmi.','Prepare basic information using the draft below, then send it through an official PFI channel announced by administrators. This draft is not an official application.')}</p></div></section><InstitutionPrepForm t={t} lang={lang} account={data.account} tell={tell}/></>}
   {kind==='expertise'&&<section className="policy-action"><ShieldCheck size={19}/><div><b>{t('Penilaian keahlian terpisah dari verifikasi akun','Expertise review is separate from account verification')}</b><p>{t('Formulir verifikasi akun saat ini tidak otomatis mengajukan pengakuan keahlian. Jangan menganggap status akun terverifikasi sebagai sertifikasi ahli.','The current account verification form does not automatically request expertise recognition. Do not treat account verification as expert certification.')}</p></div></section>}
   <div className="policy-foot"><CheckCircle2 size={16}/>{t('Siapkan informasi yang benar dan hanya kirim dokumen melalui kanal resmi PFI.','Provide accurate information and submit documents only through official PFI channels.')}</div>
  </div>;
