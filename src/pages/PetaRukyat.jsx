@@ -37,12 +37,22 @@ function loadScript(src, globalName) {
 }
 
 function loadLeafletCss() {
-  if (document.querySelector('link[data-pfi-leaflet]')) return;
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = LEAFLET_CSS;
-  link.dataset.pfiLeaflet = 'true';
-  document.head.appendChild(link);
+  return new Promise((resolve, reject) => {
+    let link = document.querySelector('link[data-pfi-leaflet]');
+    if (link?.dataset.loaded === 'true' || link?.sheet) return resolve();
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = LEAFLET_CSS;
+      link.dataset.pfiLeaflet = 'true';
+    }
+    link.addEventListener('load', () => {
+      link.dataset.loaded = 'true';
+      resolve();
+    }, { once: true });
+    link.addEventListener('error', () => reject(new Error('CSS Leaflet gagal dimuat. Periksa koneksi internet lalu muat ulang peta.')), { once: true });
+    if (!link.isConnected) document.head.appendChild(link);
+  });
 }
 
 const validCoordinates = (item) => {
@@ -316,8 +326,7 @@ export default function PetaRukyat() {
   useEffect(() => {
     if (mode !== 'map' || !mapHost.current) return undefined;
     let cancelled = false;
-    loadLeafletCss();
-    loadScript(LEAFLET_SCRIPT, 'L').then((L) => {
+    Promise.resolve().then(() => loadLeafletCss()).then(() => loadScript(LEAFLET_SCRIPT, 'L')).then((L) => {
       if (cancelled || !mapHost.current || mapInstance.current) return;
       const map = L.map(mapHost.current, { zoomControl: true, scrollWheelZoom: true }).setView([-2.5, 118], 4.5);
       const esriAttribution = 'Tiles &copy; <a href="https://www.esri.com/" target="_blank" rel="noopener noreferrer">Esri</a> — Sources: Esri, Maxar, Earthstar Geographics, and the GIS User Community';
