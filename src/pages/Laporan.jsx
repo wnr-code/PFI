@@ -288,6 +288,11 @@ export default function Laporan() {
             </div>
           )}
 
+          <a className="verification-guide-link" href="#/pedoman-rukyat">
+            <FileText size={16} />
+            <span><b>{t('Baca pedoman laporan rukyat sebelum mengirim', 'Read rukyat report guidelines before submitting')}</b><small>{t('Periksa data waktu, lokasi, kondisi ufuk, instrumen, dan dokumentasi.', 'Review time, location, horizon conditions, instruments, and evidence requirements.')}</small></span>
+            <span aria-hidden="true">›</span>
+          </a>
           <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {field(t('Judul pengamatan', 'Observation title'), 'title', { required: true, maxLength: 120, placeholder: t('Contoh: Pengamatan hilal awal Ramadan', 'e.g. Ramadan crescent observation') })}
             {field(t('Kota / lokasi pengamatan', 'City / observation location'), 'city', { required: true, maxLength: 100, placeholder: t('Nama kota atau kabupaten', 'City or regency') })}
