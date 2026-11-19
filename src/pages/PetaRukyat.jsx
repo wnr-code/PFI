@@ -451,7 +451,7 @@ export default function PetaRukyat() {
         </header>
 
         <div className="pfi-live-toolbar">
-          <span className="pfi-live-status"><i/> {t('DATA PFI', 'PFI DATA')} · {t('TERVERIFIKASI', 'VERIFIED')}</span>{issPosition && <span className="pfi-live-updated"><Satellite size={13}/> ISS · {issPosition.altitudeKm.toFixed(0)} km</span>}
+          <span className="pfi-live-status"><i/> {t('DATA PFI', 'PFI DATA')} · {t('TERVERIFIKASI', 'VERIFIED')}</span>{mode === 'globe' && issPosition && <span className="pfi-live-updated"><Satellite size={13}/> ISS · {issPosition.altitudeKm.toFixed(0)} km</span>}
           <span className="pfi-live-updated"><Clock3 size={13}/>{lastUpdated ? t('Diperbarui ', 'Updated ') + formatDate(lastUpdated) : t('Menunggu data', 'Waiting for data')}</span>
         </div>
 
