@@ -1,0 +1,9 @@
+# Dedicated config for applying migrations to the Production D1 database only.
+# Do not use this file to deploy the Worker.
+name = "pfi-production-migrations"
+
+[[d1_databases]]
+binding = "PRODUCTION_DB"
+database_name = "pfi-falaq"
+database_id = "0ae91ae2-8bec-474f-b72d-1b793f951d4a"
+migrations_dir = "migrations"
