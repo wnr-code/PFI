@@ -629,3 +629,15 @@ select,input,textarea{font-size:15px;line-height:1.5}
  .rukyat-report .pill{font-size:9px;padding:4px 6px}
 }
 @media(prefers-reduced-motion:reduce){.rukyat-globe,.rukyat-point span,.marker-pulse{animation:none!important}}
+
+
+.dashboard-rukyat-entry{position:relative;display:flex;align-items:center;gap:22px;min-height:190px;padding:24px;overflow:hidden;border:1px solid rgba(214,174,98,.27);border-radius:18px;background:radial-gradient(circle at 18% 50%,rgba(48,105,157,.28),transparent 34%),linear-gradient(115deg,#132d4d,#09182e);box-shadow:0 14px 36px rgba(0,0,0,.2)}
+.dashboard-rukyat-orb{position:relative;width:128px;height:128px;flex:0 0 128px;border-radius:50%;border:1px solid rgba(157,210,244,.65);background:radial-gradient(circle at 32% 28%,#5591b7,#1d527d 42%,#082343 78%);box-shadow:inset -15px -10px 25px rgba(0,0,0,.6),0 0 32px rgba(72,153,209,.23);animation:rukyatGlobeSpin 24s linear infinite}
+.dashboard-rukyat-orb:before,.dashboard-rukyat-orb:after{content:'';position:absolute;inset:12% 0;border:1px solid rgba(201,229,247,.3);border-radius:50%;transform:scaleX(.48)}
+.dashboard-rukyat-orb:after{inset:0 22%;transform:none;border-color:rgba(201,229,247,.2)}
+.dashboard-rukyat-orb span{position:absolute;left:62%;top:47%;width:8px;height:8px;border-radius:50%;background:#f2ca7c;box-shadow:0 0 0 6px rgba(242,202,124,.17),0 0 15px #f2ca7c}
+.dashboard-rukyat-copy{position:relative;z-index:1;display:flex;flex-direction:column;align-items:flex-start;gap:8px;max-width:650px}
+.dashboard-rukyat-copy h2{font-size:clamp(19px,2.5vw,25px);line-height:1.25;color:#fff}
+.dashboard-rukyat-copy p{font-size:13px;color:#aebfd4;line-height:1.6}
+@media(max-width:520px){.dashboard-rukyat-entry{gap:14px;padding:17px;min-height:160px}.dashboard-rukyat-orb{width:86px;height:86px;flex-basis:86px}.dashboard-rukyat-copy{gap:7px}.dashboard-rukyat-copy h2{font-size:18px}.dashboard-rukyat-copy p{font-size:11px}.dashboard-rukyat-copy .btn{font-size:11px;padding:9px 11px}}
+@media(prefers-reduced-motion:reduce){.dashboard-rukyat-orb{animation:none}}
