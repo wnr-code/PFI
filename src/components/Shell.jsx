@@ -65,7 +65,7 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
 
   const links = (items) =>
-    items.map(([id, idname, en, I]) => (
+    items.filter(([id]) => data.account || id !== 'komunitas').map(([id, idname, en, I]) => (
       <a
         href={`#/${id}`}
         className={`nav-item ${page === id ? 'active' : ''}`}
@@ -171,14 +171,14 @@ export function Topbar() {
         >
           <BookOpen size={17}/>
         </button>
-        <button
+        {data.account && <button
           className="bell-button"
           aria-label={t('Notifikasi', 'Notifications')}
           onClick={() => setNotify(!data.notify)}
         >
           <Bell size={17} />
           {data.notify && <i className="bell-dot" />}
-        </button>
+        </button>}
         <button
           className={`account-control ${data.account ? '' : 'signed-out'}`}
           onClick={() => data.account ? go('profil') : open('auth')}
@@ -199,10 +199,11 @@ export function Topbar() {
 }
 
 export function BottomNav() {
-  const { page, t } = usePFI();
+  const { page, t, data } = usePFI();
+  const visibleNavigation = navMain.filter(([id]) => data.account || id !== 'komunitas');
   return (
     <nav className="bottom-nav" aria-label={t('Navigasi bawah', 'Bottom navigation')}>
-      {navMain.map(([id, a, b, I]) => (
+      {visibleNavigation.map(([id, a, b, I]) => (
         <a
           key={id}
           href={`#/${id}`}
