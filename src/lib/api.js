@@ -5,7 +5,7 @@
  * Maintainer: @wnr-code — https://github.com/wnr-code
  * Dukung pengembang: https://trakteer.id/lanteraku/tip
  */
-import { supabase } from './supabase.js';
+import { initializeIdentity, supabase } from './supabase.js';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -37,10 +37,13 @@ export async function api(path, method = 'GET', body = null) {
 export const authApi = {
   signInWithGoogle: () => supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: `${window.location.origin}${window.location.pathname}#/beranda` },
+    options: { redirectTo: `${window.location.origin}${window.location.pathname}` },
   }),
   signOut: () => supabase.auth.signOut(),
-  getIdentitySession: () => supabase.auth.getSession(),
+  getIdentitySession: async () => {
+    await initializeIdentity();
+    return supabase.auth.getSession();
+  },
   onAuthStateChange: (callback) => supabase.auth.onAuthStateChange(callback),
 };
 
