@@ -65,7 +65,7 @@ export default function Komunitas() {
       try {
         const p = await api('/api/posts');
         await offlineStore('posts', p);
-        if (!cancelled) setPosts(p);
+        if (!cancelled) setPosts(Array.isArray(p) ? p : []);
       } catch (e) {
         const cached = await offlineGet('posts');
         if (!cancelled) setPosts(cached || []);
@@ -81,7 +81,7 @@ export default function Komunitas() {
     (async () => {
       try {
         const result = await api('/api/groups');
-        if (!cancelled) setGroups(result || []);
+        if (!cancelled) setGroups(Array.isArray(result) ? result : []);
       } catch {
         if (!cancelled) setGroups([]);
       } finally {
@@ -92,9 +92,9 @@ export default function Komunitas() {
   }, []);
 
   const filtered = useMemo(() => {
-    if (tab === 'rukyat') return posts.filter((p) => p.type === 'rukyat');
-    if (tab === 'diskusi') return posts.filter((p) => p.type === 'diskusi');
-    return posts;
+    if (tab === 'rukyat') return (Array.isArray(posts) ? posts : []).filter((p) => p?.type === 'rukyat');
+    if (tab === 'diskusi') return (Array.isArray(posts) ? posts : []).filter((p) => p?.type === 'diskusi');
+    return Array.isArray(posts) ? posts.filter(Boolean) : [];
   }, [posts, tab]);
 
   const createGroup = async (event) => {
@@ -371,9 +371,9 @@ export default function Komunitas() {
           {filtered.map((p) => (
             <div key={p.id} className="post-card">
               <div className="post-header">
-                <div className="avatar">{p.author?.split(' ').map((w) => w[0]).join('') ?? '?'}</div>
+                <div className="avatar">{String(p.author || 'Pengamat PFI').split(' ').map((w) => w[0]).join('')}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <b style={{ fontSize: 13, display: 'block' }}>{p.author}</b>
+                  <b style={{ fontSize: 13, display: 'block' }}>{p.author || 'Pengamat PFI'}</b>
                   <div style={{ fontSize: 11, color: '#8fa3b8', display: 'flex', gap: 8 }}>
                     <span>{p.city}</span>
                     <span>{formatDate(p.date)}</span>
@@ -398,13 +398,13 @@ export default function Komunitas() {
               {expandedPostId === p.id && (
                 <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-                    {(p.comments || []).map((comment) => (
+                    {(Array.isArray(p.comments) ? p.comments : []).map((comment) => (
                       <div key={comment.id} style={{ fontSize: 12, padding: 8, background: 'var(--surface2)', borderRadius: 8 }}>
                         <b>{comment.author}</b>
                         <div>{comment.text}</div>
                       </div>
                     ))}
-                    {(!p.comments || p.comments.length === 0) && (
+                    {(!Array.isArray(p.comments) || p.comments.length === 0) && (
                       <p style={{ color: '#8fa3b8', fontSize: 12 }}>{t('Belum ada komentar.', 'No comments yet.')}</p>
                     )}
                   </div>
