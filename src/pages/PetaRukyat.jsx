@@ -8,7 +8,7 @@ import { position, lunar, SITES, phaseNames } from '../lib/astro.js';
 import { MapPin, RefreshCw, Globe2, Map as MapIcon, X, ExternalLink, Activity, Satellite, Clock3 } from 'lucide-react';
 
 const GLOBE_SCRIPT = 'https://unpkg.com/globe.gl';
-const SATELLITE_SCRIPT = 'https://unpkg.com/satellite.js/dist/satellite.min.js';
+const SATELLITE_SCRIPT = 'https://cdn.jsdelivr.net/npm/satellite.js@7.1.0/dist/ext.min.js';
 const ISS_GP_URL = 'https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=JSON';
 const LEAFLET_SCRIPT = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
 const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
