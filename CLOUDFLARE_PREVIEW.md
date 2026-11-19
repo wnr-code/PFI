@@ -1,32 +1,57 @@
-# Cloudflare Workers Preview — PFI
+# Cloudflare Worker Preview — PFI
 
-Gunakan file konfigurasi khusus ini untuk Worker Preview yang terpisah dari Production.
+Gunakan **satu Worker saja: `pfi`**. Preview dibuat dari branch Git menggunakan fitur Worker Previews Cloudflare; jangan membuat Worker kedua bernama `pfi-preview`.
 
-## Cloudflare Workers Builds
+## Pengaturan Workers Builds
 
-Buat Worker/project baru bernama `pfi-preview` dari repository `wnr-code/PFI`, branch `preview/workers-build`.
+Hubungkan Worker `pfi` ke repository `wnr-code/PFI`.
 
-Atur:
-
+- Production branch: `main` (sesuaikan dengan branch Production yang benar di Dashboard).
 - Root directory: `/`
 - Build command: `npm run build`
-- Deploy command: `npx wrangler@4.165.0 deploy --config wrangler.preview.toml`
-- Build variable `VITE_API_URL`: isi dengan satu garis miring `/`. Script build akan mempertahankannya dan frontend akan memakai API same-origin pada Worker Preview.
-- Build variables `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY`: gunakan URL dan publishable key Supabase yang sudah dipakai aplikasi.
-- Worker runtime secrets: `SUPABASE_URL` dan `SUPABASE_ANON_KEY`. Isi melalui pengaturan Worker Preview, jangan commit nilainya ke repository.
+- Production deploy command: `npx wrangler@4.165.0 deploy`
+- Preview command: `npx wrangler@4.165.0 preview`
 
-## Resource Preview
+Preview command membuat/memperbarui Preview untuk branch non-Production. Nama Preview secara default mengikuti nama branch Git.
 
-- D1 binding: `falaq` → database `sanbok-pfi`.
-- R2 binding: `r2falaq` → bucket `forumcgs`.
+## Domain Preview
 
-File ini sengaja tidak memuat binding Production. Jangan menambahkan database `pfi-falaq`, bucket `pfi-falaq-r2`, atau mengarahkan domain produksi ke Worker Preview.
+Gunakan domain dasar yang sudah dipakai Worker: `pfi.cgs.my.id`.
 
-## Tes setelah deployment
+Di Cloudflare Dashboard, buka Worker `pfi` → **Settings / Domains & Routes** (atau tab **Domains**) → Custom Domains. Aktifkan domain `pfi.cgs.my.id` untuk **Production and Preview**. Jangan mengganti domain Production.
 
-1. Buka URL `workers.dev` milik Worker Preview.
-2. Buka `/api/health`; respons yang diharapkan memuat `status: "ok"` dan `runtime: "cloudflare-workers"`.
-3. Buka `/api/groups`; pastikan direktori grup awal terbaca.
-4. Lanjutkan tes login, pembuatan profil, posting, foto R2, dan hak akses dengan akun uji.
+Cloudflare membuat wildcard DNS dan sertifikat untuk hostname Preview. URL Preview akan berbentuk:
 
-Konfigurasi ini tidak menjalankan migrasi D1. Database Preview harus sudah dimigrasikan secara terpisah.
+- `https://<nama-preview>.pfi.cgs.my.id`
+- URL deployment tertentu: `https://<id-deployment>-<nama-preview>.pfi.cgs.my.id`
+
+Jadi `https://*.pfi.cgs.my.id` adalah pola hostname, bukan URL yang dibuka persis dengan tanda bintang. Pastikan hostname Preview yang dihasilkan Cloudflare tampil di bagian Previews sebelum dipakai.
+
+## Resource database dan foto
+
+Konfigurasi root `wrangler.toml` memisahkan resource Production dan Preview:
+
+| Binding | Production | Preview |
+|---|---|---|
+| D1 `falaq` | `pfi-falaq` | `sanbok-pfi` |
+| R2 `r2falaq` | `pfi-falaq-r2` | `forumcgs` |
+
+Jangan mengubah binding Production. Preview memakai resource yang sudah disiapkan dan dimigrasikan; jangan jalankan migrasi lagi tanpa pemeriksaan.
+
+## Environment variables dan secrets
+
+Build variables frontend:
+- `VITE_API_URL=/`
+- `VITE_SUPABASE_URL`: URL project Supabase yang digunakan aplikasi.
+- `VITE_SUPABASE_ANON_KEY`: publishable key Supabase.
+
+Pastikan Preview memakai API same-origin. Atur runtime secrets `SUPABASE_URL` dan `SUPABASE_ANON_KEY` melalui pengaturan Preview Worker, bukan di repository. Jika Dashboard mengelola nilai Preview secara terpisah, pastikan keduanya tersedia di Preview.
+
+## Pemeriksaan setelah Preview dibuat
+
+1. Buka URL Preview yang diberikan Cloudflare, bukan domain Production.
+2. Uji `/api/health` dan `/api/groups`.
+3. Uji login Google, profil, posting, komentar, likes, dan unggah foto.
+4. Pastikan data uji masuk ke D1 `sanbok-pfi` dan foto ke R2 `forumcgs`.
+
+Jangan mengarahkan domain Production ke Preview dan jangan menghapus resource Production.
