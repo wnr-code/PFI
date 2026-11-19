@@ -347,23 +347,8 @@ export default function PetaRukyat() {
       markersLayer.current = L.layerGroup().addTo(map);
       mapInstance.current = map;
       setMapReady(true);
-      const renderMarkers = () => {
-        markersLayer.current?.clearLayers();
-        located.forEach((report) => {
-          const marker = L.marker([Number(report.latitude), Number(report.longitude)], {
-            icon: L.divIcon({
-              className: 'pfi-map-pulse-marker',
-              html: '<span class="pfi-map-pulse-ring"></span><span class="pfi-map-pulse-core"></span>',
-              iconSize: [26, 26],
-              iconAnchor: [13, 13],
-            }),
-          }).addTo(markersLayer.current);
-          marker.bindTooltip(String(report.city || report.title || 'Titik rukyat'), { direction: 'top' });
-          marker.on('click', () => setSelected(report));
-        });
-      };
-      renderMarkers();
-      map.invalidateSize();
+      map.invalidateSize({ pan: false });
+      requestAnimationFrame(() => { if (!cancelled && mapInstance.current === map) map.invalidateSize({ pan: false }); });
       map._pfiRenderMarkers = renderMarkers;
     }).catch((error) => {
       if (!cancelled) setLibraryError(error?.message || t('Peta tidak dapat dimuat.', 'Map could not be loaded.'));
@@ -381,7 +366,27 @@ export default function PetaRukyat() {
         hybridLabelsRef.current = null;
       }
     };
-  }, [mode, located, t]);
+  }, [mode, t]);
+
+  // Perbarui marker tanpa membongkar dan membuat ulang instance Leaflet.
+  useEffect(() => {
+    const L = window.L;
+    const layer = markersLayer.current;
+    if (mode !== 'map' || !mapReady || !L || !layer) return;
+    layer.clearLayers();
+    located.forEach((report) => {
+      const marker = L.marker([Number(report.latitude), Number(report.longitude)], {
+        icon: L.divIcon({
+          className: 'pfi-map-pulse-marker',
+          html: '<span class="pfi-map-pulse-ring"></span><span class="pfi-map-pulse-core"></span>',
+          iconSize: [26, 26],
+          iconAnchor: [13, 13],
+        }),
+      }).addTo(layer);
+      marker.bindTooltip(String(report.city || report.title || 'Titik rukyat'), { direction: 'top' });
+      marker.on('click', () => setSelected(report));
+    });
+  }, [mode, located, mapReady]);
 
   // Ganti basemap tanpa membuat ulang peta atau menghapus marker laporan/GPS.
   useEffect(() => {
