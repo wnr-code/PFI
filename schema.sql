@@ -1,5 +1,0 @@
--- DEPRECATED: this pre-Cloudflare schema is retained only as a migration pointer.
--- Do not apply this file directly.
--- The canonical Cloudflare D1 schema is versioned under migrations/.
--- Apply with: npx wrangler d1 migrations apply pfi-falaq --remote
--- Review migrations/0001_initial.sql before applying to any production database.
