@@ -38,7 +38,7 @@ function fail(status, message, diagnostic = null) {
 function publicDiagnostic(error) {
   const message = String(error?.message || error || 'Unknown error');
   if (/UNIQUE constraint failed/i.test(message)) return { code: 'DATABASE_UNIQUE_CONFLICT', detail: 'Data akun bertabrakan dengan akun yang sudah tersimpan.' };
-  if (/no such table|no such column/i.test(message)) return { code: 'DATABASE_SCHEMA_MISMATCH', detail: 'Struktur basis data Production belum sesuai dengan aplikasi.' };
+  if (/no such table|no such column|has no column named/i.test(message)) return { code: 'DATABASE_SCHEMA_MISMATCH', detail: 'Struktur basis data Production belum sesuai dengan aplikasi.' };
   if (/D1|SQLITE|database/i.test(message)) return { code: 'DATABASE_OPERATION_FAILED', detail: 'Penyimpanan profil akun gagal diproses.' };
   if (/Supabase identity verification is not configured/i.test(message)) return { code: 'IDENTITY_NOT_CONFIGURED', detail: 'Konfigurasi verifikasi identitas belum lengkap.' };
   if (/fetch|network|upstream/i.test(message)) return { code: 'IDENTITY_UPSTREAM_FAILED', detail: 'Layanan verifikasi identitas tidak dapat dihubungi.' };
@@ -223,10 +223,41 @@ async function identity(request, env) {
   return { id: user.id, email: user.email, name: user.user_metadata?.name || user.user_metadata?.full_name || user.email };
 }
 
+const requiredUserColumns = {
+  name: "TEXT NOT NULL DEFAULT ''",
+  org: "TEXT NOT NULL DEFAULT ''",
+  bio: "TEXT NOT NULL DEFAULT ''",
+  role: "TEXT NOT NULL DEFAULT 'observer'",
+  verification: "TEXT NOT NULL DEFAULT 'none'",
+  evidence: "TEXT NOT NULL DEFAULT ''",
+  review_note: "TEXT NOT NULL DEFAULT ''",
+  prefs: "TEXT NOT NULL DEFAULT '{}'",
+  created: "TEXT NOT NULL DEFAULT ''",
+  updated: "TEXT NOT NULL DEFAULT ''",
+};
+
+// Early Production used an older users table. CREATE TABLE IF NOT EXISTS does
+// not add newer columns, so upgrade only the missing, statically defined fields
+// while preserving every existing account and related row.
+export async function ensureUserSchema(database) {
+  if (!database?.prepare) throw new Error('D1 binding is unavailable');
+  const result = await database.prepare('PRAGMA table_info(users)').all();
+  const existing = new Set((result.results || []).map((column) => column.name));
+  if (!existing.has('id') || !existing.has('email')) {
+    throw new Error('D1 schema mismatch: users.id and users.email are required');
+  }
+  for (const [column, definition] of Object.entries(requiredUserColumns)) {
+    if (!existing.has(column)) {
+      await database.prepare(`ALTER TABLE users ADD COLUMN ${column} ${definition}`).run();
+    }
+  }
+}
+
 async function profileFor(request, env) {
   const who = await identity(request, env);
   if (!who) return null;
 
+  await ensureUserSchema(env.falaq);
   await env.falaq.prepare(`
     INSERT INTO users (id, email, name, created)
     VALUES (?, ?, ?, datetime('now'))
