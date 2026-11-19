@@ -142,7 +142,7 @@ export function Sidebar() {
 }
 
 export function Topbar() {
-  const { page, t, loc, data, site, setSite, setNotify } = usePFI();
+  const { page, t, data, site, setSite, setNotify, open } = usePFI();
   const entry = [...navMain, ...navMore].find((n) => n[0] === page) || navMain[0];
   const label = t(entry[1], entry[2]);
 
@@ -170,9 +170,9 @@ export function Topbar() {
           {data.notify && <i className="bell-dot" />}
         </button>
         <button
-          className="account-control"
-          onClick={() => go('profil')}
-          aria-label={t('Buka profil', 'Open profile')}
+          className={`account-control ${data.account ? '' : 'signed-out'}`}
+          onClick={() => data.account ? go('profil') : open('auth')}
+          aria-label={data.account ? t('Buka profil', 'Open profile') : t('Masuk dengan Google', 'Sign in with Google')}
         >
           <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=PFI" alt="" />
           <b>

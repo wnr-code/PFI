@@ -8,10 +8,10 @@
 import React, { useState } from 'react';
 import { usePFI } from '../state.jsx';
 import { api } from '../lib/api.js';
-import { User, CreditCard, Share2, LogOut, Bell, ShieldCheck, FileText } from 'lucide-react';
+import { User, CreditCard, Share2, LogIn, LogOut, Bell, ShieldCheck, FileText } from 'lucide-react';
 
 export default function Profil() {
-  const { data, t, logout, tell, setLang, setNotify } = usePFI();
+  const { data, t, logout, tell, setLang, setNotify, open } = usePFI();
   const [showVerify, setShowVerify] = useState(false);
   const [evidence, setEvidence] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -40,8 +40,11 @@ export default function Profil() {
         <div style={{ padding: 16, background: 'rgba(214,174,98,0.1)', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 16 }}>
           <p style={{ fontSize: 12, color: '#d6ae62', marginBottom: 8 }}>{t('Mode Demo', 'Demo Mode')}</p>
           <p style={{ fontSize: 12, color: '#c7d1df' }}>
-            {t('Silakan masuk melalui tombol di kanan atas untuk mengakses profil lengkap.', 'Please sign in via the top-right button to access full profile.')}
+            {t('Masuk dengan Google untuk mengakses profil, preferensi, dan pengiriman laporan.', 'Sign in with Google to access your profile, preferences, and report submission.')}
           </p>
+          <button className="btn primary" style={{ marginTop: 14 }} onClick={() => open('auth')}>
+            <LogIn size={17}/> {t('Masuk dengan Google', 'Sign in with Google')}
+          </button>
         </div>
       )}
 

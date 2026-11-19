@@ -14,6 +14,10 @@ import { SITES, agenda } from '../src/lib/astro.js';
 const loc = SITES[0];
 const context = {
   data: { site: loc.id, posts: [], account: null, mode: 'pemula', notify: false },
+  page: 'beranda',
+  site: loc.id,
+  setSite: vi.fn(),
+  setNotify: vi.fn(),
   t: (id) => id,
   lang: 'id',
   loc,
@@ -43,6 +47,7 @@ import Profil from '../src/pages/Profil.jsx';
 import PetaRukyat from '../src/pages/PetaRukyat.jsx';
 import Laporan from '../src/pages/Laporan.jsx';
 import { AuthModal } from '../src/components/AuthModal.jsx';
+import { Topbar } from '../src/components/Shell.jsx';
 
 AfterEachSetup();
 function AfterEachSetup() { afterEach(() => cleanup()); }
@@ -71,6 +76,13 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     render(<Hisab />);
     expect(screen.getByRole('button', { name: /Hitung Sekarang/i })).toBeTruthy();
     expect(document.querySelectorAll('select')).toHaveLength(3);
+  });
+
+  it('opens Google login from the account control while signed out', () => {
+    context.open.mockClear();
+    render(<Topbar />);
+    fireEvent.click(screen.getByRole('button', { name: /Masuk dengan Google/i }));
+    expect(context.open).toHaveBeenCalledWith('auth');
   });
 
   it('offers Google identity only and no password database form', () => {
