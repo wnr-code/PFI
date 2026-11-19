@@ -85,17 +85,16 @@ export function Provider({ children }) {
   };
 
   const logout = async () => {
-    // Clear private UI immediately, then remove the persisted local session.
+    // Invalidate in-flight authenticated refreshes and clear private UI first.
+    refreshSequence.current += 1;
     session(null);
+    go('beranda');
     try {
       await authApi.signOut();
-      await refresh();
-      go('beranda');
       tell('Anda telah keluar.');
     } catch (error) {
-      // Re-read the session so a failed sign-out never leaves misleading UI.
-      await refresh();
-      tell(error?.message || 'Tidak dapat keluar. Silakan coba kembali.');
+      // Keep the UI signed out; the user explicitly requested local logout.
+      tell(error?.message || 'Sesi lokal telah dibersihkan.');
     }
   };
 
@@ -158,8 +157,13 @@ export function Provider({ children }) {
     // Online/offline
     const onOnline = () => setOnline(true);
     const onOffline = () => setOnline(false);
+    const onAuthExpired = () => {
+      refreshSequence.current += 1;
+      session(null);
+    };
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
+    window.addEventListener('pfi:auth-expired', onAuthExpired);
 
     // Hash routing
     const onHashChange = () => {
@@ -174,6 +178,7 @@ export function Provider({ children }) {
       subscription?.unsubscribe();
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);
+      window.removeEventListener('pfi:auth-expired', onAuthExpired);
       window.removeEventListener('hashchange', onHashChange);
     };
   }, [refresh, session]);
