@@ -4,6 +4,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePFI } from '../state.jsx';
 import { api, offlineGet } from '../lib/api.js';
+import { position, lunar, SITES, phaseNames } from '../lib/astro.js';
 import { MapPin, RefreshCw, Globe2, Map as MapIcon, X, ExternalLink, Activity, Satellite, Clock3 } from 'lucide-react';
 
 const GLOBE_SCRIPT = 'https://unpkg.com/globe.gl';
@@ -55,6 +56,8 @@ export default function PetaRukyat() {
   const [selected, setSelected] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [skySiteId, setSkySiteId] = useState('tasik');
+  const [skyNow, setSkyNow] = useState(() => new Date());
   const globeHost = useRef(null);
   const mapHost = useRef(null);
   const globeInstance = useRef(null);
@@ -92,6 +95,11 @@ export default function PetaRukyat() {
   }, [autoRefresh, loadReports]);
 
   const located = useMemo(() => reports.filter(validCoordinates), [reports]);
+  const skySite = useMemo(() => SITES.find((site) => site.id === skySiteId) || SITES[0], [skySiteId]);
+  const skyData = useMemo(() => { try { return { sun: position('Sun', skyNow, skySite), moon: position('Moon', skyNow, skySite), phase: lunar(skyNow), valid: true }; } catch { return { valid: false }; } }, [skyNow, skySite]);
+  useEffect(() => { const timer = window.setInterval(() => setSkyNow(new Date()), 30000); return () => window.clearInterval(timer); }, []);
+  const skyNumber = (value) => Number.isFinite(value) ? value.toFixed(1) + '°' : '—';
+  const phaseLabel = skyData.valid ? (phaseNames[skyData.phase.phase]?.[lang === 'en' ? 1 : 0] || '—') : '—';
   const formatDate = (value) => {
     if (!value) return '—';
     const date = new Date(value);
@@ -241,7 +249,7 @@ export default function PetaRukyat() {
           <span className="pfi-live-updated"><Clock3 size={13}/>{lastUpdated ? t('Diperbarui ', 'Updated ') + formatDate(lastUpdated) : t('Menunggu data', 'Waiting for data')}</span>
         </div>
 
-        {mode === 'globe' ? <div className="pfi-globe-wrap"><div ref={globeHost} className="pfi-globe-canvas"/><div className="pfi-globe-hint"><span>{t('GESER UNTUK MEMUTAR', 'DRAG TO ROTATE')}</span><span>{t('SCROLL / CUBIT UNTUK ZOOM', 'SCROLL / PINCH TO ZOOM')}</span></div></div> : <div className="pfi-map-wrap"><div ref={mapHost} className="pfi-leaflet-map"/></div>}
+        {mode === 'globe' ? <div className="pfi-globe-wrap pfi-observatory-scene"><div className="pfi-cosmos-stars" aria-hidden="true"/><div ref={globeHost} className="pfi-globe-canvas"/><div className="pfi-observatory-hud"><div className="pfi-hud-heading"><span><i/> {t('OBSERVATORIUM LANGIT', 'SKY OBSERVATORY')}</span><small>{skyNow.toLocaleTimeString(lang === 'en' ? 'en-GB' : 'id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Jakarta' })} WIB</small></div><label className="pfi-sky-site">{t('Lokasi acuan', 'Reference site')}<select value={skySiteId} onChange={(event) => setSkySiteId(event.target.value)} aria-label={t('Pilih lokasi acuan astronomi', 'Choose astronomical reference site')}>{SITES.map((site) => <option key={site.id} value={site.id}>{site.city} · {site.region}</option>)}</select></label><div className="pfi-sky-readouts"><div><span>☀ {t('MATAHARI', 'SUN')}</span><b>{skyData.valid ? skyNumber(skyData.sun.alt) : '—'}</b><small>Alt {skyData.valid ? skyNumber(skyData.sun.alt) : '—'} · Az {skyData.valid ? skyNumber(skyData.sun.az) : '—'}</small></div><div><span>☾ {t('BULAN', 'MOON')}</span><b>{skyData.valid ? skyNumber(skyData.moon.alt) : '—'}</b><small>Alt {skyData.valid ? skyNumber(skyData.moon.alt) : '—'} · Az {skyData.valid ? skyNumber(skyData.moon.az) : '—'}</small></div><div><span>{t('FASE BULAN', 'MOON PHASE')}</span><b>{phaseLabel}</b><small>{skyData.valid ? skyData.phase.illumination.toFixed(1) + '% ' + t('terang', 'illuminated') : '—'}</small></div></div><small className="pfi-sky-source">{t('Posisi dihitung secara astronomis untuk lokasi acuan terpilih; bukan data teleskop live.', 'Positions are astronomically calculated for the selected reference site; not live telescope data.')}</small></div><div className="pfi-globe-hint"><span>{t('GESER UNTUK MEMUTAR', 'DRAG TO ROTATE')}</span><span>{t('SCROLL / CUBIT UNTUK ZOOM', 'SCROLL / PINCH TO ZOOM')}</span></div></div> : <div className="pfi-map-wrap"><div ref={mapHost} className="pfi-leaflet-map"/></div>}
 
         {libraryError && <div className="pfi-map-error"><Satellite size={18}/><span>{libraryError} {t('Periksa koneksi internet lalu coba lagi.', 'Check your internet connection and try again.')}</span></div>}
 
