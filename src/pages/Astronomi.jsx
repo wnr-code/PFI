@@ -56,7 +56,7 @@ export default function Astronomi() {
 
       <section className="astronomy-photo" aria-label={t('Visual bulan sabit dari luar angkasa', 'Crescent Moon from space')}>
         <img
-          src="https://commons.wikimedia.org/wiki/Special:FilePath/Crescent_moon_from_space.jpg"
+          src="https://commons.wikimedia.org/wiki/Special:FilePath/Crescent_moon_from_space.jpg?width=2400"
           alt={t('Bulan sabit dan atmosfer Bumi dilihat dari luar angkasa', 'Crescent Moon and Earth atmosphere seen from space')}
           loading="lazy"
         />
