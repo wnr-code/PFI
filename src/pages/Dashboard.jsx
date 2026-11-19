@@ -34,6 +34,35 @@ export default function Dashboard() {
         <p>{dateFmt(new Date(), loc, lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · {hijri}</p>
       </div>
 
+      <section className="pfi-hero" aria-label={t('Langit malam Pusat Falak Indonesia', 'PFI night sky')}>
+        <img
+          className="pfi-hero-image"
+          src="https://commons.wikimedia.org/wiki/Special:FilePath/ISS043-E-39748_-_View_of_Earth%27s_horizon_and_the_crescent_Moon.jpg?width=2400"
+          alt={t('Bulan sabit di langit malam', 'Crescent moon in the night sky')}
+          loading="eager"
+        />
+        <div className="pfi-hero-shade" />
+        <div className="pfi-hero-copy">
+          <span className="pfi-hero-kicker">{t('PUSAT FALAK INDONESIA', 'INDONESIAN FALAK CENTRE')}</span>
+          <h2>{t('Menghubungkan Ilmu, Mengamati Semesta, Menyatukan Umat.', 'Connecting knowledge, observing the universe, uniting the community.')}</h2>
+          <p>{t('Jelajahi data hilal, astronomi, dan pengamatan langit bersama.', 'Explore crescent data, astronomy, and sky observations together.')}</p>
+          <button className="btn primary" onClick={() => go('hisab')}>
+            <Calculator size={17} /> {t('Mulai Hisab', 'Start Calculation')}
+          </button>
+        </div>
+        <span className="pfi-hero-stars" aria-hidden="true">✦　·　✧　·　✦</span>
+      </section>
+
+      <section className="dashboard-rukyat-entry">
+        <div className="dashboard-rukyat-orb" aria-hidden="true"><span /></div>
+        <div className="dashboard-rukyat-copy">
+          <span className="rukyat-kicker">{t('PEMANTAUAN NASIONAL', 'NATIONAL MONITORING')}</span>
+          <h2>{t('Jelajahi titik pengamatan hilal', 'Explore crescent observation sites')}</h2>
+          <p>{t('Pilih bola dunia interaktif atau peta Indonesia untuk melihat sebaran laporan rukyat.', 'Choose the interactive globe or Indonesia map to explore rukyat reports.')}</p>
+          <button className="btn primary" onClick={() => go('peta')}><MapPin size={17}/>{t('Buka Peta Rukyat', 'Open Observation Map')} <ArrowRight size={16}/></button>
+        </div>
+      </section>
+
       <div className="card">
         <div className="card-body">
           <div className="moon-display">

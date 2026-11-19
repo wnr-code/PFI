@@ -54,6 +54,18 @@ export default function Astronomi() {
         <p>{t('Lihat ketinggian, azimut, dan pemenuhan kriteria MABIMS pada waktu terbenam Matahari. Verifikasi koordinat serta elevasi lokasi acuan sebelum digunakan di lapangan.', 'View crescent height, azimuth, and MABIMS criteria at local sunset. Verify reference-site coordinates and elevation before field use.')}</p>
       </div>
 
+      <section className="astronomy-photo" aria-label={t('Visual bulan sabit dari luar angkasa', 'Crescent Moon from space')}>
+        <img
+          src="https://commons.wikimedia.org/wiki/Special:FilePath/Crescent_moon_from_space.jpg?width=2400"
+          alt={t('Bulan sabit dan atmosfer Bumi dilihat dari luar angkasa', 'Crescent Moon and Earth atmosphere seen from space')}
+          loading="lazy"
+        />
+        <div className="astronomy-photo-caption">
+          <span>{t('MENJELAJAHI SEMESTA', 'EXPLORE THE UNIVERSE')}</span>
+          <b>{t('Amati posisi Bulan menjelang Matahari terbenam.', 'Observe the Moon’s position near sunset.')}</b>
+        </div>
+      </section>
+
       <div className="card">
         <div className="card-header">
           <h2>{t('Pengaturan Simulasi', 'Simulation Settings')}</h2>

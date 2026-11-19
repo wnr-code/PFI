@@ -11,6 +11,8 @@ export default function Profil() {
 
   const account = data.account;
   const isDemo = !account;
+  const roleLabels = { observer: 'Anggota / Pengamat', reviewer: 'Tim Validasi Data', admin: 'Administrator Platform' };
+  const roleLabel = roleLabels[account?.role] || 'Anggota / Pengamat';
 
   const submitVerification = async (event) => {
     event.preventDefault();
@@ -89,7 +91,7 @@ export default function Profil() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
                 <div className="result-box">
                   <span className="label">{t('Peran', 'Role')}</span>
-                  <b>{account.role}</b>
+                  <b>{roleLabel}</b>
                 </div>
                 <div className="result-box">
                   <span className="label">{t('Verifikasi', 'Verification')}</span>
@@ -153,9 +155,14 @@ export default function Profil() {
                 <p>{t('Pengajuan sedang menunggu pemeriksaan petugas.', 'Your request is awaiting reviewer assessment.')}</p>
               ) : (
                 <form onSubmit={submitVerification} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <a className="verification-guide-link" href="#/pedoman-verifikasi">
+                    <FileText size={16} />
+                    <span><b>{t('Baca pedoman verifikasi pengamat sebelum mengajukan', 'Read observer verification guidelines before applying')}</b><small>{t('Periksa jenis bukti yang diperlukan dan tahapan peninjauan akun.', 'Review acceptable evidence and the account review process.')}</small></span>
+                    <span aria-hidden="true">›</span>
+                  </a>
                   {account.reviewNote && <p style={{ color: '#d6ae62', fontSize: 12 }}>{t('Catatan petugas:', 'Reviewer note:')} {account.reviewNote}</p>}
                   <label className="field">
-                    <span>{t('Jelaskan pengalaman atau bukti kompetensi falak (20–1.000 karakter)', 'Describe your falak experience or credentials (20–1,000 characters)')}</span>
+                    <span>{t('Ceritakan pengalaman, pendidikan, pesantren/lembaga, guru pembimbing, atau kegiatan falak (20–1.000 karakter)', 'Describe your experience, education, pesantren/institution, teacher, or falak activities (20–1,000 characters)')}</span>
                     <textarea value={evidence} onChange={(event) => setEvidence(event.target.value)} minLength={20} maxLength={1000} rows={4} required />
                   </label>
                   <button className="btn secondary full" type="submit" disabled={verificationBusy}>

@@ -3,12 +3,71 @@ import assert from 'node:assert/strict';
 import worker, { canReviewEntity, canViewGroup, canViewPost, groupSlug, normalizeRukyatDetails, uploadContentLengthStatus } from '../worker/index.js';
 import { SITES, calculateHisab, clock, lunar, sunsetTime } from '../src/lib/astro.js';
 
-test('Worker health endpoint reports Cloudflare runtime', async () => {
-  const response = await worker.fetch(new Request('https://pfi.test/api/health'), {}, {});
+test('Worker health endpoint verifies D1 schema and authentication configuration', async () => {
+  const requiredTables = [
+    'users', 'groups', 'memberships', 'group_coordinators', 'calculations',
+    'posts', 'photos', 'likes', 'comments', 'reviews', 'agendas',
+    'institution_applications', 'partner_institutions', 'institution_application_reviews',
+  ];
+  const env = {
+    SUPABASE_URL: 'https://example.supabase.co',
+    SUPABASE_ANON_KEY: 'test-public-key',
+    falaq: {
+      prepare(sql) {
+        return {
+          first: async () => ({ ok: 1 }),
+          bind: (...values) => ({
+            all: async () => ({ results: values.map((name) => ({ name })) }),
+          }),
+        };
+      },
+    },
+    r2falaq: { put() {}, get() {} },
+  };
+  const response = await worker.fetch(new Request('https://pfi.test/api/health'), env, {});
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.status, 'ok');
   assert.equal(body.runtime, 'cloudflare-workers');
+  assert.equal(body.database, 'ok');
+  assert.equal(body.schema.ready, true);
+  assert.deepEqual(body.schema.missingTables, []);
+  assert.equal(body.authentication, 'configured');
+  assert.equal(body.photoStorage, 'configured');
+});
+
+test('Worker health accepts existing Vite-prefixed Supabase runtime bindings', async () => {
+  const requiredTables = [
+    'users', 'groups', 'memberships', 'group_coordinators', 'calculations',
+    'posts', 'photos', 'likes', 'comments', 'reviews', 'agendas',
+    'institution_applications', 'partner_institutions', 'institution_application_reviews',
+  ];
+  const env = {
+    VITE_SUPABASE_URL: 'https://example.supabase.co',
+    VITE_SUPABASE_ANON_KEY: 'test-public-key',
+    falaq: {
+      prepare() {
+        return {
+          first: async () => ({ ok: 1 }),
+          bind: (...values) => ({ all: async () => ({ results: values.map((name) => ({ name })) }) }),
+        };
+      },
+    },
+    r2falaq: { put() {}, get() {} },
+  };
+  const response = await worker.fetch(new Request('https://pfi.test/api/health'), env, {});
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.authentication, 'configured');
+});
+
+test('Worker health endpoint reports missing runtime dependencies', async () => {
+  const response = await worker.fetch(new Request('https://pfi.test/api/health'), {}, {});
+  assert.equal(response.status, 503);
+  const body = await response.json();
+  assert.equal(body.status, 'degraded');
+  assert.equal(body.database, 'unavailable');
+  assert.equal(body.authentication, 'missing_configuration');
 });
 
 test('protected post creation rejects anonymous requests', async () => {
@@ -145,4 +204,32 @@ test('group IDs are generated as stable URL-safe slugs', () => {
   assert.equal(groupSlug('Kelompok Falak: Jawa Barat'), 'kelompok-falak-jawa-barat');
   assert.equal(groupSlug('   '), '');
   assert.equal(groupSlug(null), '');
+});
+
+test('institution application normalization rejects incomplete and unsafe data', async () => {
+  const { normalizeInstitutionApplication } = await import('../worker/index.js');
+  const valid = normalizeInstitutionApplication({
+    institution: 'Pesantren Falak', type: 'pesantren_madrasah', region: 'Tasikmalaya',
+    representative: 'Ahmad', position: 'Pengasuh', contact: 'sekretariat@example.org',
+    website: 'https://example.org', purpose: 'Kolaborasi rukyat',
+  });
+  assert.equal(valid.institution, 'Pesantren Falak');
+  assert.equal(normalizeInstitutionApplication({ ...valid, type: 'unknown' }), null);
+  assert.equal(normalizeInstitutionApplication({ ...valid, website: 'javascript:alert(1)' }), null);
+  assert.equal(normalizeInstitutionApplication({ ...valid, institution: ' ' }), null);
+});
+
+test('institution applications cannot be reviewed by their own applicant', async () => {
+  const { canReviewInstitutionApplication } = await import('../worker/index.js');
+  const application = { applicant_user_id: 'applicant-1', status: 'pending' };
+  assert.equal(canReviewInstitutionApplication(application, { id: 'applicant-1', role: 'admin' }), false);
+  assert.equal(canReviewInstitutionApplication(application, { id: 'reviewer-1', role: 'reviewer' }), true);
+  assert.equal(canReviewInstitutionApplication({ ...application, status: 'revision' }, { id: 'reviewer-1', role: 'reviewer' }), true);
+  assert.equal(canReviewInstitutionApplication(application, { id: 'member-1', role: 'observer' }), false);
+  assert.equal(canReviewInstitutionApplication({ ...application, status: 'approved' }, { id: 'reviewer-1', role: 'reviewer' }), false);
+});
+
+test('institution application endpoint requires an authenticated account', async () => {
+  const response = await worker.fetch(new Request('https://pfi.test/api/institution-applications', { method: 'GET' }), {}, {});
+  assert.equal(response.status, 401);
 });

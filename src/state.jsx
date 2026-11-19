@@ -44,7 +44,6 @@ export function Provider({ children }) {
   );
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState('');
-  const [ready, setReady] = useState(false);
   const [online, setOnline] = useState(true);
   const refreshVersion = useRef(0);
 
@@ -213,6 +212,7 @@ export function Provider({ children }) {
     update,
     toggle,
     route,
+    page: route,
     lang: data.lang,
     loc,
     events,
@@ -224,7 +224,7 @@ export function Provider({ children }) {
     t,
     tell,
     toast,
-    ready,
+    ready: data.ready,
     online,
     refresh,
     signIn,

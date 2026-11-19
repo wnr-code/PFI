@@ -55,12 +55,14 @@ export default function Hisab() {
           ? t('Perhitungan selesai dan tersimpan ke riwayat akun.', 'Calculation complete and saved to account history.')
           : t('Perhitungan selesai. Masuk ke akun untuk menyimpan riwayat.', 'Calculation complete. Sign in to save it to account history.'));
       } catch (e) {
-        // Only a network failure may fall back to the local engine. HTTP errors
-        // mean the server rejected the request and must be shown to the user.
-        if (Number.isInteger(e.status)) throw e;
-        console.warn('API hisab tidak terjangkau; memakai perhitungan lokal:', e.message);
+        // The local astronomy engine has already calculated this result.
+        // If the Worker is temporarily failing (5xx), still show the calculation
+        // and clearly mark that it has not been saved. Client errors (4xx) remain
+        // visible because they indicate invalid input or an unsupported request.
+        if (Number.isInteger(e.status) && e.status < 500) throw e;
+        console.warn('API hisab gagal; menampilkan hasil mesin lokal:', e.message);
         setResult(r);
-        tell(t('Perhitungan lokal selesai. Hasil belum tersimpan ke akun.', 'Local calculation complete. Result has not been saved to your account.'));
+        tell(t('Perhitungan berhasil secara lokal. Server sedang bermasalah; hasil belum tersimpan ke akun.', 'Local calculation succeeded. The server is temporarily unavailable; this result was not saved.'));
       }
     } catch (e) {
       tell(e.message || 'Perhitungan gagal.');

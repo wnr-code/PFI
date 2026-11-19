@@ -65,7 +65,7 @@ export default function Komunitas() {
       try {
         const p = await api('/api/posts');
         await offlineStore('posts', p);
-        if (!cancelled) setPosts(p);
+        if (!cancelled) setPosts(Array.isArray(p) ? p : []);
       } catch (e) {
         const cached = await offlineGet('posts');
         if (!cancelled) setPosts(cached || []);
@@ -81,7 +81,7 @@ export default function Komunitas() {
     (async () => {
       try {
         const result = await api('/api/groups');
-        if (!cancelled) setGroups(result || []);
+        if (!cancelled) setGroups(Array.isArray(result) ? result : []);
       } catch {
         if (!cancelled) setGroups([]);
       } finally {
@@ -92,9 +92,9 @@ export default function Komunitas() {
   }, []);
 
   const filtered = useMemo(() => {
-    if (tab === 'rukyat') return posts.filter((p) => p.type === 'rukyat');
-    if (tab === 'diskusi') return posts.filter((p) => p.type === 'diskusi');
-    return posts;
+    if (tab === 'rukyat') return (Array.isArray(posts) ? posts : []).filter((p) => p?.type === 'rukyat');
+    if (tab === 'diskusi') return (Array.isArray(posts) ? posts : []).filter((p) => p?.type === 'diskusi');
+    return Array.isArray(posts) ? posts.filter(Boolean) : [];
   }, [posts, tab]);
 
   const createGroup = async (event) => {
@@ -108,7 +108,7 @@ export default function Komunitas() {
       });
       update({ groups: [...new Set([...(data.groups || []), created.id])] });
       const nextGroups = await api('/api/groups');
-      setGroups(nextGroups);
+      setGroups(Array.isArray(nextGroups) ? nextGroups : []);
       setSelectedGroupId(created.id);
       setNewGroupName('');
       setNewGroupDescription('');
@@ -137,8 +137,8 @@ export default function Komunitas() {
         api('/api/posts'),
         api('/api/groups'),
       ]);
-      setPosts(nextPosts);
-      setGroups(nextGroups);
+      setPosts(Array.isArray(nextPosts) ? nextPosts : []);
+      setGroups(Array.isArray(nextGroups) ? nextGroups : []);
       tell(joined ? t('Anda keluar dari kelompok.', 'You left the group.') : t('Berhasil bergabung dengan kelompok.', 'You joined the group.'));
     } catch (error) {
       tell(error.message || t('Keanggotaan kelompok gagal diperbarui.', 'Unable to update group membership.'));
@@ -155,7 +155,7 @@ export default function Komunitas() {
     setGroupDetailsBusy(group.id);
     try {
       const details = await api(`/api/groups/${group.id}/members`);
-      setGroupDetails((current) => ({ ...current, [group.id]: details }));
+      setGroupDetails((current) => ({ ...current, [group.id]: { ...details, members: Array.isArray(details?.members) ? details.members : [] } }));
     } catch (error) {
       tell(error.message || t('Anggota kelompok tidak dapat dimuat.', 'Unable to load group members.'));
     } finally {
@@ -259,7 +259,8 @@ export default function Komunitas() {
             <p style={{ color: '#8fa3b8', fontSize: 12 }}>{t('Belum ada kelompok yang tersedia.', 'No groups are available yet.')}</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {groups.map((group) => {
+              {(Array.isArray(groups) ? groups : []).map((group) => {
+                const members = Array.isArray(groupDetails[group.id]?.members) ? groupDetails[group.id].members : [];
                 const joined = (data.groups || []).includes(group.id);
                 return (
                   <React.Fragment key={group.id}>
@@ -281,10 +282,10 @@ export default function Komunitas() {
                   {groupDetails[group.id] && (
                     <div style={{ padding: 10, background: 'var(--surface2)', borderRadius: 8, marginTop: 8 }}>
                       <p style={{ fontSize: 12, marginBottom: 8 }}>
-                        {t('Koordinator:', 'Coordinator:')} {groupDetails[group.id].members?.find((member) => member.id === groupDetails[group.id].coordinator)?.name || t('Belum ditunjuk', 'Not appointed')}
+                        {t('Koordinator:', 'Coordinator:')} {members.find((member) => member.id === groupDetails[group.id].coordinator)?.name || t('Belum ditunjuk', 'Not appointed')}
                       </p>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {(groupDetails[group.id].members || []).map((member) => (
+                        {members.map((member) => (
                           <div key={member.id} style={{ fontSize: 12, display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                             <span>{member.name}{member.isCoordinator ? ' · ' + t('Koordinator', 'Coordinator') : ''}</span>
                             <span style={{ color: '#8fa3b8' }}>{member.org || ''}</span>
@@ -333,7 +334,7 @@ export default function Komunitas() {
                 <label style={{ margin: 0, minWidth: 100 }}>{t('Kirim ke', 'Post to')}</label>
                 <select value={selectedGroupId} onChange={(event) => setSelectedGroupId(event.target.value)}>
                   <option value="">{t('Forum umum', 'Public forum')}</option>
-                  {groups.filter((group) => (data.groups || []).includes(group.id)).map((group) => (
+                  {(Array.isArray(groups) ? groups : []).filter((group) => (Array.isArray(data.groups) ? data.groups : []).includes(group.id)).map((group) => (
                     <option key={group.id} value={group.id}>{group.name}</option>
                   ))}
                 </select>
@@ -368,12 +369,12 @@ export default function Komunitas() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {filtered.map((p) => (
+          {(Array.isArray(filtered) ? filtered : []).map((p) => (
             <div key={p.id} className="post-card">
               <div className="post-header">
-                <div className="avatar">{p.author?.split(' ').map((w) => w[0]).join('') ?? '?'}</div>
+                <div className="avatar">{String(p.author || 'Pengamat PFI').split(' ').map((w) => w[0]).join('')}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <b style={{ fontSize: 13, display: 'block' }}>{p.author}</b>
+                  <b style={{ fontSize: 13, display: 'block' }}>{p.author || 'Pengamat PFI'}</b>
                   <div style={{ fontSize: 11, color: '#8fa3b8', display: 'flex', gap: 8 }}>
                     <span>{p.city}</span>
                     <span>{formatDate(p.date)}</span>
@@ -389,7 +390,7 @@ export default function Komunitas() {
                   <CheckCircle2 size={16} /> {p.likes || 0}
                 </button>
                 <button className="btn icon" onClick={() => setExpandedPostId((current) => current === p.id ? null : p.id)} aria-expanded={expandedPostId === p.id}>
-                  <MessageCircle size={16} /> {p.comments?.length || 0}
+                  <MessageCircle size={16} /> {Array.isArray(p.comments) ? p.comments.length : 0}
                 </button>
                 <button className="btn icon" onClick={() => setExpandedPostId((current) => current === p.id ? null : p.id)} aria-label={t('Lihat diskusi', 'View discussion')}>
                   <ChevronRight size={14} />
@@ -398,13 +399,13 @@ export default function Komunitas() {
               {expandedPostId === p.id && (
                 <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-                    {(p.comments || []).map((comment) => (
+                    {(Array.isArray(p.comments) ? p.comments : []).map((comment) => (
                       <div key={comment.id} style={{ fontSize: 12, padding: 8, background: 'var(--surface2)', borderRadius: 8 }}>
                         <b>{comment.author}</b>
                         <div>{comment.text}</div>
                       </div>
                     ))}
-                    {(!p.comments || p.comments.length === 0) && (
+                    {(!Array.isArray(p.comments) || p.comments.length === 0) && (
                       <p style={{ color: '#8fa3b8', fontSize: 12 }}>{t('Belum ada komentar.', 'No comments yet.')}</p>
                     )}
                   </div>

@@ -7,9 +7,14 @@ import Hisab from './pages/Hisab.jsx';
 import Astronomi from './pages/Astronomi.jsx';
 import Komunitas from './pages/Komunitas.jsx';
 import Profil from './pages/Profil.jsx';
+import ValidasiLembaga from './pages/ValidasiLembaga.jsx';
+import AjukanLembaga from './pages/AjukanLembaga.jsx';
 import PetaRukyat from './pages/PetaRukyat.jsx';
 import Laporan from './pages/Laporan.jsx';
 import Kalender from './pages/Kalender.jsx';
+import Panduan from './pages/Panduan.jsx';
+import Pengaturan from './pages/Pengaturan.jsx';
+import { PedomanKeanggotaan, PedomanLembaga, PedomanVerifikasi, PedomanKeahlian, PedomanRukyat, PedomanEtika } from './pages/PedomanDetail.jsx';
 import { SITES } from './lib/astro.js';
 import { api } from './lib/api.js';
 
@@ -19,9 +24,19 @@ const routes = {
   astronomi: Astronomi,
   komunitas: Komunitas,
   profil: Profil,
+  'validasi-lembaga': ValidasiLembaga,
+  'ajukan-lembaga': AjukanLembaga,
   peta: PetaRukyat,
   laporan: Laporan,
   kalender: Kalender,
+  panduan: Panduan,
+  pengaturan: Pengaturan,
+  'pedoman-keanggotaan': PedomanKeanggotaan,
+  'pedoman-lembaga': PedomanLembaga,
+  'pedoman-verifikasi': PedomanVerifikasi,
+  'pedoman-keahlian': PedomanKeahlian,
+  'pedoman-rukyat': PedomanRukyat,
+  'pedoman-etika': PedomanEtika,
 };
 
 function AuxiliaryModal() {
@@ -96,6 +111,37 @@ function AuxiliaryModal() {
   );
 }
 
+class PageErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error) {
+    console.error('PFI page render error:', error);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <section className="card page-error" role="alert">
+          <div className="card-body">
+            <h2>Halaman mengalami kendala</h2>
+            <p>Bagian halaman ini gagal ditampilkan. Navigasi PFI tetap dapat digunakan.</p>
+            <details>
+              <summary>Lihat detail teknis</summary>
+              <code>{String(this.state.error?.message || this.state.error)}</code>
+            </details>
+            <button className="btn secondary" onClick={() => this.setState({ error: null })}>Coba tampilkan kembali</button>
+          </div>
+        </section>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   const { page, modal, data, ready, toast } = usePFI();
   const Page = routes[page] || Dashboard;
@@ -112,7 +158,7 @@ export default function App() {
                 PFI dimuat…
               </div>
             ) : (
-              <Page />
+              <PageErrorBoundary key={page}><Page /></PageErrorBoundary>
             )}
           </div>
         </main>

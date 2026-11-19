@@ -35,6 +35,16 @@ function fail(status, message) {
   return json({ error: message }, status);
 }
 
+// Accept both Worker runtime names and the existing Vite-prefixed names.
+// These values must be configured as runtime bindings in Cloudflare Preview;
+// build-time frontend variables alone are not exposed to the Worker.
+function supabaseRuntimeConfig(env) {
+  return {
+    url: String(env.SUPABASE_URL || env.VITE_SUPABASE_URL || '').trim(),
+    anonKey: String(env.SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY || '').trim(),
+  };
+}
+
 // Pending rukyat reports are private to their owner and authorized reviewers.
 export function canViewPost(post, profile) {
   if (post?.type !== 'rukyat' || post.status === 'verified') return true;
@@ -71,6 +81,48 @@ export function groupSlug(value) {
     .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50);
 }
 
+
+const INSTITUTION_TYPES = new Set([
+  'pesantren_madrasah', 'organisasi_kemasyarakatan', 'perguruan_tinggi',
+  'observatorium_komunitas', 'lembaga_pemerintah', 'lainnya',
+]);
+
+export function normalizeInstitutionApplication(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
+  const fields = {
+    institution: [body.institution, 160],
+    type: [body.type, 40],
+    region: [body.region, 160],
+    representative: [body.representative, 120],
+    position: [body.position, 120],
+    contact: [body.contact, 160],
+    website: [body.website || '', 240],
+    purpose: [body.purpose || '', 1000],
+  };
+  const values = {};
+  for (const [key, [value, max]] of Object.entries(fields)) {
+    if (typeof value !== 'string' || value.trim().length > max) return null;
+    values[key] = value.trim();
+  }
+  if (!values.institution || !INSTITUTION_TYPES.has(values.type) ||
+      !values.region || !values.representative || !values.position ||
+      !values.contact || values.contact.length < 5) return null;
+  if (values.website) {
+    try {
+      const url = new URL(values.website);
+      if (!['http:', 'https:'].includes(url.protocol)) return null;
+    } catch { return null; }
+  }
+  return values;
+}
+
+export function canReviewInstitutionApplication(application, profile) {
+  return Boolean(application && profile &&
+    ['reviewer', 'admin'].includes(profile.role) &&
+    application.applicant_user_id !== profile.id &&
+    ['pending', 'revision'].includes(application.status));
+}
+
 // Normalize observation metadata before it enters the scientific record.
 // Coordinates must be explicit; timestamps must carry a timezone/UTC offset.
 export function normalizeRukyatDetails(details) {
@@ -99,6 +151,12 @@ export function normalizeRukyatDetails(details) {
   const utcOffsetMinutes = sign * (Number(offsetMatch[2]) * 60 + Number(offsetMatch[3]));
   if (utcOffsetMinutes !== zoneOffsets[timeZone]) return null;
 
+  let accuracyMeters = null;
+  if (details.accuracyMeters !== null && details.accuracyMeters !== undefined && String(details.accuracyMeters).trim() !== '') {
+    accuracyMeters = Number(details.accuracyMeters);
+    if (!Number.isFinite(accuracyMeters) || accuracyMeters < 0 || accuracyMeters > 100000) return null;
+  }
+
   let elevation = null;
   if (details.elevation !== null && details.elevation !== undefined && String(details.elevation).trim() !== '') {
     if (!['number', 'string'].includes(typeof details.elevation)) return null;
@@ -116,6 +174,7 @@ export function normalizeRukyatDetails(details) {
     instrument: String(details.instrument || '').slice(0, 120),
     visibility: String(details.visibility || '').slice(0, 80),
     elevation,
+    accuracyMeters,
   };
 }
 
@@ -135,15 +194,16 @@ async function identity(request, env) {
   const value = request.headers.get('authorization') || '';
   const match = value.match(/^Bearer\s+(.+)$/i);
   if (!match) return null;
-  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+  const auth = supabaseRuntimeConfig(env);
+  if (!auth.url || !auth.anonKey) {
     throw new Error('Supabase identity verification is not configured.');
   }
 
   // Ask Supabase Auth to validate the access token. Never trust user metadata
   // or decode a JWT without verifying its signature.
-  const response = await fetch(new URL('/auth/v1/user', env.SUPABASE_URL), {
+  const response = await fetch(new URL('/auth/v1/user', auth.url), {
     headers: {
-      apikey: env.SUPABASE_ANON_KEY,
+      apikey: auth.anonKey,
       authorization: `Bearer ${match[1]}`,
     },
   });
@@ -342,7 +402,46 @@ export default {
 
     try {
       if (url.pathname === '/api/health' && request.method === 'GET') {
-        return json({ status: 'ok', runtime: 'cloudflare-workers', database: 'd1', storage: 'r2', migrationPhase: 1 });
+        // Report real dependency readiness without exposing credentials or IDs.
+        const requiredTables = [
+          'users', 'groups', 'memberships', 'group_coordinators', 'calculations',
+          'posts', 'photos', 'likes', 'comments', 'reviews', 'agendas',
+          'institution_applications', 'partner_institutions', 'institution_application_reviews',
+        ];
+        let database = 'unavailable';
+        let missingTables = [...requiredTables];
+        try {
+          if (!env.falaq?.prepare) throw new Error('D1 binding is unavailable');
+          const ping = await env.falaq.prepare('SELECT 1 AS ok').first();
+          if (ping?.ok !== 1) throw new Error('D1 health query failed');
+          database = 'ok';
+          const result = await env.falaq.prepare(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name IN (" +
+            requiredTables.map(() => '?').join(',') + ')'
+          ).bind(...requiredTables).all();
+          const found = new Set((result.results || []).map((row) => row.name));
+          missingTables = requiredTables.filter((name) => !found.has(name));
+        } catch (error) {
+          console.error('PFI health check failed:', error?.message || error);
+        }
+        const auth = supabaseRuntimeConfig(env);
+        const authConfigured = Boolean(auth.url && auth.anonKey);
+        const authentication = authConfigured ? 'configured'
+          : auth.url ? 'missing_key' : auth.anonKey ? 'missing_url' : 'missing_configuration';
+        const storageConfigured = Boolean(
+          env.r2falaq && typeof env.r2falaq.put === 'function' && typeof env.r2falaq.get === 'function'
+        );
+        const schemaReady = missingTables.length === 0;
+        const ready = database === 'ok' && schemaReady && authConfigured;
+        return json({
+          status: ready ? 'ok' : 'degraded',
+          runtime: 'cloudflare-workers',
+          database,
+          schema: { ready: schemaReady, missingTables },
+          authentication,
+          photoStorage: storageConfigured ? 'configured' : 'missing_binding',
+          migrationPhase: 1,
+        }, ready ? 200 : 503);
       }
 
       if (url.pathname === '/api/session' && request.method === 'GET') {
@@ -602,6 +701,110 @@ export default {
         await env.falaq.prepare("UPDATE users SET verification='pending',evidence=?,review_note='',updated=? WHERE id=?")
           .bind(evidence, new Date().toISOString(), profile.id).run();
         return json({ status: 'pending' });
+      }
+
+
+      if (url.pathname === '/api/institution-applications' && request.method === 'GET') {
+        const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk untuk melihat pengajuan lembaga.');
+        if (['reviewer','admin'].includes(profile.role)) {
+          const rows = await env.falaq.prepare(`
+            SELECT a.*,u.name AS applicant_name,u.email AS applicant_email
+            FROM institution_applications a JOIN users u ON u.id=a.applicant_user_id
+            WHERE a.status IN ('pending','revision') ORDER BY a.updated ASC LIMIT 100
+          `).all();
+          return json({ applications: rows.results || [] });
+        }
+        const application = await env.falaq.prepare(
+          'SELECT * FROM institution_applications WHERE applicant_user_id=?'
+        ).bind(profile.id).first();
+        return json({ application: application || null });
+      }
+
+      if (url.pathname === '/api/institution-applications' && request.method === 'POST') {
+        const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk untuk mengajukan kemitraan lembaga.');
+        const body = await request.json().catch(() => null);
+        const application = normalizeInstitutionApplication(body);
+        if (!application) return fail(400, 'Data lembaga tidak lengkap atau tidak valid. Periksa kembali setiap kolom.');
+        const existing = await env.falaq.prepare(
+          'SELECT id,status FROM institution_applications WHERE applicant_user_id=?'
+        ).bind(profile.id).first();
+        if (existing && existing.status !== 'revision') {
+          return fail(409, existing.status === 'approved'
+            ? 'Lembaga Anda telah disetujui. Hubungi PFI untuk perubahan data.'
+            : 'Pengajuan lembaga Anda sedang diproses atau telah ditutup.');
+        }
+        const duplicate = await env.falaq.prepare(
+          'SELECT id FROM partner_institutions WHERE lower(name)=lower(?)'
+        ).bind(application.institution).first();
+        if (duplicate) return fail(409, 'Nama lembaga ini sudah tercatat sebagai mitra PFI.');
+        const now = new Date().toISOString();
+        if (existing) {
+          await env.falaq.prepare(`
+            UPDATE institution_applications SET institution_name=?,institution_type=?,region=?,
+              representative_name=?,representative_position=?,official_contact=?,website=?,purpose=?,
+              status='pending',review_note='',reviewed_by=NULL,reviewed_at=NULL,updated=?
+            WHERE id=? AND applicant_user_id=? AND status='revision'
+          `).bind(application.institution,application.type,application.region,
+            application.representative,application.position,application.contact,
+            application.website,application.purpose,now,existing.id,profile.id).run();
+          return json({ id: existing.id, status: 'pending', resubmitted: true });
+        }
+        const id = uuid();
+        await env.falaq.prepare(`
+          INSERT INTO institution_applications
+          (id,applicant_user_id,institution_name,institution_type,region,representative_name,
+           representative_position,official_contact,website,purpose,status,created,updated)
+          VALUES (?,?,?,?,?,?,?,?,?,?,'pending',?,?)
+        `).bind(id,profile.id,application.institution,application.type,application.region,
+          application.representative,application.position,application.contact,
+          application.website,application.purpose,now,now).run();
+        return json({ id, status: 'pending' }, 201);
+      }
+
+      const institutionReviewMatch = url.pathname.match(/^\/api\/institution-applications\/([a-zA-Z0-9_-]+)\/review$/);
+      if (institutionReviewMatch && request.method === 'POST') {
+        const profile = await profileFor(request, env);
+        if (!profile) return fail(401, 'Silakan masuk.');
+        if (!['reviewer','admin'].includes(profile.role)) return fail(403, 'Khusus Tim Validasi PFI.');
+        const id = institutionReviewMatch[1];
+        const application = await env.falaq.prepare(
+          'SELECT * FROM institution_applications WHERE id=?'
+        ).bind(id).first();
+        if (!application) return fail(404, 'Pengajuan lembaga tidak ditemukan.');
+        if (application.applicant_user_id === profile.id) return fail(403, 'Petugas tidak boleh memeriksa pengajuannya sendiri.');
+        if (!['pending','revision'].includes(application.status)) return fail(409, 'Pengajuan ini tidak sedang menunggu pemeriksaan.');
+        const body = await request.json().catch(() => null);
+        const decision = body?.decision;
+        const note = typeof body?.note === 'string' ? body.note.trim() : '';
+        if (!['approved','revision','rejected'].includes(decision) || note.length < 8 || note.length > 1000) {
+          return fail(400, 'Keputusan dan catatan pemeriksaan tidak valid.');
+        }
+        if (decision === 'approved') {
+          const duplicate = await env.falaq.prepare(
+            'SELECT id FROM partner_institutions WHERE lower(name)=lower(?)'
+          ).bind(application.institution_name).first();
+          if (duplicate) return fail(409, 'Nama lembaga sudah tercatat sebagai mitra.');
+        }
+        const now = new Date().toISOString();
+        const statements = [
+          env.falaq.prepare(`UPDATE institution_applications
+            SET status=?,review_note=?,reviewed_by=?,reviewed_at=?,updated=? WHERE id=? AND status IN ('pending','revision')`)
+            .bind(decision,note,profile.id,now,now,id),
+          env.falaq.prepare(`INSERT INTO institution_application_reviews
+            (id,application_id,reviewer_user_id,decision,note,created) VALUES (?,?,?,?,?,?)`)
+            .bind(uuid(),id,profile.id,decision,note,now),
+        ];
+        if (decision === 'approved') {
+          statements.push(env.falaq.prepare(`INSERT INTO partner_institutions
+            (id,application_id,name,institution_type,region,official_contact,website,status,created,updated)
+            VALUES (?,?,?,?,?,?,?,'active',?,?)`)
+            .bind(uuid(),id,application.institution_name,application.institution_type,
+              application.region,application.official_contact,application.website,now,now));
+        }
+        await env.falaq.batch(statements);
+        return json({ ok: true, status: decision });
       }
 
       if (url.pathname === '/api/moderation' && request.method === 'GET') {

@@ -45,7 +45,7 @@ export default function Laporan() {
   const [form, setForm] = useState({
     title: '', body: '', city: '', latitude: '', longitude: '',
     observedAt: localDateTime(loc.offset), timeZone: zlabel(loc), weather: 'Cerah', instrument: 'Mata telanjang',
-    visibility: 'Belum dinilai', elevation: '', photo: null,
+    visibility: 'Belum dinilai', elevation: '', accuracyMeters: '', photo: null,
   });
 
   useEffect(() => {
@@ -58,7 +58,7 @@ export default function Laporan() {
       title: '', body: '', city: '', latitude: '', longitude: '',
       observedAt: localDateTime(loc.offset), timeZone: zlabel(loc),
       weather: 'Cerah', instrument: 'Mata telanjang', visibility: 'Belum dinilai',
-      elevation: '', photo: null,
+      elevation: '', accuracyMeters: '', photo: null,
     });
     (async () => {
       try {
@@ -99,6 +99,7 @@ export default function Laporan() {
         ...f, latitude: coords.latitude.toFixed(6),
         longitude: coords.longitude.toFixed(6),
         elevation: Number.isFinite(coords.altitude) ? String(Math.round(coords.altitude)) : f.elevation,
+        accuracyMeters: Number.isFinite(coords.accuracy) ? String(Math.round(coords.accuracy)) : '',
       })),
       () => tell(t('Lokasi tidak dapat diakses. Periksa izin lokasi perangkat.', 'Unable to access location. Check device permissions.')),
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
@@ -121,12 +122,13 @@ export default function Laporan() {
         details: {
           latitude: form.latitude,
           longitude: form.longitude,
-          observedAt: new Date(`${form.observedAt}:00${form.timeZone === 'WIB' ? '+07:00' : form.timeZone === 'WITA' ? '+08:00' : '+09:00'}`).toISOString(),
+          observedAt: `${form.observedAt}:00${form.timeZone === 'WIB' ? '+07:00' : form.timeZone === 'WITA' ? '+08:00' : '+09:00'}`,
           timeZone: form.timeZone,
           weather: form.weather,
           instrument: form.instrument,
           visibility: form.visibility,
           elevation: form.elevation,
+          accuracyMeters: form.accuracyMeters,
         },
       });
       let saved = created;
@@ -286,6 +288,11 @@ export default function Laporan() {
             </div>
           )}
 
+          <a className="verification-guide-link" href="#/pedoman-rukyat">
+            <FileText size={16} />
+            <span><b>{t('Baca pedoman laporan rukyat sebelum mengirim', 'Read rukyat report guidelines before submitting')}</b><small>{t('Periksa data waktu, lokasi, kondisi ufuk, instrumen, dan dokumentasi.', 'Review time, location, horizon conditions, instruments, and evidence requirements.')}</small></span>
+            <span aria-hidden="true">›</span>
+          </a>
           <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {field(t('Judul pengamatan', 'Observation title'), 'title', { required: true, maxLength: 120, placeholder: t('Contoh: Pengamatan hilal awal Ramadan', 'e.g. Ramadan crescent observation') })}
             {field(t('Kota / lokasi pengamatan', 'City / observation location'), 'city', { required: true, maxLength: 100, placeholder: t('Nama kota atau kabupaten', 'City or regency') })}
@@ -294,8 +301,11 @@ export default function Laporan() {
               {field(t('Bujur (longitude)', 'Longitude'), 'longitude', { required: true, type: 'number', step: 'any', min: -180, max: 180, placeholder: '110.000000' })}
             </div>
             <button type="button" className="btn secondary" onClick={locate}>
-              <LocateFixed size={16} /> {t('Gunakan lokasi GPS', 'Use GPS location')}
+              <LocateFixed size={16} /> {t('Ambil koordinat GPS perangkat', 'Get device GPS coordinates')}
             </button>
+            <div style={{ padding: '11px 13px', borderRadius: 10, border: '1px solid var(--line)', background: 'var(--surface2)', fontSize: 12, color: 'var(--muted, #8fa3b8)' }}>
+              {form.accuracyMeters ? <><b style={{ color: 'var(--text, inherit)' }}>{t('Akurasi GPS terukur: ', 'Measured GPS accuracy: ')}±{form.accuracyMeters} m</b><br />{Number(form.accuracyMeters) <= 30 ? t('Sinyal cukup baik. Pastikan Anda berada di lokasi pengamatan.', 'Good signal. Confirm you are at the observation site.') : t('Akurasi masih rendah. Coba di area terbuka dan ambil lokasi GPS kembali.', 'Accuracy is low. Try an open area and capture GPS again.')}</> : t('Koordinat belum diambil dari GPS. Anda masih dapat mengisi koordinat secara manual; akurasi GPS akan dicatat jika tersedia.', 'Coordinates have not been captured from GPS. You may enter them manually; GPS accuracy is recorded when available.')}
+            </div>
             {field(t('Waktu pengamatan', 'Observation time'), 'observedAt', { type: 'datetime-local', required: true })}
             <label className="field">
               <span>{t('Zona waktu lokasi pengamatan', 'Observation time zone')}</span>

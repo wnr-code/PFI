@@ -6,7 +6,7 @@ import { usePFI, go } from '../state.jsx';
 import {
   House, Calculator, Orbit, UsersRound, UserRound, MapPinned, Files,
   Bell, ChevronRight, MapPin, ChevronDown, GraduationCap, FlaskConical,
-  ChevronsUpDown, LayoutDashboard, CreditCard, Share2, LogOut, CalendarDays,
+  ChevronsUpDown, LayoutDashboard, CreditCard, Share2, LogOut, CalendarDays, MoreHorizontal, X, BookOpen, Settings,
 } from 'lucide-react';
 
 export const navMain = [
@@ -21,6 +21,8 @@ export const navMore = [
   ['peta', 'Peta Rukyat', 'Observation Map', MapPinned],
   ['laporan', 'Pusat Laporan', 'Report Centre', Files],
   ['kalender', 'Kalender Hijriah', 'Hijri Calendar', CalendarDays],
+  ['panduan', 'Panduan Umum', 'General Guide', BookOpen],
+  ['pengaturan', 'Pengaturan', 'Settings', Settings],
 ];
 
 function Observatory() {
@@ -197,19 +199,45 @@ export function Topbar() {
 
 export function BottomNav() {
   const { page, t } = usePFI();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreActive = navMore.some(([id]) => id === page);
+
   return (
-    <nav className="bottom-nav" aria-label={t('Navigasi bawah', 'Bottom navigation')}>
-      {navMain.map(([id, a, b, I]) => (
-        <a
-          key={id}
-          href={`#/${id}`}
-          className={`bottom-item ${page === id ? 'active' : ''}`}
-          aria-current={page === id ? 'page' : undefined}
-        >
-          <I size={22} />
-          <span>{t(a, b)}</span>
-        </a>
-      ))}
-    </nav>
+    <>
+      {moreOpen && (
+        <button className="mobile-more-backdrop" aria-label={t('Tutup menu lainnya', 'Close more menu')} onClick={() => setMoreOpen(false)} />
+      )}
+      {moreOpen && (
+        <div className="mobile-more-menu" role="menu">
+          <div className="mobile-more-heading">
+            <b>{t('Pusat informasi', 'Information centre')}</b>
+            <button onClick={() => setMoreOpen(false)} aria-label={t('Tutup', 'Close')}><X size={18} /></button>
+          </div>
+          {navMore.map(([id, a, b, I]) => (
+            <a key={id} href={`#/${id}`} role="menuitem" className={page === id ? 'active' : ''} onClick={() => setMoreOpen(false)}>
+              <I size={19} /><span>{t(a, b)}</span><ChevronRight size={16} />
+            </a>
+          ))}
+        </div>
+      )}
+      <nav className="bottom-nav" aria-label={t('Navigasi bawah', 'Bottom navigation')}>
+        {navMain.map(([id, a, b, I]) => (
+          <a
+            key={id}
+            href={`#/${id}`}
+            className={`bottom-item ${page === id ? 'active' : ''}`}
+            aria-current={page === id ? 'page' : undefined}
+            onClick={() => setMoreOpen(false)}
+          >
+            <I size={21} />
+            <span>{t(a, b)}</span>
+          </a>
+        ))}
+        <button type="button" className={`bottom-item ${moreActive || moreOpen ? 'active' : ''}`} aria-expanded={moreOpen} onClick={() => setMoreOpen((value) => !value)}>
+          <MoreHorizontal size={22} />
+          <span>{t('Lainnya', 'More')}</span>
+        </button>
+      </nav>
+    </>
   );
 }
