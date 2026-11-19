@@ -10,6 +10,7 @@ import Profil from './pages/Profil.jsx';
 import PetaRukyat from './pages/PetaRukyat.jsx';
 import Laporan from './pages/Laporan.jsx';
 import Kalender from './pages/Kalender.jsx';
+import Panduan from './pages/Panduan.jsx';
 import { SITES } from './lib/astro.js';
 import { api } from './lib/api.js';
 
@@ -22,6 +23,7 @@ const routes = {
   peta: PetaRukyat,
   laporan: Laporan,
   kalender: Kalender,
+  panduan: Panduan,
 };
 
 function AuxiliaryModal() {
