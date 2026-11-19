@@ -386,7 +386,7 @@ export default function PetaRukyat() {
       zIndexOffset: 1000,
       icon: L.divIcon({
         className: 'pfi-user-location-marker',
-        html: '<span class="pfi-user-location-pulse"></span><span class="pfi-user-location-core"><span>●</span></span>',
+        html: '<span class="pfi-user-location-pulse"></span><span class="pfi-user-location-core"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 20.5 21l-8.5-4.7L3.5 21 12 2.8Z" fill="white" stroke="#dbeafe" stroke-width="1.1" stroke-linejoin="round"/></svg></span>',
         iconSize: [30, 30], iconAnchor: [15, 15],
       }),
     }).addTo(map);
