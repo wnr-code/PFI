@@ -36,6 +36,31 @@ test('Worker health endpoint verifies D1 schema and authentication configuration
   assert.equal(body.photoStorage, 'configured');
 });
 
+test('Worker health accepts existing Vite-prefixed Supabase runtime bindings', async () => {
+  const requiredTables = [
+    'users', 'groups', 'memberships', 'group_coordinators', 'calculations',
+    'posts', 'photos', 'likes', 'comments', 'reviews', 'agendas',
+    'institution_applications', 'partner_institutions', 'institution_application_reviews',
+  ];
+  const env = {
+    VITE_SUPABASE_URL: 'https://example.supabase.co',
+    VITE_SUPABASE_ANON_KEY: 'test-public-key',
+    falaq: {
+      prepare() {
+        return {
+          first: async () => ({ ok: 1 }),
+          bind: (...values) => ({ all: async () => ({ results: values.map((name) => ({ name })) }) }),
+        };
+      },
+    },
+    r2falaq: { put() {}, get() {} },
+  };
+  const response = await worker.fetch(new Request('https://pfi.test/api/health'), env, {});
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.authentication, 'configured');
+});
+
 test('Worker health endpoint reports missing runtime dependencies', async () => {
   const response = await worker.fetch(new Request('https://pfi.test/api/health'), {}, {});
   assert.equal(response.status, 503);
