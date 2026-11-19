@@ -30,6 +30,14 @@ describe('Cloudflare API identity boundary', () => {
     expect(options.credentials).toBe('include');
   });
 
+  it('uses the freshly exchanged callback token during session initialization', async () => {
+    supabase.auth.getSession.mockClear();
+    await api('/api/session', 'GET', null, 'fresh-callback-token');
+    const [, options] = globalThis.fetch.mock.calls[0];
+    expect(options.headers.Authorization).toBe('Bearer fresh-callback-token');
+    expect(supabase.auth.getSession).not.toHaveBeenCalled();
+  });
+
   it('lets the browser set the multipart boundary for R2 photo uploads', async () => {
     const form = new FormData();
     form.append('photo', new Blob(['image']), 'rukyat.jpg');

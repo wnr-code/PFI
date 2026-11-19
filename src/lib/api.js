@@ -17,8 +17,10 @@ async function accessToken() {
   return data.session?.access_token || null;
 }
 
-export async function api(path, method = 'GET', body = null) {
-  const token = await accessToken();
+export async function api(path, method = 'GET', body = null, identityToken = null) {
+  // Startup may have a freshly exchanged callback session before another
+  // getSession call observes storage. Prefer that exact token when supplied.
+  const token = identityToken || await accessToken();
   const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
   const headers = { 'X-PFI-Request': 'workspace' };
   if (!isForm) headers['Content-Type'] = 'application/json';

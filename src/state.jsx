@@ -6,7 +6,7 @@
  * Dukung pengembang: https://trakteer.id/lanteraku/tip
  */
 import React, {
-  createContext, useContext, useEffect, useState, useCallback,
+  createContext, useContext, useEffect, useState, useCallback, useRef,
 } from 'react';
 import { supabase, isAuthConfigured } from './lib/supabase.js';
 import {
@@ -52,6 +52,7 @@ export function Provider({ children }) {
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState('');
   const [online, setOnline] = useState(true);
+  const refreshSequence = useRef(0);
 
   const tell = useCallback((msg) => {
     setToast(msg);
@@ -98,11 +99,21 @@ export function Provider({ children }) {
     }
   };
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (authEventSession = undefined) => {
+    const sequence = ++refreshSequence.current;
     try {
-      const { data: identity } = await authApi.getIdentitySession();
-      const serverSession = await api('/api/session');
+      // Auth events provide the authoritative in-memory session. Only query
+      // storage during initial startup or an explicit manual refresh.
+      const identity = authEventSession === undefined
+        ? (await authApi.getIdentitySession()).data
+        : { session: authEventSession };
+      const identityToken = identity.session?.access_token || null;
+      const serverSession = await api('/api/session', 'GET', null, identityToken);
+      if (sequence !== refreshSequence.current) return;
       const account = serverSession?.account ?? null;
+      if (identity.session && !account) {
+        throw new Error('Identitas Google berhasil, tetapi profil PFI tidak dapat dimuat. Silakan coba masuk kembali.');
+      }
       const prefs = serverSession?.prefs && typeof serverSession.prefs === 'object' ? serverSession.prefs : {};
       setData((d) => ({
         ...d, account, session: identity.session ?? null,
@@ -116,14 +127,15 @@ export function Provider({ children }) {
       try {
         const posts = await api('/api/posts');
         await offlineStore('posts', posts);
-        setData((d) => ({ ...d, posts }));
+        if (sequence === refreshSequence.current) setData((d) => ({ ...d, posts }));
       } catch (e) {
         const cached = await offlineGet('posts');
-        setData((d) => ({ ...d, posts: cached || [] }));
+        if (sequence === refreshSequence.current) setData((d) => ({ ...d, posts: cached || [] }));
       }
 
-      setData((d) => ({ ...d, ready: true }));
+      if (sequence === refreshSequence.current) setData((d) => ({ ...d, ready: true }));
     } catch (e) {
+      if (sequence !== refreshSequence.current) return;
       setData((d) => ({ ...d, account: null, session: null, ready: true }));
       tell(e?.message || 'Sesi Google tidak dapat dimuat. Silakan masuk kembali.');
     }
@@ -131,16 +143,17 @@ export function Provider({ children }) {
 
   useEffect(() => {
     let authRefreshTimer;
-    const { data: { subscription } } = authApi.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_OUT') {
-        // Supabase warns against calling another auth method from inside this
-        // callback. Defer the refresh until its internal auth lock is released.
+    const { data: { subscription } } = authApi.onAuthStateChange((event, authEventSession) => {
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_OUT') {
+        // Supabase recommends using the event's session instead of calling
+        // getSession again. Defer API work until its internal auth lock exits.
         clearTimeout(authRefreshTimer);
-        authRefreshTimer = setTimeout(() => refresh(), 0);
+        authRefreshTimer = setTimeout(
+          () => event === 'INITIAL_SESSION' ? refresh() : refresh(authEventSession),
+          0
+        );
       }
     });
-    // Initial load
-    refresh();
 
     // Online/offline
     const onOnline = () => setOnline(true);
