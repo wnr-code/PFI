@@ -641,3 +641,81 @@ select,input,textarea{font-size:15px;line-height:1.5}
 .dashboard-rukyat-copy p{font-size:13px;color:#aebfd4;line-height:1.6}
 @media(max-width:520px){.dashboard-rukyat-entry{gap:14px;padding:17px;min-height:160px}.dashboard-rukyat-orb{width:86px;height:86px;flex-basis:86px}.dashboard-rukyat-copy{gap:7px}.dashboard-rukyat-copy h2{font-size:18px}.dashboard-rukyat-copy p{font-size:11px}.dashboard-rukyat-copy .btn{font-size:11px;padding:9px 11px}}
 @media(prefers-reduced-motion:reduce){.dashboard-rukyat-orb{animation:none}}
+
+
+/* PFI Live Geospatial Monitor — Globe.GL + Leaflet */
+.pfi-live-page{--pfi-live-gold:#f4c86f}
+.pfi-live-panel{overflow:hidden;border:1px solid rgba(168,195,226,.16);border-radius:22px;background:linear-gradient(145deg,#07182d,#0a2039 60%,#08172b);box-shadow:0 22px 60px rgba(0,0,0,.28)}
+.pfi-live-header{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:21px 22px;border-bottom:1px solid rgba(163,188,217,.13)}
+.pfi-live-eyebrow{display:flex;align-items:center;gap:7px;color:#e9c77f;font-size:10px;font-weight:850;letter-spacing:1.6px}
+.pfi-live-title h2{margin:7px 0 3px;color:#f2f6fb;font-size:21px}
+.pfi-live-title p{margin:0;color:#91a9c5;font-size:12px}
+.pfi-live-switch{display:flex;gap:5px;padding:5px;border:1px solid rgba(173,195,223,.17);border-radius:13px;background:rgba(1,10,23,.55)}
+.pfi-live-switch button{display:flex;align-items:center;gap:7px;padding:10px 13px;border-radius:9px;color:#a8bad0;font-size:12px;font-weight:750}
+.pfi-live-switch button.active{color:#17243a;background:linear-gradient(110deg,#f2d79c,#d5a951);box-shadow:0 4px 16px rgba(214,174,98,.2)}
+.pfi-live-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 18px;background:rgba(1,10,23,.36);border-bottom:1px solid rgba(163,188,217,.1)}
+.pfi-live-status{display:flex;align-items:center;gap:8px;color:#9fb4cc;font-size:9px;font-weight:850;letter-spacing:1.3px}
+.pfi-live-status i{width:7px;height:7px;border-radius:50%;background:#70dfa0;box-shadow:0 0 10px #70dfa0;animation:pfiLiveBlink 1.6s infinite}
+.pfi-live-updated{display:flex;align-items:center;gap:6px;color:#819ab7;font-size:10px}
+.pfi-globe-wrap{position:relative;min-height:420px;background:radial-gradient(ellipse at 50% 48%,#102d4d,#061427 70%)}
+.pfi-globe-canvas{width:100%;height:440px;min-height:360px;overflow:hidden;cursor:grab}
+.pfi-globe-canvas:active{cursor:grabbing}
+.pfi-globe-canvas canvas{display:block;max-width:100%}
+.pfi-globe-hint{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:18px;flex-wrap:wrap;padding:10px;background:linear-gradient(transparent,rgba(3,12,25,.85));pointer-events:none}
+.pfi-globe-hint span{color:#8ea8c5;font-size:9px;font-weight:750;letter-spacing:1px}
+.pfi-map-wrap{height:480px;background:#0b1c30}
+.pfi-leaflet-map{width:100%;height:100%;min-height:440px;z-index:1;background:#0b1c30}
+.pfi-leaflet-map .leaflet-control-attribution{font-size:9px}
+.pfi-leaflet-map .leaflet-popup-content-wrapper,.pfi-leaflet-map .leaflet-popup-tip{background:#102943;color:#edf4fc}
+.pfi-leaflet-map .leaflet-control-zoom a{background:#102943;color:#eaf2fc;border-color:#294563}
+.pfi-map-error{display:flex;align-items:center;gap:10px;padding:15px 18px;color:#ffd69b;background:rgba(145,82,26,.14);font-size:12px}
+.pfi-live-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 19px;border-top:1px solid rgba(163,188,217,.13)}
+.pfi-live-count{display:flex;flex-direction:column;gap:2px}
+.pfi-live-count b{font-size:25px;line-height:1;color:#fff}
+.pfi-live-count span{font-size:9px;color:#90a7c2;font-weight:800;letter-spacing:1px}
+.pfi-live-actions{display:flex;align-items:center;gap:14px}
+.pfi-auto-refresh{display:flex;align-items:center;gap:7px;color:#9eb1c8;font-size:11px}
+.pfi-auto-refresh input{accent-color:#e5bd70}
+.pfi-live-actions button,.pfi-coordinate-link{display:inline-flex;align-items:center;gap:7px;padding:9px 12px;border:1px solid rgba(202,176,119,.32);border-radius:10px;color:#f1d394;background:rgba(202,176,119,.08);font-size:11px;font-weight:750}
+.pfi-live-detail{position:relative;margin:0 17px 17px;padding:18px;border:1px solid rgba(223,190,124,.28);border-radius:15px;background:rgba(2,12,26,.68);animation:fadeRise .2s ease}
+.pfi-detail-close{position:absolute;right:12px;top:12px;display:grid;place-items:center;width:34px;height:34px;border-radius:9px;color:#c8d6e6;background:rgba(255,255,255,.07)}
+.pfi-live-detail h3{margin:8px 40px 4px 0;color:#f4f7fb;font-size:19px}
+.pfi-live-detail>p{margin:0 0 14px;color:#9eb2ca;font-size:12px;line-height:1.5}
+.pfi-detail-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-bottom:15px}
+.pfi-detail-grid span{display:flex;min-width:0;flex-direction:column;gap:4px}
+.pfi-detail-grid small{color:#829ab7;font-size:10px}
+.pfi-detail-grid b{color:#e8eff8;font-size:12px;overflow-wrap:anywhere}
+.pfi-report-photo{display:block;max-width:100%;max-height:260px;margin:0 0 14px;border-radius:12px;object-fit:contain}
+.pfi-coordinate-link{width:max-content;max-width:100%;text-decoration:none}
+.pfi-live-explain{display:flex;align-items:flex-start;gap:10px;margin:13px 0;padding:13px 15px;border:1px solid rgba(215,176,104,.17);border-radius:12px;background:rgba(215,176,104,.045);color:#aabbd0;font-size:11px;line-height:1.6}
+.pfi-live-explain svg{flex-shrink:0;color:#e9c77f}
+.pfi-report-list-card{overflow:hidden}
+.pfi-report-total{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 7px;border-radius:8px;background:rgba(214,174,98,.12);color:#e8c77f;font-size:11px;font-weight:800}
+.pfi-report-empty{display:flex;min-height:130px;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;color:#8fa5bf;font-size:12px}
+.pfi-report-empty b{color:#eaf1f9;font-size:14px}
+.pfi-report-empty span{max-width:420px}
+.pfi-report-list{display:flex;flex-direction:column;gap:7px}
+.pfi-report-row{display:flex;align-items:center;gap:11px;width:100%;padding:12px;text-align:left;border:1px solid rgba(147,175,207,.13);border-radius:11px;background:rgba(255,255,255,.025)}
+.pfi-report-row.selected,.pfi-report-row:hover{border-color:rgba(219,183,112,.4);background:rgba(219,183,112,.065)}
+.pfi-report-dot{width:9px;height:9px;flex-shrink:0;border-radius:50%;background:#f2c66f;box-shadow:0 0 0 5px rgba(242,198,111,.12),0 0 12px rgba(242,198,111,.65)}
+.pfi-report-text{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+.pfi-report-text b{overflow:hidden;color:#edf3fa;font-size:13px;text-overflow:ellipsis;white-space:nowrap}
+.pfi-report-text small{overflow:hidden;color:#8fa6c1;font-size:10px;text-overflow:ellipsis;white-space:nowrap}
+.pfi-verified-tag{flex-shrink:0;color:#83d8a6;font-size:9px;font-weight:850;letter-spacing:.8px}
+@keyframes pfiLiveBlink{0%,100%{opacity:1}50%{opacity:.35}}
+@media(max-width:600px){
+ .pfi-live-header{align-items:flex-start;flex-direction:column;padding:17px}
+ .pfi-live-switch{width:100%}
+ .pfi-live-switch button{flex:1;justify-content:center;padding:10px 7px;font-size:11px}
+ .pfi-live-title h2{font-size:19px}
+ .pfi-globe-wrap{min-height:340px}
+ .pfi-globe-canvas{height:360px;min-height:330px}
+ .pfi-map-wrap{height:430px}
+ .pfi-leaflet-map{min-height:430px}
+ .pfi-live-toolbar{align-items:flex-start;flex-direction:column;gap:7px}
+ .pfi-live-footer{align-items:flex-start;flex-direction:column}
+ .pfi-live-actions{width:100%;justify-content:space-between}
+ .pfi-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .pfi-live-detail{margin:0 10px 12px;padding:14px}
+}
+@media(prefers-reduced-motion:reduce){.pfi-live-status i{animation:none}}
