@@ -1,34 +1,44 @@
-// PFI — Pusat Falak Indonesia | Maintainer: @wnr-code
+// PFI — Pusat Falak Indonesia | @wnr-code
 // Repository: https://github.com/wnr-code/PFI
-// Project support: https://trakteer.id/lanteraku/tip
-// AI-assisted implementation; reviewed and maintained by the project maintainer.
+// Dukungan proyek: https://trakteer.id/lanteraku/tip
 import React, { useMemo, useState, useEffect } from 'react';
 import { usePFI } from '../state.jsx';
 import { api, offlineGet } from '../lib/api.js';
-import { MapPin, UsersRound, FileText, RefreshCw, Clock3 } from 'lucide-react';
+import { MapPin, UsersRound, FileText, RefreshCw, Clock3, Globe2, Map as MapIcon, X, ExternalLink } from 'lucide-react';
+
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 export default function PetaRukyat() {
   const { data, t, lang } = usePFI();
+  const [mode, setMode] = useState('globe');
   const [layer, setLayer] = useState('reports');
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState(null);
 
   const load = async () => {
     try {
       const posts = await api('/api/posts');
-      setReports((posts || []).filter((post) => post.type === 'rukyat' && post.status === 'verified'));
+      setReports((Array.isArray(posts) ? posts : []).filter((post) => post.type === 'rukyat' && post.status === 'verified'));
     } catch {
       const cached = await offlineGet('posts');
-      setReports((cached || []).filter((post) => post.type === 'rukyat' && post.status === 'verified'));
+      setReports((Array.isArray(cached) ? cached : []).filter((post) => post.type === 'rukyat' && post.status === 'verified'));
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { setReports([]); setLoading(true); load(); }, [data.account?.id]);
+  useEffect(() => {
+    setReports([]);
+    setSelected(null);
+    setLoading(true);
+    load();
+  }, [data.account?.id]);
 
   const located = useMemo(() => reports.filter((r) =>
     Number.isFinite(Number(r.latitude)) && Number.isFinite(Number(r.longitude))
+    && Number(r.latitude) >= -90 && Number(r.latitude) <= 90
+    && Number(r.longitude) >= -180 && Number(r.longitude) <= 180
   ), [reports]);
 
   const dateLabel = (value, report) => {
@@ -39,85 +49,144 @@ export default function PetaRukyat() {
       const local = new Date(date.getTime() + offset * 60000);
       return `${local.toISOString().slice(0, 16).replace('T', ' ')} ${report.timeZone || ''}`.trim();
     }
-    return new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'id-ID', {
-      dateStyle: 'medium', timeStyle: 'short',
-    }).format(date);
+    return new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'id-ID', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
   };
+
+  const pointPosition = (report) => {
+    // Peta tematik Indonesia: rentang koordinat untuk menempatkan laporan di wilayah Nusantara.
+    const x = 70 + ((Number(report.longitude) - 95) / 46) * 660;
+    const y = 45 + ((6 - Number(report.latitude)) / 17) * 300;
+    return { x: clamp(x, 30, 770), y: clamp(y, 25, 365) };
+  };
+
+  const openReport = (report) => setSelected(report);
+  const mapLink = selected
+    ? `https://www.openstreetmap.org/?mlat=${encodeURIComponent(selected.latitude)}&mlon=${encodeURIComponent(selected.longitude)}#map=10/${encodeURIComponent(selected.latitude)}/${encodeURIComponent(selected.longitude)}`
+    : '';
 
   return (
     <div className="page-wrap">
       <div className="page-head">
-        <div className="eyebrow"><i /> {t('PETA RUKYAT NASIONAL', 'NATIONAL OBSERVATION MAP')}</div>
-        <h1>{t('Sebaran Laporan Rukyat', 'Rukyat Report Locations')}</h1>
-        <p>{t('Lokasi ditampilkan berdasarkan koordinat yang dikirim bersama laporan pengamat. Tidak ada titik contoh yang ditampilkan sebagai laporan nyata.', 'Locations are derived from coordinates submitted with observer reports. Sample locations are not presented as real reports.')}</p>
+        <div className="eyebrow"><i /> {t('PUSAT PEMANTAUAN RUKYAT', 'RUKYAT MONITORING CENTRE')}</div>
+        <h1>{t('Sebaran Pengamatan Hilal Indonesia', 'Indonesian Crescent Observation Network')}</h1>
+        <p>{t('Jelajahi titik pengamatan melalui bola dunia atau peta Indonesia. Titik hanya berasal dari laporan rukyat terverifikasi yang memiliki koordinat.', 'Explore observation sites on the globe or Indonesia map. Markers come only from verified rukyat reports with coordinates.')}</p>
       </div>
 
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
-        <button className={`btn ${layer === 'reports' ? 'primary' : 'secondary'} full`} onClick={() => setLayer('reports')}>
-          <FileText size={16} /> {t('Laporan', 'Reports')}
-        </button>
-        <button className={`btn ${layer === 'locations' ? 'primary' : 'secondary'} full`} onClick={() => setLayer('locations')}>
-          <MapPin size={16} /> {t('Koordinat', 'Coordinates')}
-        </button>
-        <button className="btn secondary" onClick={() => { setLoading(true); load(); }} aria-label={t('Muat ulang', 'Refresh')}>
-          <RefreshCw size={16} />
-        </button>
-      </div>
-
-      <div className="card" style={{ minHeight: 240 }}>
-        <div className="card-body">
-          <div style={{ display: 'flex', gap: 18, marginBottom: 16 }}>
-            <div><b style={{ fontSize: 22 }}>{reports.length}</b><div style={{ color: '#8fa3b8', fontSize: 11 }}>{t('Total laporan', 'Total reports')}</div></div>
-            <div><b style={{ fontSize: 22 }}>{located.length}</b><div style={{ color: '#8fa3b8', fontSize: 11 }}>{t('Dengan koordinat', 'With coordinates')}</div></div>
+      <section className="rukyat-visual-card">
+        <div className="rukyat-visual-head">
+          <div>
+            <span className="rukyat-kicker">{t('VISUALISASI INTERAKTIF', 'INTERACTIVE VISUALIZATION')}</span>
+            <h2>{t('Peta Pengamatan Nasional', 'National Observation Map')}</h2>
           </div>
-          {loading ? (
-            <div style={{ padding: 30, textAlign: 'center', color: '#8fa3b8' }}>{t('Memuat laporan…', 'Loading reports…')}</div>
-          ) : reports.length === 0 ? (
-            <div style={{ padding: 24, textAlign: 'center', color: '#8fa3b8' }}>
-              <MapPin size={28} /><p>{t('Belum ada laporan rukyat. Titik akan muncul setelah pengamat mengirim laporan berkoordinat.', 'No rukyat reports yet. Locations appear after observers submit geotagged reports.')}</p>
+          <div className="rukyat-mode-switch" role="group" aria-label={t('Pilih mode tampilan', 'Choose display mode')}>
+            <button type="button" className={mode === 'globe' ? 'active' : ''} onClick={() => { setMode('globe'); setSelected(null); }} aria-pressed={mode === 'globe'}>
+              <Globe2 size={17} /> {t('Bola Dunia', 'Globe')}
+            </button>
+            <button type="button" className={mode === 'map' ? 'active' : ''} onClick={() => { setMode('map'); setSelected(null); }} aria-pressed={mode === 'map'}>
+              <MapIcon size={17} /> {t('Peta', 'Map')}
+            </button>
+          </div>
+        </div>
+
+        {mode === 'globe' ? (
+          <div className="rukyat-globe-stage">
+            <div className="rukyat-stars" aria-hidden="true" />
+            <div className="rukyat-globe">
+              <div className="rukyat-globe-grid" />
+              <svg className="rukyat-globe-land" viewBox="0 0 640 640" aria-hidden="true">
+                <path d="M105 190l38-43 55-18 37 20 11 40-28 28-13 42-48 12-30-29-36-4zM245 130l55-38 66 9 32 36-17 39-51 12-18 44-42-16-33-42zM370 255l44-28 57 19 17 45-34 33-57-8-31-28zM180 335l42-22 36 28-8 53-42 24-39-31zM420 390l48-21 46 32-12 48-53 9-34-35z" />
+              </svg>
+              <div className="rukyat-globe-points">
+                {located.map((report) => {
+                  const pos = pointPosition(report);
+                  const x = 50 + ((Number(report.longitude) - 95) / 46) * 80;
+                  const y = 50 + ((6 - Number(report.latitude)) / 17) * 50;
+                  return (
+                    <button key={report.id} type="button" className="rukyat-point globe-point" style={{ left: `${clamp(x, 8, 92)}%`, top: `${clamp(y, 12, 88)}%` }} onClick={() => openReport(report)} title={report.city || report.title} aria-label={t('Lihat laporan ', 'View report ') + (report.city || report.title)}>
+                      <span />
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="rukyat-globe-shine" />
             </div>
-          ) : layer === 'locations' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {located.length === 0 ? <p style={{ color: '#8fa3b8' }}>{t('Belum ada laporan dengan koordinat valid.', 'No reports with valid coordinates yet.')}</p> :
-                located.map((r) => (
-                  <div key={r.id} style={{ padding: 12, background: 'var(--surface2)', border: '1px solid var(--line)', borderRadius: 8 }}>
-                    <b>{r.city}</b>
-                    <div style={{ fontSize: 12, color: '#8fa3b8', marginTop: 4 }}>{Number(r.latitude).toFixed(5)}, {Number(r.longitude).toFixed(5)}</div>
-                    <a href={`https://www.openstreetmap.org/?mlat=${encodeURIComponent(r.latitude)}&mlon=${encodeURIComponent(r.longitude)}#map=12/${encodeURIComponent(r.latitude)}/${encodeURIComponent(r.longitude)}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--gold, #d6ae62)' }}>
-                      {t('Lihat di OpenStreetMap', 'View on OpenStreetMap')}
-                    </a>
-                  </div>
-                ))}
+            <div className="rukyat-globe-caption">
+              <b>{t('BUMI · JARINGAN RUKYAT INDONESIA', 'EARTH · INDONESIAN RUKYAT NETWORK')}</b>
+              <span>{t('Putaran visual • pilih titik untuk detail laporan', 'Animated view • select a marker for report details')}</span>
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {reports.map((report) => (
-                <div key={report.id} style={{ padding: 12, background: 'var(--surface2)', border: '1px solid var(--line)', borderRadius: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 12 }}>
-                    <div>
-                      <b style={{ fontSize: 13 }}>{report.title}</b>
-                      <div style={{ fontSize: 11, color: '#8fa3b8', marginTop: 3 }}>{report.author} · {report.city}</div>
-                      <div style={{ fontSize: 11, color: '#8fa3b8', marginTop: 3 }}><Clock3 size={12} style={{ verticalAlign: 'middle' }} /> {dateLabel(report.observedAt || report.date, report)}</div>
-                    </div>
-                    <span className={`pill ${report.status === 'verified' ? 'verified' : 'pending'}`} style={{ fontSize: 9 }}>
-                      {report.status === 'verified' ? t('Terverifikasi', 'Verified') : report.status === 'revision' ? t('Revisi', 'Revision') : t('Menunggu', 'Pending')}
-                    </span>
-                  </div>
-                  {Number.isFinite(Number(report.latitude)) && Number.isFinite(Number(report.longitude)) && (
-                    <div style={{ marginTop: 8, fontSize: 11, color: '#8fa3b8' }}>
-                      <MapPin size={12} style={{ verticalAlign: 'middle' }} /> {Number(report.latitude).toFixed(5)}, {Number(report.longitude).toFixed(5)}
-                    </div>
-                  )}
-                </div>
-              ))}
+          </div>
+        ) : (
+          <div className="rukyat-map-stage">
+            <div className="rukyat-map-topline"><span>{t('INDONESIA', 'INDONESIA')}</span><small>{t('Koordinat laporan terverifikasi', 'Verified report coordinates')}</small></div>
+            <svg className="rukyat-indonesia-map" viewBox="0 0 800 410" role="img" aria-label={t('Peta skematis Indonesia dengan titik laporan rukyat', 'Schematic map of Indonesia with rukyat report markers')}>
+              <defs>
+                <linearGradient id="pfiSea" x1="0" x2="1" y1="0" y2="1"><stop offset="0%" stopColor="#102b4d"/><stop offset="100%" stopColor="#07182e"/></linearGradient>
+                <linearGradient id="pfiLand" x1="0" x2="1" y1="0" y2="1"><stop offset="0%" stopColor="#d8bd83"/><stop offset="100%" stopColor="#987849"/></linearGradient>
+              </defs>
+              <rect width="800" height="410" rx="18" fill="url(#pfiSea)"/>
+              <g className="rukyat-map-graticule">
+                {Array.from({length:7},(_,i)=><line key={'v'+i} x1={80+i*105} y1="18" x2={80+i*105} y2="392"/> )}
+                {Array.from({length:5},(_,i)=><line key={'h'+i} x1="25" y1={55+i*75} x2="775" y2={55+i*75}/> )}
+              </g>
+              <g fill="url(#pfiLand)" stroke="#f0d59a" strokeWidth="2" className="rukyat-islands">
+                <path d="M72 112l24-22 35 4 26 20-8 20-32 9-29-12zM110 166l29-18 32 14 13 33-20 26-38-9-21-24z"/>
+                <path d="M212 175l36-20 42 10 22 27-22 18-48-5-34-14zM252 230l28-13 23 13-6 27-30 8-19-17z"/>
+                <path d="M335 120l38-14 44 17 18 28-28 23-42-7-29-22zM376 197l24-16 29 13 10 30-26 18-32-18z"/>
+                <path d="M466 170l39-16 40 17 21 25-24 24-49-6-29-20zM520 238l30-12 25 19-12 25-32 1-18-16z"/>
+                <path d="M600 120l30-12 31 18 10 24-26 19-34-12-17-19zM654 208l29-12 29 18-10 25-33 3-20-18z"/>
+                <path d="M150 300l24-9 22 15-7 17-26 7-18-13zM310 315l30-12 24 18-13 21-29-2-18-13zM450 315l22-9 22 14-8 19-25 1-16-12z"/>
+              </g>
+              {located.map((report) => {
+                const pos = pointPosition(report);
+                const x = 40 + ((Number(report.longitude) - 95) / 46) * 720;
+                const y = 35 + ((6 - Number(report.latitude)) / 17) * 340;
+                return <g key={report.id} className="rukyat-map-marker" transform={`translate(${clamp(x,25,775)} ${clamp(y,25,385)})`} onClick={() => openReport(report)} role="button" tabIndex="0" aria-label={report.city || report.title}>
+                  <circle r="13" className="marker-pulse"/><circle r="5.5" className="marker-core"/>
+                </g>;
+              })}
+            </svg>
+            <div className="rukyat-map-legend"><span><i /> {t('Lokasi laporan terverifikasi', 'Verified report location')}</span><span>{t('Peta skematis Nusantara', 'Schematic Indonesian archipelago')}</span></div>
+          </div>
+        )}
+
+        <div className="rukyat-stats">
+          <div><b>{reports.length}</b><span>{t('Laporan terverifikasi', 'Verified reports')}</span></div>
+          <div><b>{located.length}</b><span>{t('Titik berkoordinat', 'Geotagged locations')}</span></div>
+          <button type="button" className="btn secondary" onClick={() => { setLoading(true); load(); }}><RefreshCw size={16}/>{t('Muat ulang', 'Refresh')}</button>
+        </div>
+        {selected && (
+          <div className="rukyat-detail" role="region" aria-live="polite">
+            <button className="rukyat-detail-close" onClick={() => setSelected(null)} aria-label={t('Tutup detail', 'Close details')}><X size={18}/></button>
+            <span className="rukyat-kicker">{t('DETAIL PENGAMATAN', 'OBSERVATION DETAILS')}</span>
+            <h3>{selected.city || selected.title || t('Lokasi pengamatan', 'Observation site')}</h3>
+            <p>{selected.title}</p>
+            <div className="rukyat-detail-grid">
+              <span><small>{t('Pengamat', 'Observer')}</small><b>{selected.author || '—'}</b></span>
+              <span><small>{t('Waktu pengamatan', 'Observation time')}</small><b>{dateLabel(selected.observedAt || selected.date, selected)}</b></span>
+              <span><small>{t('Koordinat', 'Coordinates')}</small><b>{Number(selected.latitude).toFixed(5)}, {Number(selected.longitude).toFixed(5)}</b></span>
+              <span><small>{t('Status', 'Status')}</small><b className="verified-text">{t('Terverifikasi', 'Verified')}</b></span>
             </div>
-          )}
+            <a className="btn secondary" href={mapLink} target="_blank" rel="noreferrer"><ExternalLink size={15}/>{t('Buka koordinat', 'Open coordinates')}</a>
+          </div>
+        )}
+      </section>
+
+      <div className="card">
+        <div className="card-header"><h2>{t('Daftar Laporan Rukyat', 'Rukyat Reports')}</h2></div>
+        <div className="card-body">
+          {loading ? <div className="rukyat-empty">{t('Memuat laporan…', 'Loading reports…')}</div> :
+            reports.length === 0 ? <div className="rukyat-empty"><MapPin size={28}/><b>{t('Belum ada laporan rukyat terverifikasi', 'No verified rukyat reports yet')}</b><span>{t('Titik akan muncul setelah laporan berkoordinat ditinjau dan diverifikasi.', 'Markers appear after geotagged reports are reviewed and verified.')}</span></div> :
+            <div className="rukyat-report-list">
+              {reports.map((report) => <button type="button" key={report.id} className={selected?.id === report.id ? 'rukyat-report selected' : 'rukyat-report'} onClick={() => { setSelected(report); if (!Number.isFinite(Number(report.latitude)) || !Number.isFinite(Number(report.longitude))) setMode('map'); }}>
+                <span className="rukyat-report-icon"><FileText size={17}/></span>
+                <span className="rukyat-report-copy"><b>{report.title || t('Laporan rukyat', 'Rukyat report')}</b><small>{report.author || '—'} · {report.city || t('Lokasi tidak disebutkan', 'Location not specified')}</small></span>
+                <span className="pill verified">{t('Terverifikasi', 'Verified')}</span>
+              </button>)}
+            </div>
+          }
         </div>
       </div>
-      <div style={{ marginTop: 14, padding: 12, background: 'var(--surface2)', borderRadius: 8, fontSize: 11, color: '#8fa3b8' }}>
-        <UsersRound size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />
-        {t('Status laporan mengikuti hasil pemeriksaan petugas. Tampilan koordinat ini adalah daftar lokasi; peta interaktif nasional akan dikembangkan pada tahap berikutnya.', 'Report status follows reviewer assessment. This coordinate view is a location list; the interactive national map is planned for a later phase.')}
-      </div>
+      <div className="rukyat-note"><UsersRound size={17}/>{t('Hanya laporan terverifikasi yang ditampilkan sebagai titik. Data contoh tidak akan dianggap sebagai hasil rukyat nyata.', 'Only verified reports are shown as markers. Sample data is never presented as real rukyat results.')}</div>
     </div>
   );
 }
