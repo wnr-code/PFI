@@ -26,10 +26,14 @@ export function hijriText(d,l,lang='id',withDay=true){const h=hijri(d,l);return 
 export function periods(now,l){const out=[];for(let i=-35;i<355;i++){const d=new Date(+now+i*DAY),h=hijri(d,l);if(h.day===1)out.push({start:isoDay(d,l),...h});}return out;}
 export const phaseNames=[['Bulan Baru','New Moon'],['Sabit Awal','Waxing Crescent'],['Perbani Awal','First Quarter'],['Cembung Awal','Waxing Gibbous'],['Bulan Purnama','Full Moon'],['Cembung Akhir','Waning Gibbous'],['Perbani Akhir','Last Quarter'],['Sabit Akhir','Waning Crescent']];
 export function phaseIndex(angle){return angle<5||angle>=355?0:angle<84?1:angle<96?2:angle<175?3:angle<185?4:angle<264?5:angle<276?6:7;}
-export function lunar(d){const angle=MoonPhase(d),i=Illumination('Moon',d);return{angle,phase:phaseIndex(angle),illumination:100*i.phase_fraction,age:(+d-SearchMoonPhase(0,d,-32).date)/DAY,distance:i.geo_dist*KM_PER_AU};}
+export function lunar(d){const angle=MoonPhase(d),i=Illumination('Moon',d);return{angle,phase:phaseIndex(angle),elongation:AngleFromSun('Moon',d),illumination:100*i.phase_fraction,age:(+d-SearchMoonPhase(0,d,-32).date)/DAY,distance:i.geo_dist*KM_PER_AU};}
 export function position(body,d,l){const obs=new Observer(l.lat,l.lon,l.elev),e=Equator(body,d,obs,true,true),h=Horizon(d,obs,e.ra,e.dec,'normal');return {alt:h.altitude,az:h.azimuth,dec:e.dec,ra:e.ra,dist:e.dist*KM_PER_AU};}
+export function sunsetTime(day,l=SITES[0]){if(typeof day!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(day))return null;try{const check=new Date(`${day}T12:00:00.000Z`);if(!Number.isFinite(check.getTime())||check.toISOString().slice(0,10)!==day)return null;const start=localTime(day,'00:00',l);if(!Number.isFinite(start.getTime()))return null;const result=SearchRiseSet('Sun',new Observer(l.lat,l.lon,l.elev),-1,start,1);return result?.date||null;}catch{return null;}}
 export function starPosition(ra,dec,d,l){const h=Horizon(d,new Observer(l.lat,l.lon,l.elev),ra,dec);return{alt:h.altitude,az:h.azimuth};}
 export function calculateHisab(period,l,method='mabims'){
+ if(method!=='mabims')throw new Error('Metode hisab belum didukung.');
+ if(!period?.start||period.day!==1)throw new Error('Tanggal acuan harus merupakan tanggal 1 bulan Hijriah.');
+ if(!l||!Number.isFinite(l.lat)||!Number.isFinite(l.lon))throw new Error('Lokasi pengamatan tidak valid.');
  const start=localTime(period.start,'00:00',l),conj=SearchMoonPhase(0,new Date(+start-5*DAY),10).date;
  const sunset=SearchRiseSet('Sun',new Observer(l.lat,l.lon,l.elev),-1,conj,2).date;
  const moon=position('Moon',sunset,l),sun=position('Sun',sunset,l),elongation=AngleFromSun('Moon',sunset);

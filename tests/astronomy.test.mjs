@@ -22,7 +22,7 @@ assert.ok(Number.isFinite(q.km)&&q.km>8000,'qibla distance');
 const pl=prayers('2026-11-18',tasik);
 assert.equal(pl.length,6,'six prayer times');
 assert.ok(pl.every(([id,,date])=>date),'all prayer times resolved');
-const r=calculateHisab({start:'2026-12-10',month:8,year:1448},tasik,'mabims');
+const r=calculateHisab({start:'2026-12-10',month:8,year:1448,day:1},tasik,'mabims');
 assert.ok(typeof r.meets==='boolean','meets flag');
 assert.ok(r.age>0&&r.elongation>0,'computed values');
 assert.equal(typeof r.moon.alt,'number');

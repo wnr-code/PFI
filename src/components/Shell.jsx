@@ -1,9 +1,12 @@
+// PFI — Pusat Falak Indonesia | Maintainer: @wnr-code
+// Repository: https://github.com/wnr-code/PFI | Support: https://trakteer.id/lanteraku/tip
+// AI-assisted development; maintained and reviewed by the project maintainer.
 import React, { useState } from 'react';
 import { usePFI, go } from '../state.jsx';
 import {
   House, Calculator, Orbit, UsersRound, UserRound, MapPinned, Files,
   Bell, ChevronRight, MapPin, ChevronDown, GraduationCap, FlaskConical,
-  ChevronsUpDown, LayoutDashboard, CreditCard, Share2, LogOut,
+  ChevronsUpDown, LayoutDashboard, CreditCard, Share2, LogOut, CalendarDays, MoreHorizontal, X, BookOpen, Settings,
 } from 'lucide-react';
 
 export const navMain = [
@@ -17,6 +20,9 @@ export const navMain = [
 export const navMore = [
   ['peta', 'Peta Rukyat', 'Observation Map', MapPinned],
   ['laporan', 'Pusat Laporan', 'Report Centre', Files],
+  ['kalender', 'Kalender Hijriah', 'Hijri Calendar', CalendarDays],
+  ['panduan', 'Panduan Umum', 'General Guide', BookOpen],
+  ['pengaturan', 'Pengaturan', 'Settings', Settings],
 ];
 
 function Observatory() {
@@ -128,8 +134,12 @@ export function Sidebar() {
         </button>
         <div className="side-foot">
           <i />
-          {t('Ruang observasi digital', 'Digital observatory')}
+          <span>{t('Ruang observasi digital', 'Digital observatory')}</span>
           <span>v1.0</span>
+          <div style={{ display: 'flex', gap: 10, marginTop: 8, fontSize: 11 }}>
+            <a href="https://github.com/wnr-code/PFI" target="_blank" rel="noreferrer" aria-label="GitHub PFI">GitHub</a>
+            <a href="https://trakteer.id/lanteraku/tip" target="_blank" rel="noreferrer" aria-label="Dukung PFI di Trakteer">Dukung PFI</a>
+          </div>
         </div>
       </div>
     </aside>
@@ -170,8 +180,8 @@ export function Topbar() {
         </button>
         <button
           className="account-control"
-          onClick={() => go('profil')}
-          aria-label={t('Buka profil', 'Open profile')}
+          onClick={() => data.account ? go('profil') : open('auth')}
+          aria-label={data.account ? t('Buka profil', 'Open profile') : t('Masuk atau daftar', 'Sign in or register')}
         >
           <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=PFI" alt="" />
           <b>
@@ -189,19 +199,45 @@ export function Topbar() {
 
 export function BottomNav() {
   const { page, t } = usePFI();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreActive = navMore.some(([id]) => id === page);
+
   return (
-    <nav className="bottom-nav" aria-label={t('Navigasi bawah', 'Bottom navigation')}>
-      {navMain.map(([id, a, b, I]) => (
-        <a
-          key={id}
-          href={`#/${id}`}
-          className={`bottom-item ${page === id ? 'active' : ''}`}
-          aria-current={page === id ? 'page' : undefined}
-        >
-          <I size={22} />
-          <span>{t(a, b)}</span>
-        </a>
-      ))}
-    </nav>
+    <>
+      {moreOpen && (
+        <button className="mobile-more-backdrop" aria-label={t('Tutup menu lainnya', 'Close more menu')} onClick={() => setMoreOpen(false)} />
+      )}
+      {moreOpen && (
+        <div className="mobile-more-menu" role="menu">
+          <div className="mobile-more-heading">
+            <b>{t('Pusat informasi', 'Information centre')}</b>
+            <button onClick={() => setMoreOpen(false)} aria-label={t('Tutup', 'Close')}><X size={18} /></button>
+          </div>
+          {navMore.map(([id, a, b, I]) => (
+            <a key={id} href={`#/${id}`} role="menuitem" className={page === id ? 'active' : ''} onClick={() => setMoreOpen(false)}>
+              <I size={19} /><span>{t(a, b)}</span><ChevronRight size={16} />
+            </a>
+          ))}
+        </div>
+      )}
+      <nav className="bottom-nav" aria-label={t('Navigasi bawah', 'Bottom navigation')}>
+        {navMain.map(([id, a, b, I]) => (
+          <a
+            key={id}
+            href={`#/${id}`}
+            className={`bottom-item ${page === id ? 'active' : ''}`}
+            aria-current={page === id ? 'page' : undefined}
+            onClick={() => setMoreOpen(false)}
+          >
+            <I size={21} />
+            <span>{t(a, b)}</span>
+          </a>
+        ))}
+        <button type="button" className={`bottom-item ${moreActive || moreOpen ? 'active' : ''}`} aria-expanded={moreOpen} onClick={() => setMoreOpen((value) => !value)}>
+          <MoreHorizontal size={22} />
+          <span>{t('Lainnya', 'More')}</span>
+        </button>
+      </nav>
+    </>
   );
 }

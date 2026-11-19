@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { usePFI, go } from '../state.jsx';
-import { lunar, dateFmt, hijriText, SITES } from '../lib/astro.js';
+import { lunar, dateFmt, hijriText, clock, zlabel, phaseNames } from '../lib/astro.js';
 import {
   Moon, Sun, CalendarDays, MapPin, Calculator, Telescope, UsersRound,
   FileText, Share2, Orbit, History, FileDown, ArrowRight,
@@ -12,6 +12,8 @@ export default function Dashboard() {
   const hijri = hijriText(new Date(), loc, lang, false);
 
   const moon = useMemo(() => lunar(new Date()), [loc]);
+  const conjunction = events.find((event) => event.type === 'new');
+  const observation = events.find((event) => event.type === 'rukyat');
 
   const quickActions = [
     { id: 'hisab', label: t('Hisab Awal Bulan', 'New Month Calculation'), icon: Calculator, color: 'text-gold' },
@@ -32,6 +34,35 @@ export default function Dashboard() {
         <p>{dateFmt(new Date(), loc, lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · {hijri}</p>
       </div>
 
+      <section className="pfi-hero" aria-label={t('Langit malam Pusat Falak Indonesia', 'PFI night sky')}>
+        <img
+          className="pfi-hero-image"
+          src="https://commons.wikimedia.org/wiki/Special:FilePath/ISS043-E-39748_-_View_of_Earth%27s_horizon_and_the_crescent_Moon.jpg?width=2400"
+          alt={t('Bulan sabit di langit malam', 'Crescent moon in the night sky')}
+          loading="eager"
+        />
+        <div className="pfi-hero-shade" />
+        <div className="pfi-hero-copy">
+          <span className="pfi-hero-kicker">{t('PUSAT FALAK INDONESIA', 'INDONESIAN FALAK CENTRE')}</span>
+          <h2>{t('Menghubungkan Ilmu, Mengamati Semesta, Menyatukan Umat.', 'Connecting knowledge, observing the universe, uniting the community.')}</h2>
+          <p>{t('Jelajahi data hilal, astronomi, dan pengamatan langit bersama.', 'Explore crescent data, astronomy, and sky observations together.')}</p>
+          <button className="btn primary" onClick={() => go('hisab')}>
+            <Calculator size={17} /> {t('Mulai Hisab', 'Start Calculation')}
+          </button>
+        </div>
+        <span className="pfi-hero-stars" aria-hidden="true">✦　·　✧　·　✦</span>
+      </section>
+
+      <section className="dashboard-rukyat-entry">
+        <div className="dashboard-rukyat-orb" aria-hidden="true"><span /></div>
+        <div className="dashboard-rukyat-copy">
+          <span className="rukyat-kicker">{t('PEMANTAUAN NASIONAL', 'NATIONAL MONITORING')}</span>
+          <h2>{t('Jelajahi titik pengamatan hilal', 'Explore crescent observation sites')}</h2>
+          <p>{t('Pilih bola dunia interaktif atau peta Indonesia untuk melihat sebaran laporan rukyat.', 'Choose the interactive globe or Indonesia map to explore rukyat reports.')}</p>
+          <button className="btn primary" onClick={() => go('peta')}><MapPin size={17}/>{t('Buka Peta Rukyat', 'Open Observation Map')} <ArrowRight size={16}/></button>
+        </div>
+      </section>
+
       <div className="card">
         <div className="card-body">
           <div className="moon-display">
@@ -39,7 +70,7 @@ export default function Dashboard() {
               <Moon size={48} color="#d6ae62" />
             </div>
             <div className="moon-info">
-              <h3>{t('Fase Bulan', 'Moon Phase')} · {moon.phase === 'full' ? t('Purnama', 'Full Moon') : moon.phase === 'new' ? t('Ijtimak', 'New Moon') : t('Fase ' + moon.phase, 'Phase ' + moon.phase)}</h3>
+              <h3>{t('Fase Bulan', 'Moon Phase')} · {phaseNames[moon.phase]?.[lang === 'en' ? 1 : 0] || '—'}</h3>
               <p>{t('Iluminasi', 'Illumination')}: {Math.round(moon.illumination)}% · {t('Usia', 'Age')}: {moon.age?.toFixed?.(1) ?? '—'} {t('hari', 'days')}</p>
             </div>
           </div>
@@ -55,13 +86,13 @@ export default function Dashboard() {
             <div className="result-grid">
               <div className="metric">
                 <span className="label">{t('Ijtimak Berikutnya', 'Next Conjunction')}</span>
-                <b>{t('10 Mar 2025', '10 Mar 2025')}</b>
-                <small>{t('22:00 WIB', '22:00 WIB')}</small>
+                <b>{conjunction ? dateFmt(new Date(conjunction.date), loc, lang, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</b>
+                <small>{conjunction ? `${clock(new Date(conjunction.date), loc)} ${zlabel(loc)}` : '—'}</small>
               </div>
               <div className="metric">
                 <span className="label">{t('Rukyat Hilal', 'Crescent Observation')}</span>
-                <b>{t('11 Mar 2025', '11 Mar 2025')}</b>
-                <small>{t('Sore hari', 'Evening')}</small>
+                <b>{observation ? dateFmt(new Date(observation.date), loc, lang, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</b>
+                <small>{observation ? `${clock(new Date(observation.date), loc)} ${zlabel(loc)}` : '—'}</small>
               </div>
             </div>
           </div>

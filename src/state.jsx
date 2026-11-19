@@ -1,7 +1,8 @@
 import React, {
-  createContext, useContext, useEffect, useState, useRef, useCallback,
+  createContext, useContext, useEffect, useState, useRef, useCallback, useMemo,
 } from 'react';
 import { supabase, isAuthConfigured } from './lib/supabase.js';
+import { agenda, SITES } from './lib/astro.js';
 import {
   authApi, api, offlineStore, offlineGet,
 } from './lib/api.js';
@@ -19,7 +20,7 @@ const blank = () => ({
   session: null,
   lang: 'id',
   mode: 'pemula',
-  site: 'jakarta',
+  site: 'tasik',
   notify: true,
   posts: [],
   groups: [],
@@ -43,8 +44,8 @@ export function Provider({ children }) {
   );
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState('');
-  const [ready, setReady] = useState(false);
   const [online, setOnline] = useState(true);
+  const refreshVersion = useRef(0);
 
   const tell = useCallback((msg) => {
     setToast(msg);
@@ -73,32 +74,81 @@ export function Provider({ children }) {
   };
 
   const refresh = useCallback(async () => {
+    const version = ++refreshVersion.current;
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      if (version !== refreshVersion.current) return;
       const account = session?.user
         ? {
             id: session.user.id,
             name: session.user.user_metadata?.name ?? session.user.email,
             email: session.user.email,
-            role: session.user.user_metadata?.role ?? 'observer',
-            org: session.user.user_metadata?.org ?? '',
-            verification: session.user.user_metadata?.verification ?? 'none',
+            role: 'observer',
+            org: '',
+            verification: 'none',
           }
         : null;
-      setData((d) => ({ ...d, account, session }));
+      setData((d) => ({
+        ...d,
+        account,
+        session,
+        ...(d.account?.id !== account?.id
+          ? { posts: [], groups: [], agendas: [], calculations: [] }
+          : {}),
+      }));
+
+      // Authorization roles and verification status must come from D1 via the
+      // Worker, never from editable Supabase user metadata.
+      if (session?.user) {
+        try {
+          const serverSession = await api('/api/session');
+          if (version !== refreshVersion.current) return;
+          setData((d) => ({
+            ...d,
+            account: serverSession.account || account,
+            groups: serverSession.groups || [],
+            calculations: serverSession.history || [],
+            prefs: serverSession.prefs || {},
+            lang: ['id', 'en'].includes(serverSession.prefs?.lang) ? serverSession.prefs.lang : d.lang,
+            mode: ['pemula', 'profesional'].includes(serverSession.prefs?.mode) ? serverSession.prefs.mode : d.mode,
+            site: SITES.some((site) => site.id === serverSession.prefs?.site) ? serverSession.prefs.site : d.site,
+            notify: typeof serverSession.prefs?.notify === 'boolean' ? serverSession.prefs.notify : d.notify,
+          }));
+        } catch {
+          // Keep the conservative observer fallback if the profile API is unavailable.
+          if (version !== refreshVersion.current) return;
+        }
+        try {
+          const agendas = await api('/api/agendas');
+          if (version !== refreshVersion.current) return;
+          setData((d) => ({ ...d, agendas }));
+        } catch {
+          if (version !== refreshVersion.current) return;
+          setData((d) => ({ ...d, agendas: [] }));
+        }
+      } else {
+        if (version !== refreshVersion.current) return;
+        setData((d) => ({ ...d, groups: [], agendas: [], calculations: [] }));
+      }
 
       // Fetch posts from API (with offline fallback)
       try {
         const posts = await api('/api/posts');
+        if (version !== refreshVersion.current) return;
         await offlineStore('posts', posts);
+        if (version !== refreshVersion.current) return;
         setData((d) => ({ ...d, posts }));
       } catch (e) {
+        if (version !== refreshVersion.current) return;
         const cached = await offlineGet('posts');
+        if (version !== refreshVersion.current) return;
         setData((d) => ({ ...d, posts: cached || [] }));
       }
 
+      if (version !== refreshVersion.current) return;
       setData((d) => ({ ...d, ready: true }));
     } catch (e) {
+      if (version !== refreshVersion.current) return;
       setData((d) => ({ ...d, ready: true }));
     }
   }, []);
@@ -109,8 +159,9 @@ export function Provider({ children }) {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         await refresh();
       } else if (event === 'SIGNED_OUT') {
+        refreshVersion.current += 1;
         session(null);
-        setData((d) => ({ ...d, posts: [] }));
+        setData((d) => ({ ...d, posts: [], groups: [], agendas: [], calculations: [] }));
       }
     });
 
@@ -148,6 +199,12 @@ export function Provider({ children }) {
         : [...d[field], value],
     }));
 
+  const loc = useMemo(
+    () => SITES.find((site) => site.id === data.site) || SITES[0],
+    [data.site]
+  );
+  const events = useMemo(() => agenda(new Date(), loc), [loc]);
+
   const t = (id, en) => (data.lang === 'en' ? (en ?? id) : id);
 
   const value = {
@@ -155,7 +212,10 @@ export function Provider({ children }) {
     update,
     toggle,
     route,
+    page: route,
     lang: data.lang,
+    loc,
+    events,
     setLang: (l) => update({ lang: l }),
     mode: data.mode,
     setMode: (m) => update({ mode: m }),
@@ -164,7 +224,7 @@ export function Provider({ children }) {
     t,
     tell,
     toast,
-    ready,
+    ready: data.ready,
     online,
     refresh,
     signIn,

@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { usePFI, go } from '../state.jsx';
-import { lunar, position, dateFmt, SITES } from '../lib/astro.js';
+import { lunar, position, sunsetTime, clock, isoDay, SITES, zlabel } from '../lib/astro.js';
 import {
   Moon, Sun, Calendar, Clock, MapPin, Play, Compass, Eclipse, RefreshCw,
 } from 'lucide-react';
@@ -12,37 +12,59 @@ const TABS = [
 ];
 
 export default function Astronomi() {
-  const { data, t, lang, loc } = usePFI();
-  const [tab, setTab] = useState('simulasi');
-  [new Date().toISOString().slice(0, 10)];
-  const [waktu, setWaktu] = useState('18:00');
-  const [siteId, setSiteId] = useState(data.site || 'jakarta');
+  const { data, t, tell } = usePFI();
+  const [tanggal, setTanggal] = useState(() => {
+    const initialSite = SITES.find((item) => item.id === data.site) || SITES[0];
+    return isoDay(new Date(), initialSite);
+  });
+  const [siteId, setSiteId] = useState(() => SITES.some((item) => item.id === data.site) ? data.site : 'tasik');
+
+  useEffect(() => {
+    if (SITES.some((item) => item.id === data.site)) setSiteId(data.site);
+  }, [data.site]);
 
   const site = SITES.find((s) => s.id === siteId) || SITES[0];
-  const moon = useMemo(() => lunar(new Date(`${waktu}:00+07:00`)), [waktu, siteId]);
+  // MABIMS criteria are evaluated at local sunset, not at an arbitrary clock time.
+  const observationDate = useMemo(() => sunsetTime(tanggal, site), [tanggal, site]);
+  const moon = useMemo(() => observationDate ? lunar(observationDate) : null, [observationDate]);
 
   const simulasi = useMemo(() => {
+    if (!observationDate) return null;
     try {
-      const pos = position(new Date(`${waktu}:00+07:00`), site);
+      const pos = position('Moon', observationDate, site);
       return {
-        alt: pos.alt?.toFixed?.(2) ?? 0,
-        az: pos.az?.toFixed?.(2) ?? 0,
-        ra: pos.ra?.toFixed?.(2) ?? 0,
-        dec: pos.dec?.toFixed?.(2) ?? 0,
-        dist: pos.dist?.toFixed?.(0) ?? 0,
+        alt: pos.alt,
+        az: pos.az,
+        ra: pos.ra,
+        dec: pos.dec,
+        dist: pos.dist,
       };
-    } catch (e) {
-      return { alt: 0, az: 0, ra: 0, dec: 0, dist: 0 };
+    } catch {
+      return null;
     }
-  }, [waktu, siteId]);
+  }, [observationDate, site]);
+  const meets = Number.isFinite(simulasi?.alt) && simulasi.alt >= 3 &&
+    Number.isFinite(moon?.elongation) && moon.elongation >= 6.4;
 
   return (
     <div className="page-wrap">
       <div className="page-head">
         <div className="eyebrow"><i /> {t('ASTRONOMI / SIMULASI HILAL', 'ASTRONOMY / CRESCENT SIMULATION')}</div>
-        <h1>{t('Simulasi posisi bulan setelah matahari terbenam', 'Crescent position simulation after sunset')}</h1>
-        <p>{t('Lihat ketinggian, azimut, dan visibilitas hilal dari lokasi pengamatan.', 'View crescent height, azimuth, and visibility from observation site.')}</p>
+        <h1>{t('Simulasi posisi hilal saat matahari terbenam', 'Crescent position simulation at local sunset')}</h1>
+        <p>{t('Lihat ketinggian, azimut, dan pemenuhan kriteria MABIMS pada waktu terbenam Matahari. Verifikasi koordinat serta elevasi lokasi acuan sebelum digunakan di lapangan.', 'View crescent height, azimuth, and MABIMS criteria at local sunset. Verify reference-site coordinates and elevation before field use.')}</p>
       </div>
+
+      <section className="astronomy-photo" aria-label={t('Visual bulan sabit dari luar angkasa', 'Crescent Moon from space')}>
+        <img
+          src="https://commons.wikimedia.org/wiki/Special:FilePath/Crescent_moon_from_space.jpg?width=2400"
+          alt={t('Bulan sabit dan atmosfer Bumi dilihat dari luar angkasa', 'Crescent Moon and Earth atmosphere seen from space')}
+          loading="lazy"
+        />
+        <div className="astronomy-photo-caption">
+          <span>{t('MENJELAJAHI SEMESTA', 'EXPLORE THE UNIVERSE')}</span>
+          <b>{t('Amati posisi Bulan menjelang Matahari terbenam.', 'Observe the Moon’s position near sunset.')}</b>
+        </div>
+      </section>
 
       <div className="card">
         <div className="card-header">
@@ -52,15 +74,14 @@ export default function Astronomi() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
             <div className="field">
               <label>{t('Tanggal', 'Date')}</label>
-              <input type="date" defaultValue="2026-02-17" />
+              <input type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} />
             </div>
             <div className="field">
-              <label>{t('Waktu', 'Time')}</label>
-              <select value={waktu} onChange={(e) => setWaktu(e.target.value)}>
-                {[17, 18, 19, 20, 21].map((h) => (
-                  <option key={h} value={`${h}:00`}>{h.toString().padStart(2, '0')}:00 WIB</option>
-                ))}
-              </select>
+              <label>{t('Waktu terbenam Matahari', 'Local sunset')}</label>
+              <div className="result-box">
+                <b>{observationDate ? `${clock(observationDate, site)} ${zlabel(site)}` : '—'}</b>
+                <small>{t('Dihitung dari koordinat lokasi', 'Calculated for selected coordinates')}</small>
+              </div>
             </div>
             <div className="field">
               <label>{t('Lokasi', 'Location')}</label>
@@ -71,14 +92,7 @@ export default function Astronomi() {
               </select>
             </div>
           </div>
-          <div style={{ marginTop: 18 }}>
-            <button
-              className="btn primary full"
-              onClick={() => tell(t('Simulasi dijalankan.', 'Simulation run.'))}
-            >
-              <Play size={18} /> {t('Jalankan Simulasi', 'Run Simulation')}
-            </button>
-          </div>
+
         </div>
       </div>
 
@@ -90,26 +104,29 @@ export default function Astronomi() {
           <div className="result-grid" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
             <div className="metric">
               <span className="label">{t('Tinggi Hilal', 'Crescent Height')}</span>
-              <b>{simulasi.alt}°</b>
+              <b>{simulasi ? simulasi.alt.toFixed(2) : '—'}°</b>
               <small>{t('di atas horizon', 'above horizon')}</small>
             </div>
             <div className="metric">
               <span className="label">{t('Azimut', 'Azimuth')}</span>
-              <b>{simulasi.az}°</b>
+              <b>{simulasi ? simulasi.az.toFixed(2) : '—'}°</b>
               <small>{t('arah kompas', 'compass direction')}</small>
             </div>
             <div className="metric">
               <span className="label">{t('Elongasi', 'Elongation')}</span>
-              <b>{moon.elongation?.toFixed?.(1) ?? '—'}°</b>
+              <b>{moon?.elongation?.toFixed?.(1) ?? '—'}°</b>
               <small>{t('jarak dari matahari', 'from sun')}</small>
             </div>
             <div className="metric">
-              <span className="label">{t('Visibilitas', 'Visibility')}</span>
-              <b>{Number(simulasi.alt) >= 3 ? t('Cukup Baik', 'Good') : t('Kurang Baik', 'Poor')}</b>
-              <small>{Number(simulasi.alt) >= 3 ? '✓' : '✗'}</small>
+              <span className="label">{t('Kriteria MABIMS', 'MABIMS Criteria')}</span>
+              <b>{meets ? t('Memenuhi kriteria', 'Criteria met') : t('Belum memenuhi', 'Criteria not met')}</b>
+              <small>{meets ? '✓' : '✗'}</small>
             </div>
           </div>
 
+          <p style={{ marginTop: 14, fontSize: 11, lineHeight: 1.6, color: '#8fa3b8' }}>
+            {t('Perhitungan 3° dan 6,4° ini berlaku untuk lokasi terpilih pada saat Matahari terbenam, bukan evaluasi nasional multi-titik. Memenuhi kriteria tidak menjamin hilal pasti terlihat; cuaca, transparansi atmosfer, dan kondisi ufuk tetap berpengaruh. Penetapan resmi mengikuti keputusan pemerintah.', 'The 3° and 6.4° thresholds are evaluated at sunset for the selected location, not as a nationwide multi-site assessment. Meeting them does not guarantee an actual sighting; weather, atmospheric transparency, and horizon conditions still matter. Official month declarations follow the competent authority.')}
+          </p>
           <div style={{ marginTop: 20, height: 200, background: 'var(--surface2)', border: '1px solid var(--line)', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ fontSize: 11, color: '#8fa3b8', textAlign: 'center', padding: 10 }}>
               {t('Diagram ketinggian hilal (ilustrasi)', 'Crescent height diagram (illustration)')}
