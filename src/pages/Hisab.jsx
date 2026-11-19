@@ -83,7 +83,7 @@ export default function Hisab() {
         <div><div className="eyebrow"><i /> {t('LABORATORIUM HISAB', 'CALCULATION LABORATORY')}</div>
         <h1>{t('Hisab awal bulan', 'New month calculation')}</h1>
         <p>{t('Hitung ijtimak, matahari terbenam, tinggi hilal, dan elongasi menggunakan kriteria MABIMS.', 'Calculate conjunction, sunset, crescent height, and elongation using MABIMS criteria.')}</p></div>
-        <span className="method-badge"><Calculator size={16}/>MABIMS 2021</span>
+        <div className="hisab-head-actions"><span className="method-badge"><Calculator size={16}/>MABIMS 2021</span><button className="btn secondary" onClick={() => go('kalkulator')}><Compass size={16}/>{t('Kalkulator Lapangan', 'Field Calculator')}</button></div>
       </header>
 
       <section className="card hisab-parameters">

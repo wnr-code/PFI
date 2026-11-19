@@ -47,6 +47,7 @@ import Profil from '../src/pages/Profil.jsx';
 import PetaRukyat from '../src/pages/PetaRukyat.jsx';
 import Laporan from '../src/pages/Laporan.jsx';
 import Kamus from '../src/pages/Kamus.jsx';
+import KalkulatorLapangan from '../src/pages/KalkulatorLapangan.jsx';
 import { AuthModal } from '../src/components/AuthModal.jsx';
 import { Topbar } from '../src/components/Shell.jsx';
 
@@ -66,6 +67,15 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     expect(screen.getByRole('heading', { level: 1, name: /Kamus Falaq/i })).toBeTruthy();
     expect(screen.getByRole('searchbox', { name: /Cari istilah Falaq/i })).toBeTruthy();
     expect(screen.getByText('Hilal')).toBeTruthy();
+  });
+
+  it('renders practical field calculators with four tools', () => {
+    render(<KalkulatorLapangan />);
+    expect(screen.getByRole('heading', { level: 1, name: /Kalkulator Falaq/i })).toBeTruthy();
+    expect(screen.getAllByRole('tab')).toHaveLength(4);
+    expect(screen.getByText(/Arah dari utara sejati/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole('tab', { name: /Posisi Langit/i }));
+    expect(screen.getByText(/Tinggi Matahari/i)).toBeTruthy();
   });
 
   it('keeps the 3D globe and 2D map in separate renderer hosts', () => {

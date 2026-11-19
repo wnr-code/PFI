@@ -26,6 +26,7 @@ export const navMore = [
   ['peta', 'Peta Rukyat', 'Observation Map', MapPinned],
   ['laporan', 'Pusat Laporan', 'Report Centre', Files],
   ['kamus', 'Kamus Falaq', 'Falaq Glossary', BookOpen],
+  ['kalkulator', 'Kalkulator Falaq', 'Falaq Calculator', Calculator],
 ];
 
 function Observatory() {
