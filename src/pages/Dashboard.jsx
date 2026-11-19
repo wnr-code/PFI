@@ -53,6 +53,16 @@ export default function Dashboard() {
         <span className="pfi-hero-stars" aria-hidden="true">✦　·　✧　·　✦</span>
       </section>
 
+      <section className="dashboard-rukyat-entry">
+        <div className="dashboard-rukyat-orb" aria-hidden="true"><span /></div>
+        <div className="dashboard-rukyat-copy">
+          <span className="rukyat-kicker">{t('PEMANTAUAN NASIONAL', 'NATIONAL MONITORING')}</span>
+          <h2>{t('Jelajahi titik pengamatan hilal', 'Explore crescent observation sites')}</h2>
+          <p>{t('Pilih bola dunia interaktif atau peta Indonesia untuk melihat sebaran laporan rukyat.', 'Choose the interactive globe or Indonesia map to explore rukyat reports.')}</p>
+          <button className="btn primary" onClick={() => go('peta')}><MapPin size={17}/>{t('Buka Peta Rukyat', 'Open Observation Map')} <ArrowRight size={16}/></button>
+        </div>
+      </section>
+
       <div className="card">
         <div className="card-body">
           <div className="moon-display">
