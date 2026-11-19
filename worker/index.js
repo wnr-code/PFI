@@ -99,6 +99,12 @@ export function normalizeRukyatDetails(details) {
   const utcOffsetMinutes = sign * (Number(offsetMatch[2]) * 60 + Number(offsetMatch[3]));
   if (utcOffsetMinutes !== zoneOffsets[timeZone]) return null;
 
+  let accuracyMeters = null;
+  if (details.accuracyMeters !== null && details.accuracyMeters !== undefined && String(details.accuracyMeters).trim() !== '') {
+    accuracyMeters = Number(details.accuracyMeters);
+    if (!Number.isFinite(accuracyMeters) || accuracyMeters < 0 || accuracyMeters > 100000) return null;
+  }
+
   let elevation = null;
   if (details.elevation !== null && details.elevation !== undefined && String(details.elevation).trim() !== '') {
     if (!['number', 'string'].includes(typeof details.elevation)) return null;
@@ -116,6 +122,7 @@ export function normalizeRukyatDetails(details) {
     instrument: String(details.instrument || '').slice(0, 120),
     visibility: String(details.visibility || '').slice(0, 80),
     elevation,
+    accuracyMeters,
   };
 }
 
