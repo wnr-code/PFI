@@ -34,3 +34,18 @@ bucket_name = "forumcgs"
 # server-side here so the Worker can validate access tokens with Supabase Auth.
 # SUPABASE_URL
 # SUPABASE_ANON_KEY
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+persist = true
+
+[observability.traces]
+enabled = false
+head_sampling_rate = 1
+persist = true
