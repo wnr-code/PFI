@@ -827,3 +827,10 @@ select,input,textarea{font-size:15px;line-height:1.5}
 @keyframes pfiUserGpsPulse{0%{transform:scale(.55);opacity:.95}100%{transform:scale(1.45);opacity:0}}
 @media(max-width:600px){.pfi-map-location-tools{top:9px;right:9px}.pfi-locate-button{min-height:40px;padding:9px 11px;font-size:11px}}
 @media(prefers-reduced-motion:reduce){.pfi-user-location-pulse{animation:none}}
+
+
+/* PFI 2D map theme selector */
+.pfi-map-theme-tools{position:absolute;z-index:510;top:12px;left:12px;display:flex;align-items:center;gap:7px;max-width:calc(100% - 24px);padding:7px 9px;border:1px solid rgba(148,163,184,.28);border-radius:12px;background:rgba(8,20,36,.94);box-shadow:0 8px 24px rgba(0,0,0,.24);color:#eaf4ff}
+.pfi-map-theme-tools label{font-size:10px;font-weight:800;white-space:nowrap;color:#bfdbfe}
+.pfi-map-theme-tools select{min-width:0;max-width:180px;padding:7px 25px 7px 9px;border:1px solid rgba(147,197,253,.32);border-radius:8px;background:#132c49;color:#fff;font-size:11px;font-weight:700}
+@media(max-width:600px){.pfi-map-theme-tools{top:9px;left:9px;gap:5px;padding:6px 7px}.pfi-map-theme-tools label{font-size:9px}.pfi-map-theme-tools select{max-width:145px;font-size:10px;padding:7px 20px 7px 7px}.pfi-map-location-tools{top:9px;right:9px}}
