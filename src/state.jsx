@@ -55,7 +55,8 @@ export function Provider({ children }) {
 
   const tell = useCallback((msg) => {
     setToast(msg);
-    setTimeout(() => setToast(''), 4000);
+    // Diagnostic messages remain longer so their reference can be copied.
+    setTimeout(() => setToast(''), /Kode:\s*\S+/.test(msg) ? 12000 : 4000);
   }, []);
 
   const setPreference = useCallback(async (field, value) => {

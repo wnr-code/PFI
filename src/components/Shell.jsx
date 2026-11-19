@@ -186,14 +186,14 @@ export function Topbar() {
         >
           {data.account
             ? <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=PFI" alt="" />
-            : <LogIn size={17} aria-hidden="true" />}
+            : <span className="login-icon"><LogIn size={20} aria-hidden="true" /></span>}
           <b>
             {data.account
               ? data.account.name.split(' ')[0] +
                 (data.account.name.split(' ')[1] ? ' ' + data.account.name.split(' ')[1][0] + '.' : '')
               : t('Masuk', 'Sign in')}
           </b>
-          <ChevronDown size={12} />
+          <ChevronDown className="account-chevron" size={12} />
         </button>
       </div>
     </header>
