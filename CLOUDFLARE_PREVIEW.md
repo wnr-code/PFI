@@ -45,7 +45,7 @@ Build variables frontend:
 - `VITE_SUPABASE_URL`: URL project Supabase yang digunakan aplikasi.
 - `VITE_SUPABASE_ANON_KEY`: publishable key Supabase.
 
-Pastikan Preview memakai API same-origin. Atur runtime secrets `SUPABASE_URL` dan `SUPABASE_ANON_KEY` melalui pengaturan Preview Worker, bukan di repository. Jika Dashboard mengelola nilai Preview secara terpisah, pastikan keduanya tersedia di Preview.
+Pastikan Preview memakai API same-origin. Worker menerima nama runtime `SUPABASE_URL` dan `SUPABASE_ANON_KEY`; sebagai kompatibilitas, Worker juga membaca `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` bila nama utama tidak tersedia. Nilai tersebut harus benar-benar tersedia sebagai **runtime variables/secrets pada Worker Preview**. Variabel build frontend saja tidak otomatis tersedia di runtime Worker. Jangan menaruh service-role key di konfigurasi ini. Periksa status `/api/health`: `missing_url` berarti URL runtime tidak tersedia, `missing_key` berarti publishable/anon key runtime tidak tersedia, dan `configured` berarti keduanya terbaca (belum membuktikan login berhasil).
 
 ## Pemeriksaan setelah Preview dibuat
 
