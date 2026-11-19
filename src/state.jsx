@@ -163,7 +163,14 @@ export function Provider({ children }) {
     let authRefreshTimer;
     const { data: { subscription } } = authApi.onAuthStateChange((event, authEventSession) => {
       if (signedOutRequested.current && authEventSession) return;
-      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_OUT') {
+      if (event === 'SIGNED_OUT') {
+        clearTimeout(authRefreshTimer);
+        signedOutRequested.current = true;
+        refreshSequence.current += 1;
+        session(null);
+        return;
+      }
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         // Supabase recommends using the event's session instead of calling
         // getSession again. Defer API work until its internal auth lock exits.
         clearTimeout(authRefreshTimer);

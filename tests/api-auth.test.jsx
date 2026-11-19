@@ -39,6 +39,14 @@ describe('Cloudflare API identity boundary', () => {
     expect(supabase.auth.getSession).not.toHaveBeenCalled();
   });
 
+  it('keeps an explicitly anonymous request anonymous during sign-out', async () => {
+    supabase.auth.getSession.mockClear();
+    await api('/api/session', 'GET', null, null);
+    const [, options] = globalThis.fetch.mock.calls[0];
+    expect(options.headers.Authorization).toBeUndefined();
+    expect(supabase.auth.getSession).not.toHaveBeenCalled();
+  });
+
   it('lets the browser set the multipart boundary for R2 photo uploads', async () => {
     const form = new FormData();
     form.append('photo', new Blob(['image']), 'rukyat.jpg');

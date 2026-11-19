@@ -17,10 +17,10 @@ async function accessToken() {
   return data.session?.access_token || null;
 }
 
-export async function api(path, method = 'GET', body = null, identityToken = null) {
-  // Startup may have a freshly exchanged callback session before another
-  // getSession call observes storage. Prefer that exact token when supplied.
-  const token = identityToken || await accessToken();
+export async function api(path, method = 'GET', body = null, identityToken = undefined) {
+  // `undefined` means resolve the current session. Explicit `null` means an
+  // anonymous request and must never fall back to a token being signed out.
+  const token = identityToken === undefined ? await accessToken() : identityToken;
   const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
   const headers = { 'X-PFI-Request': 'workspace' };
   if (!isForm) headers['Content-Type'] = 'application/json';
