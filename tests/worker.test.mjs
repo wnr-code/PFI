@@ -165,6 +165,7 @@ test('institution applications cannot be reviewed by their own applicant', async
   const application = { applicant_user_id: 'applicant-1', status: 'pending' };
   assert.equal(canReviewInstitutionApplication(application, { id: 'applicant-1', role: 'admin' }), false);
   assert.equal(canReviewInstitutionApplication(application, { id: 'reviewer-1', role: 'reviewer' }), true);
+  assert.equal(canReviewInstitutionApplication({ ...application, status: 'revision' }, { id: 'reviewer-1', role: 'reviewer' }), true);
   assert.equal(canReviewInstitutionApplication(application, { id: 'member-1', role: 'observer' }), false);
   assert.equal(canReviewInstitutionApplication({ ...application, status: 'approved' }, { id: 'reviewer-1', role: 'reviewer' }), false);
 });
