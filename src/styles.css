@@ -836,22 +836,23 @@ select,input,textarea{font-size:15px;line-height:1.5}
 @media(max-width:600px){.pfi-map-theme-tools{top:9px;left:9px;gap:5px;padding:6px 7px}.pfi-map-theme-tools label{font-size:9px}.pfi-map-theme-tools select{max-width:145px;font-size:10px;padding:7px 20px 7px 7px}.pfi-map-location-tools{top:9px;right:9px}}
 
 
-/* Leaflet map viewport: clip raster tiles to the map frame on mobile and desktop. */
-.pfi-map-wrap{position:relative;isolation:isolate;overflow:hidden}
+/* Leaflet viewport: retain Leaflet's native pane stacking so map tiles,
+   globe canvas and satellite overlays can never cover the 2D map. */
+.pfi-map-wrap{position:relative;overflow:hidden}
 .pfi-leaflet-map{
   position:relative;
-  overflow:hidden;
+  width:100%;
+  height:100%;
+  min-height:440px;
   outline:0;
   background:#d9e7eb;
-  isolation:isolate;
 }
-.pfi-leaflet-map.leaflet-container{font:12px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-.pfi-leaflet-map .leaflet-tile-pane{z-index:200}
-.pfi-leaflet-map .leaflet-overlay-pane{z-index:400}
-.pfi-leaflet-map .leaflet-marker-pane{z-index:600}
-.pfi-leaflet-map .leaflet-tooltip-pane{z-index:650}
-.pfi-leaflet-map .leaflet-popup-pane{z-index:700}
-.pfi-leaflet-map .leaflet-control-container{position:absolute;inset:0;pointer-events:none}
+.pfi-leaflet-map.leaflet-container{
+  font:12px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  overflow:hidden;
+  isolation:auto;
+}
+.pfi-leaflet-map .leaflet-tile{opacity:1!important;filter:none!important}
 .pfi-leaflet-map .leaflet-control{pointer-events:auto}
 @media(max-width:600px){
   .pfi-map-wrap{overflow:hidden;border-radius:0}
