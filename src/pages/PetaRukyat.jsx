@@ -349,7 +349,6 @@ export default function PetaRukyat() {
       setMapReady(true);
       map.invalidateSize({ pan: false });
       requestAnimationFrame(() => { if (!cancelled && mapInstance.current === map) map.invalidateSize({ pan: false }); });
-      map._pfiRenderMarkers = renderMarkers;
     }).catch((error) => {
       if (!cancelled) setLibraryError(error?.message || t('Peta tidak dapat dimuat.', 'Map could not be loaded.'));
     });
