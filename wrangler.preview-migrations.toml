@@ -1,0 +1,9 @@
+# Dedicated config for applying migrations to the Preview D1 database only.
+# Do not use this file to deploy the Worker.
+name = "pfi-preview-migrations"
+
+[[d1_databases]]
+binding = "PREVIEW_DB"
+database_name = "sanbok-pfi"
+database_id = "b43a00c7-7ba9-4b9a-95be-a2770ab8e3ae"
+migrations_dir = "migrations"
