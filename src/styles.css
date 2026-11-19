@@ -442,3 +442,11 @@ select,input,textarea{font-size:15px;line-height:1.5}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+.astronomy-photo{height:230px;position:relative;overflow:hidden;border:1px solid rgba(230,193,130,.3);border-radius:16px;background:#08162b;box-shadow:0 14px 34px rgba(0,0,0,.28);animation:fadeRise .55s ease both}
+.astronomy-photo img{width:100%;height:100%;object-fit:cover;object-position:center 44%;filter:saturate(.9)}
+.astronomy-photo:after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,rgba(4,12,27,.92),transparent 76%)}
+.astronomy-photo-caption{position:absolute;z-index:1;left:22px;right:22px;bottom:18px;display:flex;flex-direction:column;gap:5px}
+.astronomy-photo-caption span{font-size:10px;font-weight:800;letter-spacing:2px;color:#f0cc83}
+.astronomy-photo-caption b{font-size:19px;line-height:1.3;color:#fff}
+@media(max-width:520px){.astronomy-photo{height:205px;border-radius:14px}.astronomy-photo-caption{left:16px;bottom:14px}.astronomy-photo-caption b{font-size:17px}}
