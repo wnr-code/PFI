@@ -32,7 +32,12 @@ export async function api(path, method = 'GET', body = null) {
   const contentType = res.headers.get('content-type') || '';
   const payload = contentType.includes('application/json') ? await res.json() : await res.text();
   if (res.status === 401) throw new Error('Sesi Google berakhir. Silakan masuk kembali.');
-  if (!res.ok) throw new Error(payload?.error || payload?.message || `Permintaan gagal (${res.status})`);
+  if (!res.ok) {
+    const message = payload?.error || payload?.message || `Permintaan gagal (${res.status})`;
+    const detail = payload?.detail ? ` ${payload.detail}` : '';
+    const reference = payload?.requestId ? ` Kode: ${payload.code || 'ERROR'} · Referensi: ${payload.requestId}` : '';
+    throw new Error(`${message}${detail}${reference}`);
+  }
   return payload;
 }
 

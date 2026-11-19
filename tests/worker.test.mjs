@@ -70,6 +70,19 @@ test('Worker health endpoint reports missing runtime dependencies', async () => 
   assert.equal(body.authentication, 'missing_configuration');
 });
 
+test('Worker failures include a safe diagnostic code and traceable request reference', async () => {
+  const env = {
+    ASSETS: { fetch: async () => { throw new Error('UNIQUE constraint failed: users.email'); } },
+  };
+  const response = await worker.fetch(new Request('https://pfi.test/'), env, {});
+  assert.equal(response.status, 500);
+  const body = await response.json();
+  assert.equal(body.code, 'DATABASE_UNIQUE_CONFLICT');
+  assert.match(body.detail, /akun/i);
+  assert.match(body.requestId, /^[0-9a-f-]{36}$/i);
+  assert.equal(body.error, 'Layanan PFI belum dapat menyelesaikan permintaan.');
+});
+
 test('protected post creation rejects anonymous requests', async () => {
   const request = new Request('https://pfi.test/api/posts', {
     method: 'POST',
