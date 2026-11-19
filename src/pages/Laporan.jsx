@@ -121,7 +121,7 @@ export default function Laporan() {
         details: {
           latitude: form.latitude,
           longitude: form.longitude,
-          observedAt: new Date(`${form.observedAt}:00${form.timeZone === 'WIB' ? '+07:00' : form.timeZone === 'WITA' ? '+08:00' : '+09:00'}`).toISOString(),
+          observedAt: `${form.observedAt}:00${form.timeZone === 'WIB' ? '+07:00' : form.timeZone === 'WITA' ? '+08:00' : '+09:00'}`,
           timeZone: form.timeZone,
           weather: form.weather,
           instrument: form.instrument,
