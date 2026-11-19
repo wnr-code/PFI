@@ -550,3 +550,82 @@ select,input,textarea{font-size:15px;line-height:1.5}
 @media(prefers-reduced-motion:reduce){
   .nav-item,.nav-item svg,.bottom-item,.bottom-item svg{transition:none!important}
 }
+
+
+/* PFI interactive rukyat globe and Indonesia map */
+.rukyat-visual-card{overflow:hidden;border:1px solid rgba(214,174,98,.25);border-radius:20px;background:linear-gradient(145deg,#132b4b,#09182e);box-shadow:0 18px 48px rgba(0,0,0,.28)}
+.rukyat-visual-head{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 22px;border-bottom:1px solid rgba(160,185,216,.13)}
+.rukyat-kicker{display:block;color:#e6c17c;font-size:10px;font-weight:800;letter-spacing:1.8px}
+.rukyat-visual-head h2{font-size:19px;margin-top:5px}
+.rukyat-mode-switch{display:flex;gap:5px;padding:5px;border:1px solid rgba(173,195,223,.17);border-radius:13px;background:rgba(2,12,26,.42)}
+.rukyat-mode-switch button{display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 13px;border-radius:9px;color:#a9bad0;font-size:12px;font-weight:700}
+.rukyat-mode-switch button.active{color:#14213b;background:linear-gradient(110deg,#edcf91,#c99c52);box-shadow:0 4px 15px rgba(214,174,98,.18)}
+.rukyat-globe-stage{position:relative;min-height:390px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,rgba(35,83,133,.35),transparent 48%),linear-gradient(180deg,#08172c,#0c2140)}
+.rukyat-stars{position:absolute;inset:0;opacity:.55;background-image:radial-gradient(1px 1px at 12% 22%,#fff 98%,transparent),radial-gradient(2px 2px at 80% 18%,#e9d6ad 98%,transparent),radial-gradient(1px 1px at 65% 72%,#fff 98%,transparent),radial-gradient(1px 1px at 24% 78%,#fff 98%,transparent),radial-gradient(1px 1px at 90% 60%,#fff 98%,transparent);background-size:210px 180px}
+.rukyat-globe{position:relative;width:min(300px,68vw);aspect-ratio:1;border-radius:50%;overflow:hidden;border:1px solid rgba(131,190,236,.55);background:radial-gradient(circle at 32% 28%,#3975a7 0%,#17436f 34%,#0a294c 70%,#06172c 100%);box-shadow:inset -25px -15px 48px rgba(0,0,0,.68),inset 12px 8px 28px rgba(151,206,244,.24),0 0 35px rgba(67,151,218,.24),0 0 90px rgba(42,113,184,.16);animation:rukyatGlobeSpin 34s linear infinite}
+.rukyat-globe-grid{position:absolute;inset:-8%;border-radius:50%;background:repeating-linear-gradient(0deg,transparent 0 39px,rgba(174,218,246,.15) 40px 41px,transparent 42px 80px),repeating-linear-gradient(90deg,transparent 0 39px,rgba(174,218,246,.14) 40px 41px,transparent 42px 80px);transform:scaleX(.58);border:1px solid rgba(174,218,246,.2)}
+.rukyat-globe-land{position:absolute;inset:0;width:100%;height:100%;fill:#78a77d;opacity:.8;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
+.rukyat-globe-points{position:absolute;inset:0;z-index:3}
+.rukyat-point{position:absolute;width:18px;height:18px;padding:0;transform:translate(-50%,-50%);border:0;border-radius:50%;background:rgba(242,199,111,.2);display:grid;place-items:center}
+.rukyat-point span{width:7px;height:7px;border-radius:50%;background:#f3cb77;box-shadow:0 0 8px 3px rgba(243,203,119,.65);animation:rukyatPulse 1.8s ease-in-out infinite}
+.rukyat-globe-shine{position:absolute;inset:0;border-radius:50%;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.16),transparent 35% 68%,rgba(0,0,0,.35))}
+.rukyat-globe-caption{display:flex;flex-direction:column;align-items:center;gap:5px;margin:18px 0 20px;text-align:center}
+.rukyat-globe-caption b{font-size:10px;letter-spacing:1.6px;color:#e8c985}
+.rukyat-globe-caption span{font-size:12px;color:#9db1ca}
+.rukyat-map-stage{padding:18px;background:#08172c}
+.rukyat-map-topline{display:flex;justify-content:space-between;align-items:center;margin:0 0 10px;color:#e8c985;font-size:11px;font-weight:800;letter-spacing:1.7px}
+.rukyat-map-topline small{font-size:10px;font-weight:500;letter-spacing:0;color:#93a9c4}
+.rukyat-indonesia-map{display:block;width:100%;height:auto;max-height:440px;border:1px solid rgba(147,177,210,.15);border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.2)}
+.rukyat-map-graticule line{stroke:rgba(143,179,214,.12);stroke-width:1;stroke-dasharray:4 7}
+.rukyat-islands{filter:drop-shadow(0 4px 5px rgba(0,0,0,.28))}
+.rukyat-map-marker{cursor:pointer;outline:none}
+.marker-pulse{fill:rgba(244,202,120,.2);stroke:rgba(244,202,120,.65);stroke-width:1;animation:rukyatPulse 1.8s ease-out infinite}
+.marker-core{fill:#f2c878;stroke:#fff1cf;stroke-width:1.5}
+.rukyat-map-marker:focus .marker-core{stroke:#fff;stroke-width:3}
+.rukyat-map-legend{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;color:#91a8c4;font-size:10px}
+.rukyat-map-legend span:first-child{display:flex;align-items:center;gap:7px}
+.rukyat-map-legend i{width:8px;height:8px;border-radius:50%;background:#f2c878;box-shadow:0 0 8px #f2c878}
+.rukyat-stats{display:flex;align-items:center;gap:22px;padding:15px 20px;border-top:1px solid rgba(160,185,216,.13)}
+.rukyat-stats>div{display:flex;flex-direction:column;gap:2px}
+.rukyat-stats b{font-size:22px;color:#fff}
+.rukyat-stats span{font-size:10px;color:#91a8c4}
+.rukyat-stats .btn{margin-left:auto}
+.rukyat-detail{position:relative;margin:0 18px 18px;padding:18px;border:1px solid rgba(226,192,125,.27);border-radius:14px;background:rgba(3,13,28,.58);animation:fadeRise .22s ease}
+.rukyat-detail-close{position:absolute;right:12px;top:12px;width:34px;height:34px;display:grid;place-items:center;border-radius:9px;background:rgba(255,255,255,.06);color:#c5d3e4}
+.rukyat-detail h3{font-size:19px;margin:6px 38px 2px 0}
+.rukyat-detail>p{font-size:12px;color:#9eb1c9;margin-bottom:14px}
+.rukyat-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:15px}
+.rukyat-detail-grid span{display:flex;flex-direction:column;gap:3px;min-width:0}
+.rukyat-detail-grid small{font-size:10px;color:#8da4c0}
+.rukyat-detail-grid b{font-size:12px;overflow-wrap:anywhere;color:#eaf0f8}
+.verified-text{color:#8bd3a7!important}
+.rukyat-empty{display:flex;min-height:110px;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;color:#94a9c3;font-size:12px}
+.rukyat-empty b{color:#eaf0f8;font-size:14px}
+.rukyat-empty span{max-width:420px}
+.rukyat-report-list{display:flex;flex-direction:column;gap:8px}
+.rukyat-report{width:100%;display:flex;align-items:center;gap:12px;padding:13px;text-align:left;border:1px solid rgba(150,178,211,.13);border-radius:12px;background:rgba(255,255,255,.025)}
+.rukyat-report.selected,.rukyat-report:hover{border-color:rgba(214,174,98,.4);background:rgba(214,174,98,.07)}
+.rukyat-report-icon{width:38px;height:38px;display:grid;place-items:center;flex-shrink:0;border-radius:11px;background:rgba(214,174,98,.1);color:#e6c17c}
+.rukyat-report-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+.rukyat-report-copy b{font-size:13px;color:#edf3fa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rukyat-report-copy small{font-size:11px;color:#91a8c4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rukyat-note{display:flex;align-items:flex-start;gap:9px;padding:13px 15px;border:1px solid rgba(214,174,98,.18);border-radius:12px;background:rgba(214,174,98,.05);font-size:11px;color:#aebed2;line-height:1.6}
+.rukyat-note svg{flex-shrink:0;color:#e6c17c}
+@keyframes rukyatGlobeSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes rukyatPulse{0%,100%{opacity:.65;transform:scale(.85)}50%{opacity:1;transform:scale(1.18)}}
+@media(max-width:600px){
+ .rukyat-visual-head{align-items:flex-start;flex-direction:column;padding:17px}
+ .rukyat-mode-switch{width:100%}
+ .rukyat-mode-switch button{flex:1;padding:10px 7px;font-size:11px}
+ .rukyat-globe-stage{min-height:340px}
+ .rukyat-globe{width:min(250px,68vw)}
+ .rukyat-map-stage{padding:12px 9px}
+ .rukyat-stats{gap:13px;padding:13px}
+ .rukyat-stats b{font-size:19px}
+ .rukyat-stats span{font-size:9px}
+ .rukyat-stats .btn{padding:9px;font-size:11px}
+ .rukyat-detail{margin:0 10px 12px;padding:14px}
+ .rukyat-detail-grid{gap:10px}
+ .rukyat-report .pill{font-size:9px;padding:4px 6px}
+}
+@media(prefers-reduced-motion:reduce){.rukyat-globe,.rukyat-point span,.marker-pulse{animation:none!important}}
