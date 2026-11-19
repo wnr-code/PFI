@@ -1,28 +1,30 @@
-// PFI — Pusat Falak Indonesia | Maintainer: @wnr-code
-// Repository: https://github.com/wnr-code/PFI | Support: https://trakteer.id/lanteraku/tip
-// AI-assisted development; maintained and reviewed by the project maintainer.
+/*
+ * Dibuat/diperbarui: 2026-11-19
+ * Dibuat oleh: AEP
+ * GitHub: https://github.com/wnr-code/PFI
+ * Maintainer: @wnr-code — https://github.com/wnr-code
+ * Dukung pengembang: https://trakteer.id/lanteraku/tip
+ */
 import React, { useState } from 'react';
 import { usePFI, go } from '../state.jsx';
 import {
   House, Calculator, Orbit, UsersRound, UserRound, MapPinned, Files,
   Bell, ChevronRight, MapPin, ChevronDown, GraduationCap, FlaskConical,
-  ChevronsUpDown, LayoutDashboard, CreditCard, Share2, LogOut, CalendarDays, MoreHorizontal, X, BookOpen, Settings,
+  ChevronsUpDown, LayoutDashboard, CreditCard, Share2, LogOut,
 } from 'lucide-react';
+import { SITES } from '../lib/astro.js';
 
 export const navMain = [
   ['beranda', 'Beranda', 'Home', House],
   ['hisab', 'Hisab', 'Hisab', Calculator],
   ['astronomi', 'Astronomi', 'Astronomy', Orbit],
+  ['peta', 'Peta', 'Map', MapPinned],
   ['komunitas', 'Komunitas', 'Community', UsersRound],
-  ['profil', 'Profil', 'Profile', UserRound],
 ];
 
 export const navMore = [
   ['peta', 'Peta Rukyat', 'Observation Map', MapPinned],
   ['laporan', 'Pusat Laporan', 'Report Centre', Files],
-  ['kalender', 'Kalender Hijriah', 'Hijri Calendar', CalendarDays],
-  ['panduan', 'Panduan Umum', 'General Guide', BookOpen],
-  ['pengaturan', 'Pengaturan', 'Settings', Settings],
 ];
 
 function Observatory() {
@@ -57,7 +59,7 @@ function Observatory() {
 }
 
 export function Sidebar() {
-  const { page, t, data, open, toggle } = usePFI();
+  const { page, t, data, setMode } = usePFI();
   const [collapsed, setCollapsed] = useState(false);
 
   const links = (items) =>
@@ -80,7 +82,7 @@ export function Sidebar() {
       <a
         className="brand-link"
         href="#/beranda"
-        aria-label="Pusat Falak Indonesia"
+        aria-label="Pusat Falaq Indonesia"
         onClick={() => setCollapsed(false)}
       >
         <div className="brand">
@@ -90,7 +92,7 @@ export function Sidebar() {
             <path d="M32 33M53 33" fill="none" stroke="#d6ae62" strokeWidth="2" />
           </svg>
           <div>
-            <span>Pusat Falak Indonesia</span>
+            <span>Pusat Falaq Indonesia</span>
             <small>PFI</small>
           </div>
         </div>
@@ -105,15 +107,12 @@ export function Sidebar() {
       <nav aria-label={t('Navigasi utama', 'Main navigation')}>
         <div className="nav-label">{t('MENU UTAMA', 'MAIN MENU')}</div>
         {links(navMain)}
-        <div className="nav-divider" />
-        <div className="nav-label">{t('PUSAT INFORMASI', 'INFORMATION CENTRE')}</div>
-        {links(navMore)}
       </nav>
       <div className="side-bottom">
         <Observatory />
         <button
           className="mode-button"
-          onClick={() => open('mode')}
+          onClick={() => setMode(data.mode === 'pemula' ? 'profesional' : 'pemula')}
         >
           <span className="mode-icon">
             {data.mode === 'pemula' ? (
@@ -134,12 +133,8 @@ export function Sidebar() {
         </button>
         <div className="side-foot">
           <i />
-          <span>{t('Ruang observasi digital', 'Digital observatory')}</span>
+          {t('Ruang observasi digital', 'Digital observatory')}
           <span>v1.0</span>
-          <div style={{ display: 'flex', gap: 10, marginTop: 8, fontSize: 11 }}>
-            <a href="https://github.com/wnr-code/PFI" target="_blank" rel="noreferrer" aria-label="GitHub PFI">GitHub</a>
-            <a href="https://trakteer.id/lanteraku/tip" target="_blank" rel="noreferrer" aria-label="Dukung PFI di Trakteer">Dukung PFI</a>
-          </div>
         </div>
       </div>
     </aside>
@@ -147,7 +142,7 @@ export function Sidebar() {
 }
 
 export function Topbar() {
-  const { page, t, loc, open, data, lang } = usePFI();
+  const { page, t, loc, data, site, setSite, setNotify } = usePFI();
   const entry = [...navMain, ...navMore].find((n) => n[0] === page) || navMain[0];
   const label = t(entry[1], entry[2]);
 
@@ -160,28 +155,24 @@ export function Topbar() {
         <strong>{label}</strong>
       </div>
       <div className="top-actions">
-        <button
-          className="loc-control"
-          onClick={() => open('location')}
-        >
+        <label className="loc-control" aria-label={t('Lokasi pengamatan', 'Observation site')}>
           <MapPin size={14} />
-          <span>
-            {loc.city}<span className="region">, {loc.region}</span>
-          </span>
-          <ChevronDown size={10} />
-        </button>
+          <select value={site} onChange={(event) => setSite(event.target.value)}>
+            {SITES.map((item) => <option key={item.id} value={item.id}>{item.city}</option>)}
+          </select>
+        </label>
         <button
           className="bell-button"
           aria-label={t('Notifikasi', 'Notifications')}
-          onClick={() => open('notifications')}
+          onClick={() => setNotify(!data.notify)}
         >
           <Bell size={17} />
           {data.notify && <i className="bell-dot" />}
         </button>
         <button
           className="account-control"
-          onClick={() => data.account ? go('profil') : open('auth')}
-          aria-label={data.account ? t('Buka profil', 'Open profile') : t('Masuk atau daftar', 'Sign in or register')}
+          onClick={() => go('profil')}
+          aria-label={t('Buka profil', 'Open profile')}
         >
           <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=PFI" alt="" />
           <b>
@@ -199,45 +190,19 @@ export function Topbar() {
 
 export function BottomNav() {
   const { page, t } = usePFI();
-  const [moreOpen, setMoreOpen] = useState(false);
-  const moreActive = navMore.some(([id]) => id === page);
-
   return (
-    <>
-      {moreOpen && (
-        <button className="mobile-more-backdrop" aria-label={t('Tutup menu lainnya', 'Close more menu')} onClick={() => setMoreOpen(false)} />
-      )}
-      {moreOpen && (
-        <div className="mobile-more-menu" role="menu">
-          <div className="mobile-more-heading">
-            <b>{t('Pusat informasi', 'Information centre')}</b>
-            <button onClick={() => setMoreOpen(false)} aria-label={t('Tutup', 'Close')}><X size={18} /></button>
-          </div>
-          {navMore.map(([id, a, b, I]) => (
-            <a key={id} href={`#/${id}`} role="menuitem" className={page === id ? 'active' : ''} onClick={() => setMoreOpen(false)}>
-              <I size={19} /><span>{t(a, b)}</span><ChevronRight size={16} />
-            </a>
-          ))}
-        </div>
-      )}
-      <nav className="bottom-nav" aria-label={t('Navigasi bawah', 'Bottom navigation')}>
-        {navMain.map(([id, a, b, I]) => (
-          <a
-            key={id}
-            href={`#/${id}`}
-            className={`bottom-item ${page === id ? 'active' : ''}`}
-            aria-current={page === id ? 'page' : undefined}
-            onClick={() => setMoreOpen(false)}
-          >
-            <I size={21} />
-            <span>{t(a, b)}</span>
-          </a>
-        ))}
-        <button type="button" className={`bottom-item ${moreActive || moreOpen ? 'active' : ''}`} aria-expanded={moreOpen} onClick={() => setMoreOpen((value) => !value)}>
-          <MoreHorizontal size={22} />
-          <span>{t('Lainnya', 'More')}</span>
-        </button>
-      </nav>
-    </>
+    <nav className="bottom-nav" aria-label={t('Navigasi bawah', 'Bottom navigation')}>
+      {navMain.map(([id, a, b, I]) => (
+        <a
+          key={id}
+          href={`#/${id}`}
+          className={`bottom-item ${page === id ? 'active' : ''}`}
+          aria-current={page === id ? 'page' : undefined}
+        >
+          <I size={22} />
+          <span>{t(a, b)}</span>
+        </a>
+      ))}
+    </nav>
   );
 }

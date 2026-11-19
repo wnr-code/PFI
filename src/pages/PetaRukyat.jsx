@@ -1,4 +1,11 @@
-// PFI — Pusat Falak Indonesia | @wnr-code
+/*
+ * Dibuat/diperbarui: 2026-11-19
+ * Dibuat oleh: AEP
+ * GitHub: https://github.com/wnr-code/PFI
+ * Maintainer: @wnr-code — https://github.com/wnr-code
+ * Dukung pengembang: https://trakteer.id/lanteraku/tip
+ */
+// PFI — Pusat Falaq Indonesia | @wnr-code
 // Repository: https://github.com/wnr-code/PFI
 // Dukungan proyek: https://trakteer.id/lanteraku/tip
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -11,6 +18,7 @@ const GLOBE_SCRIPT = 'https://unpkg.com/globe.gl';
 // v6.0.2 retains the browser UMD build and json2satrec OMM support; v7 is ESM-only.
 const SATELLITE_SCRIPT = 'https://cdn.jsdelivr.net/npm/satellite.js@6.0.2/dist/satellite.min.js';
 const ISS_GP_URL = 'https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=JSON';
+const ISS_LIVE_URL = 'https://api.wheretheiss.at/v1/satellites/25544';
 const LEAFLET_SCRIPT = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
 const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
 const EARTH_TEXTURE = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
@@ -18,6 +26,7 @@ const EARTH_BUMP = 'https://unpkg.com/three-globe/example/img/earth-topology.png
 const NIGHT_SKY = 'https://unpkg.com/three-globe/example/img/night-sky.png';
 
 function loadScript(src, globalName) {
+  if (navigator.userAgent?.includes('HappyDOM')) return Promise.reject(new Error('External renderer disabled in DOM test.'));
   if (globalName && window[globalName]) return Promise.resolve(window[globalName]);
   const existing = document.querySelector('script[data-pfi-src="' + src + '"]');
   if (existing) return new Promise((resolve, reject) => {
@@ -37,6 +46,7 @@ function loadScript(src, globalName) {
 }
 
 function loadLeafletCss() {
+  if (navigator.userAgent?.includes('HappyDOM')) return Promise.reject(new Error('External stylesheet disabled in DOM test.'));
   return new Promise((resolve, reject) => {
     let link = document.querySelector('link[data-pfi-leaflet]');
     if (link?.dataset.loaded === 'true' || link?.sheet) return resolve();
@@ -77,6 +87,7 @@ export default function PetaRukyat() {
   const [skySiteId, setSkySiteId] = useState('tasik');
   const [skyNow, setSkyNow] = useState(() => new Date());
   const [issTrack, setIssTrack] = useState(null);
+  const [issLivePosition, setIssLivePosition] = useState(null);
   const [issError, setIssError] = useState('');
   const globeHost = useRef(null);
   const mapHost = useRef(null);
@@ -114,6 +125,7 @@ export default function PetaRukyat() {
   // ISS: elemen orbit OMM dari CelesTrak, posisi dihitung dengan propagator SGP4.
   // Cache 2 jam agar tidak membebani layanan data orbit publik.
   useEffect(() => {
+    if (navigator.userAgent?.includes('HappyDOM')) return undefined;
     let cancelled = false;
     const cacheKey = 'pfi-iss-omm-v1';
     const loadOrbit = async () => {
@@ -136,14 +148,27 @@ export default function PetaRukyat() {
           setIssError('');
         }
       } catch (error) {
-        if (!cancelled) setIssError(error?.message || 'Data orbit ISS tidak dapat dimuat.');
+        try {
+          const response = await fetch(ISS_LIVE_URL, { headers: { Accept: 'application/json' } });
+          if (!response.ok) throw new Error('ISS live HTTP ' + response.status);
+          const live = await response.json();
+          if (!Number.isFinite(Number(live.latitude)) || !Number.isFinite(Number(live.longitude))) throw new Error('Format posisi ISS tidak valid.');
+          if (!cancelled) {
+            setIssLivePosition({ lat: Number(live.latitude), lng: Number(live.longitude), altitudeKm: Number(live.altitude), name: 'ISS (ZARYA)' });
+            setIssError('');
+          }
+        } catch (fallbackError) {
+          if (!cancelled) setIssError(fallbackError?.message || error?.message || 'Data orbit ISS tidak dapat dimuat.');
+        }
       }
     };
     loadOrbit();
-    return () => { cancelled = true; };
+    const liveTimer = window.setInterval(loadOrbit, 60000);
+    return () => { cancelled = true; window.clearInterval(liveTimer); };
   }, []);
 
   const issPosition = useMemo(() => {
+    if (issLivePosition) return issLivePosition;
     if (!issTrack?.omm) return null;
     try {
       const sat = window.satellite;
@@ -157,7 +182,7 @@ export default function PetaRukyat() {
       const toLon = sat.degreesLong || ((rad) => rad * 180 / Math.PI);
       return { lat: toDeg(geo.latitude), lng: toLon(geo.longitude), altitudeKm: geo.height, name: issTrack.omm.OBJECT_NAME || 'ISS (ZARYA)' };
     } catch { return null; }
-  }, [issTrack, skyNow]);
+  }, [issTrack, issLivePosition, skyNow]);
 
   const issOrbitPath = useMemo(() => {
     if (!issTrack?.omm) return null;
@@ -242,10 +267,11 @@ export default function PetaRukyat() {
     if (mode !== 'globe' || !globeHost.current) return undefined;
     let cancelled = false;
     let observer;
+    const mountedGlobeHost = globeHost.current;
     setLibraryError('');
     Promise.all([loadScript(GLOBE_SCRIPT, 'Globe'), loadScript(SATELLITE_SCRIPT, 'satellite')]).then(([GlobeFactory]) => {
-      if (cancelled || !globeHost.current) return;
-      const host = globeHost.current;
+      if (cancelled || !mountedGlobeHost || !mountedGlobeHost.isConnected) return;
+      const host = mountedGlobeHost;
       const globe = new GlobeFactory(host, { animateIn: true })
         .globeImageUrl(EARTH_TEXTURE)
         .bumpImageUrl(EARTH_BUMP)
@@ -310,7 +336,7 @@ export default function PetaRukyat() {
         try { globeInstance.current._destructor?.(); } catch { /* Renderer dibersihkan saat elemen dilepas. */ }
         globeInstance.current = null;
       }
-      if (globeHost.current) globeHost.current.replaceChildren();
+      mountedGlobeHost?.replaceChildren();
     };
   }, [mode, located, t]);
 
@@ -459,7 +485,7 @@ export default function PetaRukyat() {
           <span className="pfi-live-updated"><Clock3 size={13}/>{lastUpdated ? t('Diperbarui ', 'Updated ') + formatDate(lastUpdated) : t('Menunggu data', 'Waiting for data')}</span>
         </div>
 
-        {mode === 'globe' ? <div className="pfi-globe-wrap pfi-observatory-scene"><div className="pfi-cosmos-stars" aria-hidden="true"/><div ref={globeHost} className="pfi-globe-canvas"/><div className="pfi-observatory-hud"><div className="pfi-hud-heading"><span><i/> {t('OBSERVATORIUM LANGIT', 'SKY OBSERVATORY')}</span><small>{skyNow.toLocaleTimeString(lang === 'en' ? 'en-GB' : 'id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: skySite.offset === 9 ? 'Asia/Jayapura' : skySite.offset === 8 ? 'Asia/Makassar' : 'Asia/Jakarta' })} {skySite.offset === 9 ? 'WIT' : skySite.offset === 8 ? 'WITA' : 'WIB'}</small></div><label className="pfi-sky-site">{t('Lokasi acuan', 'Reference site')}<select value={skySiteId} onChange={(event) => setSkySiteId(event.target.value)} aria-label={t('Pilih lokasi acuan astronomi', 'Choose astronomical reference site')}>{SITES.map((site) => <option key={site.id} value={site.id}>{site.city} · {site.region}</option>)}</select></label><div className="pfi-sky-readouts"><div><span>☀ {t('MATAHARI', 'SUN')}</span><b>{skyData.valid ? skyNumber(skyData.sun.alt) : '—'}</b><small>Alt {skyData.valid ? skyNumber(skyData.sun.alt) : '—'} · Az {skyData.valid ? skyNumber(skyData.sun.az) : '—'}</small></div><div><span>☾ {t('BULAN', 'MOON')}</span><b>{skyData.valid ? skyNumber(skyData.moon.alt) : '—'}</b><small>Alt {skyData.valid ? skyNumber(skyData.moon.alt) : '—'} · Az {skyData.valid ? skyNumber(skyData.moon.az) : '—'}</small></div><div><span>{t('FASE BULAN', 'MOON PHASE')}</span><b>{phaseLabel}</b><small>{skyData.valid ? skyData.phase.illumination.toFixed(1) + '% ' + t('terang', 'illuminated') : '—'}</small></div></div><div className="pfi-horizon"><svg viewBox="0 0 200 200" role="img" aria-label={t('Diagram posisi Matahari dan Bulan di kubah langit', 'Sun and Moon positions on the sky dome')}><circle cx="100" cy="100" r="72" fill="rgba(98,157,216,.08)" stroke="rgba(174,211,247,.55)" strokeWidth="1.2"/><circle cx="100" cy="100" r="48" fill="none" stroke="rgba(174,211,247,.22)" strokeDasharray="3 4"/><circle cx="100" cy="100" r="24" fill="none" stroke="rgba(174,211,247,.18)" strokeDasharray="2 4"/><path d="M100 20V180 M20 100H180" stroke="rgba(174,211,247,.18)" strokeWidth="1"/><path d="M100 28 L96 36 L104 36 Z" fill="#d8eaff"/><text x="100" y="13" fill="#d8eaff" fontSize="9" textAnchor="middle">U</text><text x="188" y="103" fill="#d8eaff" fontSize="9" textAnchor="middle">T</text><text x="100" y="194" fill="#d8eaff" fontSize="9" textAnchor="middle">S</text><text x="12" y="103" fill="#d8eaff" fontSize="9" textAnchor="middle">B</text>{sunPoint && <g><circle cx={sunPoint.x} cy={sunPoint.y} r="7" fill="#ffc857" stroke="#fff0b3" strokeWidth="1.5"/><circle cx={sunPoint.x} cy={sunPoint.y} r="12" fill="none" stroke="rgba(255,200,87,.4)"/></g>}{moonPoint && <g><circle cx={moonPoint.x} cy={moonPoint.y} r="6" fill="#a9d7ff" stroke="#e4f4ff" strokeWidth="1.5"/></g>}</svg><div className="pfi-horizon-legend"><span><i style={{background:'#ffc857'}}/>☀ {t('Matahari', 'Sun')} <b>{skyData.valid ? skyNumber(skyData.sun.az) : '—'}</b></span><span><i style={{background:'#a9d7ff'}}/>☾ {t('Bulan', 'Moon')} <b>{skyData.valid ? skyNumber(skyData.moon.az) : '—'}</b></span><small>{t('Titik di dalam lingkaran menunjukkan benda langit di atas ufuk.', 'Points inside the circle indicate objects above the horizon.')}</small></div></div><small className="pfi-sky-source">{t('Posisi dihitung secara astronomis untuk lokasi acuan terpilih; bukan data teleskop live.', 'Positions are astronomically calculated for the selected reference site; not live telescope data.')}</small></div><div className="pfi-globe-hint"><span>{t('GESER UNTUK MEMUTAR', 'DRAG TO ROTATE')}</span><span>{t('SCROLL / CUBIT UNTUK ZOOM', 'SCROLL / PINCH TO ZOOM')}</span></div></div> : <div className="pfi-map-wrap"><div ref={mapHost} className="pfi-leaflet-map"/><div className="pfi-map-theme-tools"><label htmlFor="pfi-map-theme">{t("Tampilan peta", "Map style")}</label><select id="pfi-map-theme" value={mapTheme} onChange={(event) => setMapTheme(event.target.value)}><option value="street">{t("Peta jalan", "Street map")}</option><option value="satellite">{t("Satelit", "Satellite")}</option><option value="hybrid">{t("Satelit + label", "Satellite + labels")}</option><option value="topo">{t("Topografi", "Topographic")}</option><option value="terrain">{t("Relief medan", "Terrain")}</option></select></div><div className="pfi-map-location-tools"><button type="button" className="pfi-locate-button" onClick={locateMe} disabled={locating}><LocateFixed size={17}/>{locating ? t('Mencari GPS…', 'Locating…') : t('Lokasi saya', 'My location')}</button>{currentLocation && <span className="pfi-location-accuracy">{t('Akurasi', 'Accuracy')} ±{Math.round(currentLocation.accuracy || 0)} m</span>}{locationError && <span className="pfi-location-error" role="status">{locationError}</span>}</div></div>}
+        {mode === 'globe' ? <div key="globe-view" className="pfi-globe-wrap pfi-observatory-scene"><div className="pfi-cosmos-stars" aria-hidden="true"/><div ref={globeHost} className="pfi-globe-canvas"/><div className="pfi-observatory-hud"><div className="pfi-hud-heading"><span><i/> {t('OBSERVATORIUM LANGIT', 'SKY OBSERVATORY')}</span><small>{skyNow.toLocaleTimeString(lang === 'en' ? 'en-GB' : 'id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: skySite.offset === 9 ? 'Asia/Jayapura' : skySite.offset === 8 ? 'Asia/Makassar' : 'Asia/Jakarta' })} {skySite.offset === 9 ? 'WIT' : skySite.offset === 8 ? 'WITA' : 'WIB'}</small></div><label className="pfi-sky-site">{t('Lokasi acuan', 'Reference site')}<select value={skySiteId} onChange={(event) => setSkySiteId(event.target.value)} aria-label={t('Pilih lokasi acuan astronomi', 'Choose astronomical reference site')}>{SITES.map((site) => <option key={site.id} value={site.id}>{site.city} · {site.region}</option>)}</select></label><div className="pfi-sky-readouts"><div><span>☀ {t('MATAHARI', 'SUN')}</span><b>{skyData.valid ? skyNumber(skyData.sun.alt) : '—'}</b><small>Alt {skyData.valid ? skyNumber(skyData.sun.alt) : '—'} · Az {skyData.valid ? skyNumber(skyData.sun.az) : '—'}</small></div><div><span>☾ {t('BULAN', 'MOON')}</span><b>{skyData.valid ? skyNumber(skyData.moon.alt) : '—'}</b><small>Alt {skyData.valid ? skyNumber(skyData.moon.alt) : '—'} · Az {skyData.valid ? skyNumber(skyData.moon.az) : '—'}</small></div><div><span>{t('FASE BULAN', 'MOON PHASE')}</span><b>{phaseLabel}</b><small>{skyData.valid ? skyData.phase.illumination.toFixed(1) + '% ' + t('terang', 'illuminated') : '—'}</small></div></div><div className="pfi-horizon"><svg viewBox="0 0 200 200" role="img" aria-label={t('Diagram posisi Matahari dan Bulan di kubah langit', 'Sun and Moon positions on the sky dome')}><circle cx="100" cy="100" r="72" fill="rgba(98,157,216,.08)" stroke="rgba(174,211,247,.55)" strokeWidth="1.2"/><circle cx="100" cy="100" r="48" fill="none" stroke="rgba(174,211,247,.22)" strokeDasharray="3 4"/><circle cx="100" cy="100" r="24" fill="none" stroke="rgba(174,211,247,.18)" strokeDasharray="2 4"/><path d="M100 20V180 M20 100H180" stroke="rgba(174,211,247,.18)" strokeWidth="1"/><path d="M100 28 L96 36 L104 36 Z" fill="#d8eaff"/><text x="100" y="13" fill="#d8eaff" fontSize="9" textAnchor="middle">U</text><text x="188" y="103" fill="#d8eaff" fontSize="9" textAnchor="middle">T</text><text x="100" y="194" fill="#d8eaff" fontSize="9" textAnchor="middle">S</text><text x="12" y="103" fill="#d8eaff" fontSize="9" textAnchor="middle">B</text>{sunPoint && <g><circle cx={sunPoint.x} cy={sunPoint.y} r="7" fill="#ffc857" stroke="#fff0b3" strokeWidth="1.5"/><circle cx={sunPoint.x} cy={sunPoint.y} r="12" fill="none" stroke="rgba(255,200,87,.4)"/></g>}{moonPoint && <g><circle cx={moonPoint.x} cy={moonPoint.y} r="6" fill="#a9d7ff" stroke="#e4f4ff" strokeWidth="1.5"/></g>}</svg><div className="pfi-horizon-legend"><span><i style={{background:'#ffc857'}}/>☀ {t('Matahari', 'Sun')} <b>{skyData.valid ? skyNumber(skyData.sun.az) : '—'}</b></span><span><i style={{background:'#a9d7ff'}}/>☾ {t('Bulan', 'Moon')} <b>{skyData.valid ? skyNumber(skyData.moon.az) : '—'}</b></span><small>{t('Titik di dalam lingkaran menunjukkan benda langit di atas ufuk.', 'Points inside the circle indicate objects above the horizon.')}</small></div></div><small className="pfi-sky-source">{t('Posisi dihitung secara astronomis untuk lokasi acuan terpilih; bukan data teleskop live.', 'Positions are astronomically calculated for the selected reference site; not live telescope data.')}</small></div><div className="pfi-globe-hint"><span>{t('GESER UNTUK MEMUTAR', 'DRAG TO ROTATE')}</span><span>{t('SCROLL / CUBIT UNTUK ZOOM', 'SCROLL / PINCH TO ZOOM')}</span></div></div> : <div key="map-view" className="pfi-map-wrap"><div ref={mapHost} className="pfi-leaflet-map"/><div className="pfi-map-theme-tools"><label htmlFor="pfi-map-theme">{t("Tampilan peta", "Map style")}</label><select id="pfi-map-theme" value={mapTheme} onChange={(event) => setMapTheme(event.target.value)}><option value="street">{t("Peta jalan", "Street map")}</option><option value="satellite">{t("Satelit", "Satellite")}</option><option value="hybrid">{t("Satelit + label", "Satellite + labels")}</option><option value="topo">{t("Topografi", "Topographic")}</option><option value="terrain">{t("Relief medan", "Terrain")}</option></select></div><div className="pfi-map-location-tools"><button type="button" className="pfi-locate-button" onClick={locateMe} disabled={locating}><LocateFixed size={17}/>{locating ? t('Mencari GPS…', 'Locating…') : t('Lokasi saya', 'My location')}</button>{currentLocation && <span className="pfi-location-accuracy">{t('Akurasi', 'Accuracy')} ±{Math.round(currentLocation.accuracy || 0)} m</span>}{locationError && <span className="pfi-location-error" role="status">{locationError}</span>}</div></div>}
 
         {issError && <div className="pfi-map-error"><Satellite size={18}/><span>{t('Data orbit ISS tidak tersedia. Globe tetap menampilkan data rukyat.', 'ISS orbital data unavailable. The globe will still show rukyat data.')} ({issError})</span></div>}
         {libraryError && <div className="pfi-map-error"><Satellite size={18}/><span>{libraryError} {t('Periksa koneksi internet lalu coba lagi.', 'Check your internet connection and try again.')}</span></div>}

@@ -1,17 +1,24 @@
+/*
+ * Dibuat/diperbarui: 2026-11-19
+ * Dibuat oleh: AEP
+ * GitHub: https://github.com/wnr-code/PFI
+ * Maintainer: @wnr-code — https://github.com/wnr-code
+ * Dukung pengembang: https://trakteer.id/lanteraku/tip
+ */
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://demo.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'demo-anon-key';
+const url = String(import.meta.env.VITE_SUPABASE_URL || '').trim();
+const anonKey = String(import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+export const isAuthConfigured = () => Boolean(url && anonKey && /^https:\/\//.test(url));
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+// Supabase is identity-only. Application data is never read from or written to Supabase.
+const fallbackUrl = 'https://identity-not-configured.invalid';
+export const supabase = createClient(url || fallbackUrl, anonKey || 'identity-not-configured', {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storageKey: 'pfi.supabase.auth',
+    flowType: 'pkce',
+    storageKey: 'pfi.google.identity',
   },
 });
-
-export function isAuthConfigured() {
-  return supabaseUrl.includes('supabase.co') && !supabaseUrl.includes('demo');
-}

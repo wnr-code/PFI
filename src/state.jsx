@@ -1,11 +1,18 @@
+/*
+ * Dibuat/diperbarui: 2026-11-19
+ * Dibuat oleh: AEP
+ * GitHub: https://github.com/wnr-code/PFI
+ * Maintainer: @wnr-code — https://github.com/wnr-code
+ * Dukung pengembang: https://trakteer.id/lanteraku/tip
+ */
 import React, {
-  createContext, useContext, useEffect, useState, useRef, useCallback, useMemo,
+  createContext, useContext, useEffect, useState, useCallback,
 } from 'react';
 import { supabase, isAuthConfigured } from './lib/supabase.js';
-import { agenda, SITES } from './lib/astro.js';
 import {
   authApi, api, offlineStore, offlineGet,
 } from './lib/api.js';
+import { SITES, agenda } from './lib/astro.js';
 
 const C = createContext(null);
 
@@ -45,12 +52,21 @@ export function Provider({ children }) {
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState('');
   const [online, setOnline] = useState(true);
-  const refreshVersion = useRef(0);
 
   const tell = useCallback((msg) => {
     setToast(msg);
     setTimeout(() => setToast(''), 4000);
   }, []);
+
+  const setPreference = useCallback(async (field, value) => {
+    let previous;
+    setData((current) => { previous = current[field]; return { ...current, [field]: value }; });
+    try { await api('/api/preferences', 'PUT', { [field]: value }); }
+    catch (error) {
+      setData((current) => ({ ...current, [field]: previous }));
+      tell(error.message || 'Pengaturan gagal disimpan.');
+    }
+  }, [tell]);
 
   const session = useCallback((s) => {
     setData((d) => ({ ...d, account: s?.account ?? null, session: s?.session ?? null }));
@@ -74,97 +90,39 @@ export function Provider({ children }) {
   };
 
   const refresh = useCallback(async () => {
-    const version = ++refreshVersion.current;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (version !== refreshVersion.current) return;
-      const account = session?.user
-        ? {
-            id: session.user.id,
-            name: session.user.user_metadata?.name ?? session.user.email,
-            email: session.user.email,
-            role: 'observer',
-            org: '',
-            verification: 'none',
-          }
-        : null;
+      const { data: identity } = await authApi.getIdentitySession();
+      const serverSession = await api('/api/session');
+      const account = serverSession?.account ?? null;
+      const prefs = serverSession?.prefs && typeof serverSession.prefs === 'object' ? serverSession.prefs : {};
       setData((d) => ({
-        ...d,
-        account,
-        session,
-        ...(d.account?.id !== account?.id
-          ? { posts: [], groups: [], agendas: [], calculations: [] }
-          : {}),
+        ...d, account, session: identity.session ?? null,
+        lang: ['id', 'en'].includes(prefs.lang) ? prefs.lang : d.lang,
+        mode: ['pemula', 'profesional'].includes(prefs.mode) ? prefs.mode : d.mode,
+        site: SITES.some((item) => item.id === prefs.site) ? prefs.site : d.site,
+        notify: typeof prefs.notify === 'boolean' ? prefs.notify : d.notify,
       }));
-
-      // Authorization roles and verification status must come from D1 via the
-      // Worker, never from editable Supabase user metadata.
-      if (session?.user) {
-        try {
-          const serverSession = await api('/api/session');
-          if (version !== refreshVersion.current) return;
-          setData((d) => ({
-            ...d,
-            account: serverSession.account || account,
-            groups: serverSession.groups || [],
-            calculations: serverSession.history || [],
-            prefs: serverSession.prefs || {},
-            lang: ['id', 'en'].includes(serverSession.prefs?.lang) ? serverSession.prefs.lang : d.lang,
-            mode: ['pemula', 'profesional'].includes(serverSession.prefs?.mode) ? serverSession.prefs.mode : d.mode,
-            site: SITES.some((site) => site.id === serverSession.prefs?.site) ? serverSession.prefs.site : d.site,
-            notify: typeof serverSession.prefs?.notify === 'boolean' ? serverSession.prefs.notify : d.notify,
-          }));
-        } catch {
-          // Keep the conservative observer fallback if the profile API is unavailable.
-          if (version !== refreshVersion.current) return;
-        }
-        try {
-          const agendas = await api('/api/agendas');
-          if (version !== refreshVersion.current) return;
-          setData((d) => ({ ...d, agendas }));
-        } catch {
-          if (version !== refreshVersion.current) return;
-          setData((d) => ({ ...d, agendas: [] }));
-        }
-      } else {
-        if (version !== refreshVersion.current) return;
-        setData((d) => ({ ...d, groups: [], agendas: [], calculations: [] }));
-      }
 
       // Fetch posts from API (with offline fallback)
       try {
         const posts = await api('/api/posts');
-        if (version !== refreshVersion.current) return;
         await offlineStore('posts', posts);
-        if (version !== refreshVersion.current) return;
         setData((d) => ({ ...d, posts }));
       } catch (e) {
-        if (version !== refreshVersion.current) return;
         const cached = await offlineGet('posts');
-        if (version !== refreshVersion.current) return;
         setData((d) => ({ ...d, posts: cached || [] }));
       }
 
-      if (version !== refreshVersion.current) return;
       setData((d) => ({ ...d, ready: true }));
     } catch (e) {
-      if (version !== refreshVersion.current) return;
       setData((d) => ({ ...d, ready: true }));
     }
   }, []);
 
   useEffect(() => {
-    // Listen to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, sess) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        await refresh();
-      } else if (event === 'SIGNED_OUT') {
-        refreshVersion.current += 1;
-        session(null);
-        setData((d) => ({ ...d, posts: [], groups: [], agendas: [], calculations: [] }));
-      }
+    const { data: { subscription } } = authApi.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_OUT') refresh();
     });
-
     // Initial load
     refresh();
 
@@ -199,28 +157,28 @@ export function Provider({ children }) {
         : [...d[field], value],
     }));
 
-  const loc = useMemo(
-    () => SITES.find((site) => site.id === data.site) || SITES[0],
-    [data.site]
-  );
-  const events = useMemo(() => agenda(new Date(), loc), [loc]);
-
   const t = (id, en) => (data.lang === 'en' ? (en ?? id) : id);
+
+  const loc = SITES.find((item) => item.id === data.site) || SITES[0];
+  const events = agenda(new Date(), loc);
+  const refreshPosts = refresh;
 
   const value = {
     data,
+    page: route.split('/')[0],
+    loc,
+    events,
+    refreshPosts,
     update,
     toggle,
     route,
-    page: route,
     lang: data.lang,
-    loc,
-    events,
-    setLang: (l) => update({ lang: l }),
+    setLang: (l) => setPreference('lang', l),
     mode: data.mode,
-    setMode: (m) => update({ mode: m }),
+    setMode: (m) => setPreference('mode', m),
     site: data.site,
-    setSite: (s) => update({ site: s }),
+    setSite: (s) => setPreference('site', s),
+    setNotify: (value) => setPreference('notify', value),
     t,
     tell,
     toast,

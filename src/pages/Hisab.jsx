@@ -1,12 +1,20 @@
-import React, { useState, useMemo, useEffect } from 'react';
+/*
+ * Dibuat/diperbarui: 2026-11-19
+ * Dibuat oleh: AEP
+ * GitHub: https://github.com/wnr-code/PFI
+ * Maintainer: @wnr-code — https://github.com/wnr-code
+ * Dukung pengembang: https://trakteer.id/lanteraku/tip
+ */
+import React, { useState, useMemo } from 'react';
 import { usePFI, go } from '../state.jsx';
 import {
-  calculateHisab, hijri, periods, SITES, num, clock, zlabel,
+  calculateHisab, periods, SITES, num,
 } from '../lib/astro.js';
 import { api } from '../lib/api.js';
+import { exportReport } from '../lib/export.js';
 import {
-  Calendar, MapPin, Settings, Sun, Moon, Compass, FileDown, Share2, Calculator,
-  ArrowRight, CheckCircle2, Info, History,
+  Calendar, MapPin, Settings, Sun, Moon, Compass, FileDown, Share2,
+  ArrowRight, CheckCircle2, Info, History, Calculator,
 } from 'lucide-react';
 
 const BULAN_HIJRIAH = [
@@ -22,48 +30,36 @@ const BULAN_HIJRIAH_EN = [
 ];
 
 export default function Hisab() {
-  const { data, t, lang, loc, tell, update, refresh } = usePFI();
-  const [bulan, setBulan] = useState(8); // Ramadan default
-  const [siteId, setSiteId] = useState(() => SITES.some((item) => item.id === data.site) ? data.site : 'tasik');
+  const { data, t, lang, loc, tell, update } = usePFI();
+  const [bulan, setBulan] = useState(8); // Ramadan
+  const [siteId, setSiteId] = useState(data.site || 'tasik');
   const [metode, setMetode] = useState('mabims');
   const [result, setResult] = useState(null);
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    if (SITES.some((item) => item.id === data.site)) setSiteId(data.site);
-  }, [data.site]);
 
   const site = SITES.find((s) => s.id === siteId) || SITES[0];
 
   const hitung = async () => {
     setBusy(true);
     try {
-      const period = periods(new Date(), site)
-        .filter((item) => item.month === bulan + 1)
-        .sort((a, b) => a.start.localeCompare(b.start))[0];
-      if (!period) throw new Error('Awal bulan Hijriah yang dipilih belum ditemukan dalam rentang kalender.');
+      const candidates = periods(new Date(), site);
+      const period = candidates.find((item) => item.month === bulan + 1 && new Date(item.start) >= new Date())
+        || candidates.find((item) => item.month === bulan + 1);
+      if (!period) throw new Error(t('Periode Hijriah tidak ditemukan.', 'Hijri period was not found.'));
       const r = calculateHisab(period, site, metode);
+      setResult(r);
       try {
-        const authoritative = await api('/api/hisab', 'POST', {
+        await api('/api/hisab', 'POST', {
           site: siteId,
           start: period.start,
           method: metode,
+          result: r,
         });
-        setResult(authoritative);
-        if (authoritative.saved) await refresh();
-        tell(authoritative.saved
-          ? t('Perhitungan selesai dan tersimpan ke riwayat akun.', 'Calculation complete and saved to account history.')
-          : t('Perhitungan selesai. Masuk ke akun untuk menyimpan riwayat.', 'Calculation complete. Sign in to save it to account history.'));
       } catch (e) {
-        // The local astronomy engine has already calculated this result.
-        // If the Worker is temporarily failing (5xx), still show the calculation
-        // and clearly mark that it has not been saved. Client errors (4xx) remain
-        // visible because they indicate invalid input or an unsupported request.
-        if (Number.isInteger(e.status) && e.status < 500) throw e;
-        console.warn('API hisab gagal; menampilkan hasil mesin lokal:', e.message);
-        setResult(r);
-        tell(t('Perhitungan berhasil secara lokal. Server sedang bermasalah; hasil belum tersimpan ke akun.', 'Local calculation succeeded. The server is temporarily unavailable; this result was not saved.'));
+        // offline: store locally
+        console.warn('API hisab gagal, simpan lokal:', e.message);
       }
+      tell(t('Perhitungan selesai.', 'Calculation complete.'));
     } catch (e) {
       tell(e.message || 'Perhitungan gagal.');
     } finally {
@@ -75,24 +71,25 @@ export default function Hisab() {
   const formatTime = (v) => {
     if (!v) return '—';
     return new Date(v).toLocaleTimeString(lang === 'id' ? 'id-ID' : 'en-GB', {
-      timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: false,
+      hour: '2-digit', minute: '2-digit', hour12: false,
     });
   };
 
-  const formatLocalTime = (value) => value ? `${clock(new Date(value), site)} ${zlabel(site)}` : '—';
   const bulanLabel = lang === 'id' ? BULAN_HIJRIAH[bulan] : BULAN_HIJRIAH_EN[bulan];
 
   return (
-    <div className="page-wrap">
-      <div className="page-head">
-        <div className="eyebrow"><i /> {t('HISAB AWAL BULAN', 'NEW MONTH CALCULATION')}</div>
-        <h1>{t('Perhitungan awal bulan Hijriah', 'New month calculation')}</h1>
-        <p>{t('Hitung ijtimak, terbenam matahari, tinggi hilal, elongasi, dan posisi bulan.', 'Calculate conjunction, sunset, crescent height, elongation, and moon position.')}</p>
-      </div>
+    <div className="page-wrap hisab-page page-enter">
+      <header className="science-page-head page-head">
+        <div><div className="eyebrow"><i /> {t('LABORATORIUM HISAB', 'CALCULATION LABORATORY')}</div>
+        <h1>{t('Hisab awal bulan', 'New month calculation')}</h1>
+        <p>{t('Hitung ijtimak, matahari terbenam, tinggi hilal, dan elongasi menggunakan kriteria MABIMS.', 'Calculate conjunction, sunset, crescent height, and elongation using MABIMS criteria.')}</p></div>
+        <span className="method-badge"><Calculator size={16}/>MABIMS 2021</span>
+      </header>
 
-      <div className="card">
+      <section className="card hisab-parameters">
+        <div className="card-header"><div><span className="section-kicker">{t('PARAMETER HISAB', 'CALCULATION PARAMETERS')}</span><h2>{t('Tentukan periode dan lokasi', 'Select period and location')}</h2></div><Settings size={20}/></div>
         <div className="card-body">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+          <div className="hisab-form-grid">
             <div className="field">
               <label>{t('Bulan Hijriah', 'Hijri Month')}</label>
               <select value={bulan} onChange={(e) => setBulan(Number(e.target.value))}>
@@ -110,14 +107,11 @@ export default function Hisab() {
                   </option>
                 ))}
               </select>
-              <small>{t('Titik acuan proyek; cocokkan koordinat dan elevasi dengan data lapangan sebelum digunakan untuk keputusan operasional.', 'Project reference site; verify coordinates and elevation against field data before operational use.')}</small>
             </div>
             <div className="field">
               <label>{t('Metode Hisab', 'Calculation Method')}</label>
-              <small>{t('Saat ini metode MABIMS yang sudah tersedia dan divalidasi pada API.', 'MABIMS is currently the implemented and API-validated method.')}</small>
               <select value={metode} onChange={(e) => setMetode(e.target.value)}>
                 <option value="mabims">MABIMS (tinggi ≥ 3°, elongasi ≥ 6,4°)</option>
-
               </select>
             </div>
           </div>
@@ -131,10 +125,10 @@ export default function Hisab() {
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
       {result && (
-        <div className="card">
+        <section className="card hisab-results">
           <div className="card-header">
             <h2>{t('Hasil Perhitungan', 'Calculation Result')}</h2>
             <span className="pill verified">{t('Data astronomis', 'Astronomical Data')}</span>
@@ -145,11 +139,6 @@ export default function Hisab() {
                 <span className="label">{t('Waktu Ijtimak', 'Conjunction Time')}</span>
                 <b>{formatTime(result.conj)}</b>
                 <small>{t('UTC', 'UTC')}</small>
-              </div>
-              <div className="result-box">
-                <span className="label">{t('Terbenam Matahari', 'Local Sunset')}</span>
-                <b>{formatLocalTime(result.sunset)}</b>
-                <small>{site.city} · {zlabel(site)}</small>
               </div>
               <div className="result-box">
                 <span className="label">{t('Tinggi Hilal', 'Crescent Height')}</span>
@@ -173,60 +162,31 @@ export default function Hisab() {
               </div>
               <div className="result-box">
                 <span className="label">{t('Visibilitas', 'Visibility')}</span>
-                <b>{result.meets ? t('Memenuhi kriteria', 'Criteria met') : t('Belum memenuhi', 'Criteria not met')}</b>
+                <b>{result.meets ? t('Terlihat', 'Visible') : t('Tidak terlihat', 'Not Visible')}</b>
                 <small>{result.meets ? '✓' : '✗'}</small>
               </div>
             </div>
 
             <div style={{ marginTop: 16, padding: 14, background: 'var(--surface2)', border: '1px solid var(--line)', borderRadius: 8 }}>
               <h3 style={{ fontSize: 13, marginBottom: 8, color: '#d6ae62' }}>{t('Kesimpulan', 'Conclusion')}</h3>
-              <p style={{ fontSize: 13, lineHeight: 1.6, color: '#c7d1df' }}>{result.meets ? t('Kriteria MABIMS terpenuhi secara hisab pada lokasi yang dipilih. Ini bukan evaluasi seluruh titik Indonesia, bukan bukti hilal benar-benar terlihat, dan bukan penetapan resmi awal bulan.', 'The MABIMS criteria are met at the selected location only. This is not a nationwide multi-site assessment, does not prove an actual sighting, and is not an official month declaration.') : t('Kriteria MABIMS belum terpenuhi pada lokasi yang dipilih. Ini bukan evaluasi seluruh titik Indonesia dan bukan keputusan resmi awal bulan.', 'The MABIMS criteria are not met at the selected location. This is not a nationwide multi-site assessment or an official month determination.')}</p>
+              <p style={{ fontSize: 13, lineHeight: 1.6, color: '#c7d1df' }}>{result.meets ? t('Kondisi matahari terbenam mencukupi untuk pengamatan hilal. Namun, penetapan resmi awal bulan adalah wewenang sidang isbat.', 'Sunset conditions sufficient for crescent observation. Official determination is authority of isbat session.') : t('Kondisi matahari terbenam kurang mencukupi untuk pengamatan hilal berdasarkan metode yang dipilih.', 'Sunset conditions insufficient for crescent observation based on selected method.')}</p>
               <p style={{ fontSize: 11, color: '#747f8e', marginTop: 8 }}>
-                {t('Hasil perhitungan adalah data astronomis, bukan keputusan resmi awal bulan. Metode dan kriteria yang digunakan oleh organisasi atau otoritas dapat berbeda.', 'Calculation results are astronomical data, not official new month determination. Methods and criteria used by different organizations or authorities may differ.')}
+                {t('Hasil perhitungan adalah data astronomis, bukan keputusan resmi awal bulan. Setiap lembaga (MUI, NU, Muhammadiyah, dll.) memiliki metode perhitungan sendiri.', 'Calculation results are astronomical data, not official new month determination. Each institution (MUI, NU, Muhammadiyah, etc.) has its own calculation method.')}
               </p>
             </div>
           </div>
           <div className="card-footer">
             <div style={{ display: 'flex', gap: 10 }}>
-              <button className="btn secondary full" onClick={() => window.print()}>
-                <FileDown size={16} /> {t('Cetak / Simpan PDF', 'Print / Save PDF')}
+              <button className="btn secondary full" onClick={() => exportReport(result, lang, 'pdf').catch((error) => tell(error.message))}>
+                <FileDown size={16} /> {t('Unduh PDF', 'Download PDF')}
               </button>
               <button className="btn secondary full" onClick={() => {
-                const txt = `Hisab ${bulanLabel}: Tinggi ${formatAngle(result.moon?.alt)}°, Elongasi ${formatAngle(result.elongation)}°, ${result.meets ? 'Kriteria MABIMS terpenuhi' : 'Kriteria MABIMS belum terpenuhi'}`;
-                if (navigator.clipboard?.writeText) {
-                  navigator.clipboard.writeText(txt)
-                    .then(() => tell(t('Disalin ke clipboard.', 'Copied to clipboard.')))
-                    .catch(() => tell(t('Tidak dapat menyalin teks.', 'Unable to copy text.')));
-                } else {
-                  tell(t('Clipboard tidak didukung browser ini.', 'Clipboard is not supported by this browser.'));
-                }
+                const txt = `Hisab ${bulanLabel}: Tinggi ${formatAngle(result.moon?.alt)}°, Elongasi ${formatAngle(result.elongation)}°, ${result.meets ? 'Terlihat' : 'Tidak terlihat'}`;
+                navigator.clipboard?.writeText(txt).then(() => tell(t('Disalin ke clipboard.', 'Copied to clipboard.')));
               }}>
                 <Share2 size={16} /> {t('Bagikan', 'Share')}
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {data.calculations?.length > 0 && (
-        <section className="card" style={{ marginTop: 18 }}>
-          <div className="card-header">
-            <h2>{t('Riwayat Hisab', 'Calculation History')}</h2>
-            <span className="pill">{data.calculations.length}</span>
-          </div>
-          <div className="card-body">
-            {data.calculations.slice(0, 10).map((item) => (
-              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
-                <div>
-                  <b>{BULAN_HIJRIAH[(item.period?.month || 1) - 1]} {item.period?.year || ''}</b>
-                  <small style={{ display: 'block', color: '#8fa3b8' }}>{item.loc?.city || '—'} · {item.created ? formatTime(item.created) : '—'} UTC</small>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <b>{item.meets ? t('Memenuhi', 'Met') : t('Belum', 'Not met')}</b>
-                  <small style={{ display: 'block', color: '#8fa3b8' }}>{formatAngle(item.moon?.alt)}° / {formatAngle(item.elongation)}°</small>
-                </div>
-              </div>
-            ))}
           </div>
         </section>
       )}

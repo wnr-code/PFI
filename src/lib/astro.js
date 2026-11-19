@@ -1,3 +1,10 @@
+/*
+ * Dibuat/diperbarui: 2026-11-19
+ * Dibuat oleh: AEP
+ * GitHub: https://github.com/wnr-code/PFI
+ * Maintainer: @wnr-code — https://github.com/wnr-code
+ * Dukung pengembang: https://trakteer.id/lanteraku/tip
+ */
 import { Observer, Equator, Horizon, MoonPhase, SearchMoonPhase, Illumination, AngleFromSun, SearchRiseSet, SearchAltitude, SearchHourAngle, SearchLunarEclipse, SearchGlobalSolarEclipse, KM_PER_AU } from 'astronomy-engine';
 export const DAY=86400000;
 export const SITES=[

@@ -1,3 +1,8 @@
+# Dibuat/diperbarui: 2026-11-19
+# Dibuat oleh: AEP
+# GitHub: https://github.com/wnr-code/PFI
+# Maintainer: @wnr-code — https://github.com/wnr-code
+# Dukung pengembang: https://trakteer.id/lanteraku/tip
 name: Apply Production D1 migrations
 
 on:
@@ -79,7 +84,7 @@ jobs:
           fi
 
           if echo "$TABLES" | grep -Eq '"name"[[:space:]]*:[[:space:]]*"groups"'; then
-            $WRANGLER --command="UPDATE groups SET name = CASE id WHEN 'nusantara' THEN 'Jaringan Nusantara' WHEN 'kelas-falak' THEN 'Kelas Falak' WHEN 'lab-hisab' THEN 'Lab Hisab' ELSE name END WHERE id IN ('nusantara','kelas-falak','lab-hisab') AND (name IS NULL OR name = '')" --yes
+            $WRANGLER --command="UPDATE groups SET name = CASE id WHEN 'nusantara' THEN 'Jaringan Nusantara' WHEN 'kelas-falak' THEN 'Kelas Falaq' WHEN 'lab-hisab' THEN 'Lab Hisab' ELSE name END WHERE id IN ('nusantara','kelas-falak','lab-hisab') AND (name IS NULL OR name = '')" --yes
           fi
 
           echo "Legacy schema compatibility checks completed."

@@ -1,3 +1,10 @@
+/*
+ * Dibuat/diperbarui: 2026-11-19
+ * Dibuat oleh: AEP
+ * GitHub: https://github.com/wnr-code/PFI
+ * Maintainer: @wnr-code — https://github.com/wnr-code
+ * Dukung pengembang: https://trakteer.id/lanteraku/tip
+ */
 import {strict as assert} from 'node:assert';
 import {lunar,hijri,hijriText,qibla,prayers,calculateHisab,SITES,localTime,periods,phaseNames} from '../src/lib/astro.js';
 
