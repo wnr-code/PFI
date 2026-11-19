@@ -713,7 +713,7 @@ export default {
         return json({ id, status: 'pending' }, 201);
       }
 
-      const institutionReviewMatch = url.pathname.match(/^\\/api\\/institution-applications\\/([a-zA-Z0-9_-]+)\\/review$/);
+      const institutionReviewMatch = url.pathname.match(/^\/api\/institution-applications\/([a-zA-Z0-9_-]+)\/review$/);
       if (institutionReviewMatch && request.method === 'POST') {
         const profile = await profileFor(request, env);
         if (!profile) return fail(401, 'Silakan masuk.');
