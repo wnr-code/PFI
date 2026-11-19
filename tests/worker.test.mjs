@@ -3,12 +3,46 @@ import assert from 'node:assert/strict';
 import worker, { canReviewEntity, canViewGroup, canViewPost, groupSlug, normalizeRukyatDetails, uploadContentLengthStatus } from '../worker/index.js';
 import { SITES, calculateHisab, clock, lunar, sunsetTime } from '../src/lib/astro.js';
 
-test('Worker health endpoint reports Cloudflare runtime', async () => {
-  const response = await worker.fetch(new Request('https://pfi.test/api/health'), {}, {});
+test('Worker health endpoint verifies D1 schema and authentication configuration', async () => {
+  const requiredTables = [
+    'users', 'groups', 'memberships', 'group_coordinators', 'calculations',
+    'posts', 'photos', 'likes', 'comments', 'reviews', 'agendas',
+    'institution_applications', 'partner_institutions', 'institution_application_reviews',
+  ];
+  const env = {
+    SUPABASE_URL: 'https://example.supabase.co',
+    SUPABASE_ANON_KEY: 'test-public-key',
+    falaq: {
+      prepare(sql) {
+        return {
+          first: async () => ({ ok: 1 }),
+          bind: (...values) => ({
+            all: async () => ({ results: values.map((name) => ({ name })) }),
+          }),
+        };
+      },
+    },
+    r2falaq: { put() {}, get() {} },
+  };
+  const response = await worker.fetch(new Request('https://pfi.test/api/health'), env, {});
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.status, 'ok');
   assert.equal(body.runtime, 'cloudflare-workers');
+  assert.equal(body.database, 'ok');
+  assert.equal(body.schema.ready, true);
+  assert.deepEqual(body.schema.missingTables, []);
+  assert.equal(body.authentication, 'configured');
+  assert.equal(body.photoStorage, 'configured');
+});
+
+test('Worker health endpoint reports missing runtime dependencies', async () => {
+  const response = await worker.fetch(new Request('https://pfi.test/api/health'), {}, {});
+  assert.equal(response.status, 503);
+  const body = await response.json();
+  assert.equal(body.status, 'degraded');
+  assert.equal(body.database, 'unavailable');
+  assert.equal(body.authentication, 'missing_configuration');
 });
 
 test('protected post creation rejects anonymous requests', async () => {
