@@ -34,6 +34,25 @@ export default function Dashboard() {
         <p>{dateFmt(new Date(), loc, lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · {hijri}</p>
       </div>
 
+      <section className="pfi-hero" aria-label={t('Langit malam Pusat Falak Indonesia', 'PFI night sky')}>
+        <img
+          className="pfi-hero-image"
+          src="https://c.pxhere.com/photos/f8/54/moon_night_night_sky_nasa_earth-130004.jpg!d"
+          alt={t('Bulan sabit di langit malam', 'Crescent moon in the night sky')}
+          loading="eager"
+        />
+        <div className="pfi-hero-shade" />
+        <div className="pfi-hero-copy">
+          <span className="pfi-hero-kicker">{t('PUSAT FALAK INDONESIA', 'INDONESIAN FALAK CENTRE')}</span>
+          <h2>{t('Menghubungkan Ilmu, Mengamati Semesta, Menyatukan Umat.', 'Connecting knowledge, observing the universe, uniting the community.')}</h2>
+          <p>{t('Jelajahi data hilal, astronomi, dan pengamatan langit bersama.', 'Explore crescent data, astronomy, and sky observations together.')}</p>
+          <button className="btn primary" onClick={() => go('hisab')}>
+            <Calculator size={17} /> {t('Mulai Hisab', 'Start Calculation')}
+          </button>
+        </div>
+        <span className="pfi-hero-stars" aria-hidden="true">✦　·　✧　·　✦</span>
+      </section>
+
       <div className="card">
         <div className="card-body">
           <div className="moon-display">
