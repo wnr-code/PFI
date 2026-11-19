@@ -176,8 +176,13 @@ export default function PetaRukyat() {
       const renderMarkers = () => {
         markersLayer.current?.clearLayers();
         located.forEach((report) => {
-          const marker = L.circleMarker([Number(report.latitude), Number(report.longitude)], {
-            radius: 8, color: '#ffe2a0', weight: 2, fillColor: '#f5b942', fillOpacity: 0.95,
+          const marker = L.marker([Number(report.latitude), Number(report.longitude)], {
+            icon: L.divIcon({
+              className: 'pfi-map-pulse-marker',
+              html: '<span class="pfi-map-pulse-ring"></span><span class="pfi-map-pulse-core"></span>',
+              iconSize: [26, 26],
+              iconAnchor: [13, 13],
+            }),
           }).addTo(markersLayer.current);
           marker.bindTooltip(String(report.city || report.title || 'Titik rukyat'), { direction: 'top' });
           marker.on('click', () => setSelected(report));
