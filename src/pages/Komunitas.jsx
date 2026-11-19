@@ -1,3 +1,10 @@
+/*
+ * Dibuat/diperbarui: 2026-11-19
+ * Dibuat oleh: AEP
+ * GitHub: https://github.com/wnr-code/PFI
+ * Maintainer: @wnr-code — https://github.com/wnr-code
+ * Dukung pengembang: https://trakteer.id/lanteraku/tip
+ */
 import React, { useState, useEffect, useMemo } from 'react';
 import { usePFI, go } from '../state.jsx';
 import { api, offlineStore, offlineGet } from '../lib/api.js';
@@ -14,12 +21,13 @@ const TABS = [
 ];
 
 export default function Komunitas() {
-  const { data, t, lang, tell, refreshPosts } = usePFI();
+  const { data, t, lang, tell, loc } = usePFI();
   const [tab, setTab] = useState('beranda');
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newPost, setNewPost] = useState('');
-  const [postType, setPostType] = useState('rukyat');
+  const [postType, setPostType] = useState('diskusi');
+  const [rukyat, setRukyat] = useState({ lat: '', lon: '', instrument: '', weather: '', result: 'Tidak terlihat', observedAt: '', photo: null });
 
   useEffect(() => {
     let cancelled = false;
@@ -48,14 +56,28 @@ export default function Komunitas() {
     e.preventDefault();
     if (!newPost.trim()) return;
     try {
-      await api('/api/posts', 'POST', {
-        type: postType,
-        title: newPost.slice(0, 60),
-        body: newPost,
-        city: 'Tasikmalaya',
-      });
+      const payload = { type: postType, title: newPost.slice(0, 60), body: newPost, city: loc.city };
+      if (postType === 'rukyat') {
+        const offset = String(loc.offset).padStart(2, '0');
+        const observedAt = `${rukyat.observedAt}:00+${offset}:00`;
+        payload.details = {
+          latitude: Number(rukyat.lat), longitude: Number(rukyat.lon), observedAt,
+          timeZone: loc.offset === 9 ? 'WIT' : loc.offset === 8 ? 'WITA' : 'WIB',
+          instrument: rukyat.instrument, weather: rukyat.weather,
+          visibility: rukyat.result, elevation: loc.elev, accuracyMeters: null,
+        };
+      }
+      const created = await api('/api/posts', 'POST', payload);
+      if (postType === 'rukyat' && rukyat.photo) {
+        const upload = new FormData();
+        upload.append('photo', rukyat.photo);
+        try { await api(`/api/posts/${created.id}/photo`, 'POST', upload); }
+        catch (photoError) { tell(t('Laporan tersimpan, tetapi foto gagal diunggah: ', 'Report saved, but photo upload failed: ') + photoError.message); }
+      }
       setNewPost('');
-      await refreshPosts();
+      const latest = await api('/api/posts');
+      setPosts(latest);
+      await offlineStore('posts', latest);
       tell(t('Postingan berhasil dibuat.', 'Post created.'));
     } catch (e) {
       tell(e.message || 'Gagal membuat postingan.');
@@ -92,28 +114,19 @@ export default function Komunitas() {
 
       <div className="card">
         <div className="card-body">
-          <form onSubmit={createPost} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-            <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <label style={{ margin: 0, minWidth: 100 }}>{t('Jenis', 'Type')}</label>
-              <select value={postType} onChange={(e) => setPostType(e.target.value)}>
-                <option value="rukyat">{t('Laporan Rukyat', 'Crescent Report')}</option>
-                <option value="diskusi">{t('Diskusi', 'Discussion')}</option>
-              </select>
-            </div>
-            <textarea
-              value={newPost}
-              onChange={(e) => setNewPost(e.target.value)}
-              placeholder={t('Apa yang Anda amati di langit hari ini?', 'What did you observe in the sky today?')}
-              rows={3}
-              style={{
-                width: '100%', padding: 12, borderRadius: 8,
-                background: 'rgba(255,255,255,0.04)', border: '1px solid var(--line)',
-                color: '#fff', fontFamily: 'inherit',
-              }}
-            />
-            <button type="submit" className="btn primary">
-              <Send size={16} /> {t('Bagikan', 'Share')}
-            </button>
+          <form onSubmit={createPost} className="community-composer">
+            <div className="field"><label htmlFor="post-type">{t('Jenis kiriman', 'Post type')}</label><select id="post-type" value={postType} onChange={(e) => setPostType(e.target.value)}><option value="diskusi">{t('Diskusi umum', 'General discussion')}</option><option value="rukyat">{t('Laporan Rukyat', 'Crescent report')}</option></select></div>
+            <div className="field"><label htmlFor="post-body">{t('Catatan', 'Notes')}</label><textarea id="post-body" value={newPost} onChange={(e) => setNewPost(e.target.value)} placeholder={t('Bagikan pembahasan atau hasil pengamatan secara jelas…', 'Share a discussion or observation clearly…')} minLength={3} maxLength={4000} required rows={4}/><small className="field-hint">{newPost.length}/4000</small></div>
+            {postType === 'rukyat' && <div className="rukyat-form-grid">
+              <div className="field"><label htmlFor="rukyat-lat">Latitude</label><input id="rukyat-lat" type="number" step="any" min="-90" max="90" value={rukyat.lat} onChange={(e) => setRukyat({...rukyat,lat:e.target.value})} required/></div>
+              <div className="field"><label htmlFor="rukyat-lon">Longitude</label><input id="rukyat-lon" type="number" step="any" min="-180" max="180" value={rukyat.lon} onChange={(e) => setRukyat({...rukyat,lon:e.target.value})} required/></div>
+              <div className="field"><label htmlFor="rukyat-time">{t('Waktu pengamatan', 'Observation time')}</label><input id="rukyat-time" type="datetime-local" value={rukyat.observedAt} onChange={(e) => setRukyat({...rukyat,observedAt:e.target.value})} required/></div>
+              <div className="field"><label htmlFor="rukyat-tool">{t('Instrumen', 'Instrument')}</label><input id="rukyat-tool" value={rukyat.instrument} onChange={(e) => setRukyat({...rukyat,instrument:e.target.value})} minLength={2} maxLength={180} required placeholder={t('Teleskop/binokular', 'Telescope/binoculars')}/></div>
+              <div className="field"><label htmlFor="rukyat-weather">{t('Cuaca', 'Weather')}</label><input id="rukyat-weather" value={rukyat.weather} onChange={(e) => setRukyat({...rukyat,weather:e.target.value})} minLength={2} maxLength={100} required placeholder={t('Cerah, berawan…', 'Clear, cloudy…')}/></div>
+              <div className="field"><label htmlFor="rukyat-result">{t('Hasil', 'Result')}</label><select id="rukyat-result" value={rukyat.result} onChange={(e) => setRukyat({...rukyat,result:e.target.value})}><option>Tidak terlihat</option><option>Terlihat</option></select></div>
+              <div className="field rukyat-photo"><label htmlFor="rukyat-photo">{t('Foto asli (maks. 3 MB)', 'Original photo (max. 3 MB)')}</label><input id="rukyat-photo" type="file" accept="image/jpeg,image/png,image/webp" required onChange={(e) => { const file=e.target.files?.[0]; if(!file)return; if(file.size>3*1024*1024){tell(t('Foto maksimal 3 MB.','Photo must be under 3 MB.'));e.target.value='';return;} setRukyat({...rukyat,photo:file}); }}/></div>
+            </div>}
+            <button type="submit" className="btn primary"><Send size={16}/>{postType === 'rukyat' ? t('Kirim untuk ditinjau', 'Submit for review') : t('Bagikan diskusi', 'Share discussion')}</button>
           </form>
         </div>
       </div>

@@ -1,3 +1,10 @@
+/*
+ * Dibuat/diperbarui: 2026-11-19
+ * Dibuat oleh: AEP
+ * GitHub: https://github.com/wnr-code/PFI
+ * Maintainer: @wnr-code — https://github.com/wnr-code
+ * Dukung pengembang: https://trakteer.id/lanteraku/tip
+ */
 import React from 'react';
 import { usePFI } from './state.jsx';
 import { Sidebar, Topbar, BottomNav } from './components/Shell.jsx';
@@ -21,7 +28,7 @@ const routes = {
 };
 
 export default function App() {
-  const { page, modal, data, ready } = usePFI();
+  const { page, modal, toast, ready } = usePFI();
   const Page = routes[page] || Dashboard;
 
   return (
@@ -44,12 +51,12 @@ export default function App() {
       </div>
       {modal && modal.type === 'auth' && <AuthModal />}
       <div
-        className="toast"
-        style={{ display: data.toast ? 'flex' : 'none' }}
+        className={`toast ${toast ? 'show' : ''}`}
+        style={undefined}
         role="status"
         aria-live="polite"
       >
-        <span>{data.toast}</span>
+        <span>{toast}</span>
       </div>
     </div>
   );

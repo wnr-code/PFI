@@ -1,3 +1,10 @@
+/*
+ * Dibuat/diperbarui: 2026-11-19
+ * Dibuat oleh: AEP
+ * GitHub: https://github.com/wnr-code/PFI
+ * Maintainer: @wnr-code — https://github.com/wnr-code
+ * Dukung pengembang: https://trakteer.id/lanteraku/tip
+ */
 import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react';
 import {createApi} from './server/api.mjs';

@@ -1,3 +1,10 @@
+/*
+ * Dibuat/diperbarui: 2026-11-19
+ * Dibuat oleh: AEP
+ * GitHub: https://github.com/wnr-code/PFI
+ * Maintainer: @wnr-code — https://github.com/wnr-code
+ * Dukung pengembang: https://trakteer.id/lanteraku/tip
+ */
 import express from 'express';
 import {randomBytes,randomUUID,scrypt,timingSafeEqual,createHash} from 'node:crypto';
 import {promisify} from 'node:util';
@@ -9,7 +16,7 @@ const text=(v,max,min=0)=>{if(typeof v!=='string'||v.trim().length<min||v.trim()
 const choice=(v,opts)=>{if(!opts.includes(v))fail(400,'Pilihan tidak valid.');return v;};
 const finite=(v,min,max)=>{if(typeof v!=='number'||!Number.isFinite(v)||v<min||v>max)fail(400,'Koordinat di luar rentang.');return v;};
 const account=r=>r?{id:r.id,name:r.name,email:r.email,org:r.org,bio:r.bio,role:r.role,verification:r.verification,reviewNote:r.review_note,created:r.created}:null;
-const groups={nusantara:{name:'Jaringan Nusantara',desc:'Kelompok pengamat hilal seluruh Indonesia, dari Sabang hingga Merauke.'},'kelas-falak':{name:'Kelas Falak',desc:'Komunitas pelajar dan praktikan ilmu falak untuk hisab dan rukyat.'},'lab-hisab':{name:'Lab Hisab',desc:'Kelompok fokus perhitungan awal bulan dan verifikasi hisab.'}};
+const groups={nusantara:{name:'Jaringan Nusantara',desc:'Kelompok pengamat hilal seluruh Indonesia, dari Sabang hingga Merauke.'},'kelas-falak':{name:'Kelas Falaq',desc:'Komunitas pelajar dan praktikan ilmu falaq untuk hisab dan rukyat.'},'lab-hisab':{name:'Lab Hisab',desc:'Kelompok fokus perhitungan awal bulan dan verifikasi hisab.'}};
 function prefs(input){const p={};for(const [key,opts] of Object.entries({site:SITES.map(s=>s.id),theme:['light','dark'],mode:['pemula','profesional'],lang:['id','en']}))if(key in input)p[key]=choice(input[key],opts);if('notify' in input)p.notify=!!input.notify;for(const key of ['saved','favorites','read'])if(Array.isArray(input[key]))p[key]=input[key].slice(-150).map(v=>text(v,180));if(Array.isArray(input.reminders))p.reminders=input.reminders.slice(-80).map(e=>({id:text(e.id,160,1),type:choice(e.type,['full','new','rukyat','quarter']),date:new Date(e.date).toISOString(),title:text(e.title,120,1),en:text(e.en,120,1),desc:text(e.desc,700),descEn:text(e.descEn,700),loc:SITES.find(s=>s.id===e.loc?.id)||SITES[0]}));return p;}
 export function createApi(db=database()){
  const app=express();app.disable('x-powered-by');

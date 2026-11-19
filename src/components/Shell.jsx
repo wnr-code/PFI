@@ -1,3 +1,10 @@
+/*
+ * Dibuat/diperbarui: 2026-11-19
+ * Dibuat oleh: AEP
+ * GitHub: https://github.com/wnr-code/PFI
+ * Maintainer: @wnr-code — https://github.com/wnr-code
+ * Dukung pengembang: https://trakteer.id/lanteraku/tip
+ */
 import React, { useState } from 'react';
 import { usePFI, go } from '../state.jsx';
 import {
@@ -5,13 +12,14 @@ import {
   Bell, ChevronRight, MapPin, ChevronDown, GraduationCap, FlaskConical,
   ChevronsUpDown, LayoutDashboard, CreditCard, Share2, LogOut,
 } from 'lucide-react';
+import { SITES } from '../lib/astro.js';
 
 export const navMain = [
   ['beranda', 'Beranda', 'Home', House],
   ['hisab', 'Hisab', 'Hisab', Calculator],
   ['astronomi', 'Astronomi', 'Astronomy', Orbit],
+  ['peta', 'Peta', 'Map', MapPinned],
   ['komunitas', 'Komunitas', 'Community', UsersRound],
-  ['profil', 'Profil', 'Profile', UserRound],
 ];
 
 export const navMore = [
@@ -51,7 +59,7 @@ function Observatory() {
 }
 
 export function Sidebar() {
-  const { page, t, data, open, toggle } = usePFI();
+  const { page, t, data, setMode } = usePFI();
   const [collapsed, setCollapsed] = useState(false);
 
   const links = (items) =>
@@ -74,7 +82,7 @@ export function Sidebar() {
       <a
         className="brand-link"
         href="#/beranda"
-        aria-label="Pusat Falak Indonesia"
+        aria-label="Pusat Falaq Indonesia"
         onClick={() => setCollapsed(false)}
       >
         <div className="brand">
@@ -84,7 +92,7 @@ export function Sidebar() {
             <path d="M32 33M53 33" fill="none" stroke="#d6ae62" strokeWidth="2" />
           </svg>
           <div>
-            <span>Pusat Falak Indonesia</span>
+            <span>Pusat Falaq Indonesia</span>
             <small>PFI</small>
           </div>
         </div>
@@ -99,15 +107,12 @@ export function Sidebar() {
       <nav aria-label={t('Navigasi utama', 'Main navigation')}>
         <div className="nav-label">{t('MENU UTAMA', 'MAIN MENU')}</div>
         {links(navMain)}
-        <div className="nav-divider" />
-        <div className="nav-label">{t('PUSAT INFORMASI', 'INFORMATION CENTRE')}</div>
-        {links(navMore)}
       </nav>
       <div className="side-bottom">
         <Observatory />
         <button
           className="mode-button"
-          onClick={() => open('mode')}
+          onClick={() => setMode(data.mode === 'pemula' ? 'profesional' : 'pemula')}
         >
           <span className="mode-icon">
             {data.mode === 'pemula' ? (
@@ -137,7 +142,7 @@ export function Sidebar() {
 }
 
 export function Topbar() {
-  const { page, t, loc, open, data, lang } = usePFI();
+  const { page, t, loc, data, site, setSite, setNotify } = usePFI();
   const entry = [...navMain, ...navMore].find((n) => n[0] === page) || navMain[0];
   const label = t(entry[1], entry[2]);
 
@@ -150,20 +155,16 @@ export function Topbar() {
         <strong>{label}</strong>
       </div>
       <div className="top-actions">
-        <button
-          className="loc-control"
-          onClick={() => open('location')}
-        >
+        <label className="loc-control" aria-label={t('Lokasi pengamatan', 'Observation site')}>
           <MapPin size={14} />
-          <span>
-            {loc.city}<span className="region">, {loc.region}</span>
-          </span>
-          <ChevronDown size={10} />
-        </button>
+          <select value={site} onChange={(event) => setSite(event.target.value)}>
+            {SITES.map((item) => <option key={item.id} value={item.id}>{item.city}</option>)}
+          </select>
+        </label>
         <button
           className="bell-button"
           aria-label={t('Notifikasi', 'Notifications')}
-          onClick={() => open('notifications')}
+          onClick={() => setNotify(!data.notify)}
         >
           <Bell size={17} />
           {data.notify && <i className="bell-dot" />}

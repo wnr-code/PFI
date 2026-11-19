@@ -1,3 +1,10 @@
+/*
+ * Dibuat/diperbarui: 2026-11-19
+ * Dibuat oleh: AEP
+ * GitHub: https://github.com/wnr-code/PFI
+ * Maintainer: @wnr-code — https://github.com/wnr-code
+ * Dukung pengembang: https://trakteer.id/lanteraku/tip
+ */
 import { readdir, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 const list=async (path,prefix='')=>(await Promise.all((await readdir(path,{withFileTypes:true})).map(e=>e.isDirectory()?list(path+'/'+e.name,prefix+e.name+'/'):prefix+e.name))).flat();

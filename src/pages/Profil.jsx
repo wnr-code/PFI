@@ -1,17 +1,32 @@
+/*
+ * Dibuat/diperbarui: 2026-11-19
+ * Dibuat oleh: AEP
+ * GitHub: https://github.com/wnr-code/PFI
+ * Maintainer: @wnr-code — https://github.com/wnr-code
+ * Dukung pengembang: https://trakteer.id/lanteraku/tip
+ */
 import React, { useState } from 'react';
-import { usePFI, go } from '../state.jsx';
+import { usePFI } from '../state.jsx';
+import { api } from '../lib/api.js';
 import { User, CreditCard, Share2, LogOut, Bell, ShieldCheck, FileText } from 'lucide-react';
 
 export default function Profil() {
-  const { data, t, lang, logout, tell, update } = usePFI();
-  const [showDonasi, setShowDonasi] = useState(false);
+  const { data, t, logout, tell, setLang, setNotify } = usePFI();
+  const [showVerify, setShowVerify] = useState(false);
+  const [evidence, setEvidence] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const account = data.account;
   const isDemo = !account;
 
-  const handleDonasi = () => {
-    tell('Donasi akan diarahkan ke halaman pembayaran (demo).');
+  const submitVerification = async () => {
+    if (evidence.trim().length < 20) return tell(t('Keterangan bukti minimal 20 karakter.', 'Evidence must be at least 20 characters.'));
+    setSubmitting(true);
+    try { await api('/api/verification', 'POST', { evidence: evidence.trim() }); tell(t('Pengajuan verifikasi berhasil dikirim.', 'Verification request submitted.')); setShowVerify(false); }
+    catch (error) { tell(error.message); } finally { setSubmitting(false); }
   };
+
+  const handleDonasi = () => { tell(t('Kanal donasi resmi sedang disiapkan. Jangan mengirim dana ke rekening yang tidak diumumkan melalui kanal resmi PFI.', 'The official donation channel is being prepared. Do not send funds to accounts not announced by official PFI channels.')); };
 
   return (
     <div className="page-wrap">
@@ -76,7 +91,7 @@ export default function Profil() {
                 </button>
               </div>
               <div style={{ marginTop: 16, padding: 12, background: 'rgba(214,174,98,0.05)', borderRadius: 6, fontSize: 11, color: '#8fa3b8' }}>
-                {t('Rekening: BCA 1234567890 a/n Pusat Falak Indonesia', 'Account: BCA 1234567890 a/n Pusat Falak Indonesia')}
+                {t('Informasi rekening hanya akan diumumkan melalui kanal resmi PFI.', 'Bank details will only be announced through official PFI channels.')}
               </div>
             </div>
           </div>
@@ -91,7 +106,7 @@ export default function Profil() {
                   <b>{t('Peringatan Agenda', 'Event Reminders')}</b>
                   <div style={{ fontSize: 11, color: '#8fa3b8' }}>{t('Aktifkan pengingat agenda astronomi', 'Enable astronomical event reminders')}</div>
                 </div>
-                <button style={{ width: 44, height: 24, background: data.notify ? 'var(--gold)' : 'var(--line)', borderRadius: 12, position: 'relative' }}>
+                <button type="button" role="switch" aria-checked={data.notify} aria-label={t('Pengingat agenda', 'Agenda reminders')} onClick={() => setNotify(!data.notify)} style={{ width: 44, height: 24, background: data.notify ? 'var(--gold)' : 'var(--line)', borderRadius: 12, position: 'relative' }}>
                   <div style={{ position: 'absolute', top: 2, left: data.notify ? 22 : 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left .2s' }} />
                 </button>
               </div>
@@ -100,17 +115,18 @@ export default function Profil() {
                   <b>{t('Bahasa', 'Language')}</b>
                   <div style={{ fontSize: 11, color: '#8fa3b8' }}>{data.lang === 'id' ? 'Indonesia' : 'English'}</div>
                 </div>
-                <button className="btn secondary" onClick={() => update({ lang: data.lang === 'id' ? 'en' : 'id' })}>
+                <button className="btn secondary" onClick={() => setLang(data.lang === 'id' ? 'en' : 'id')}>
                   {t('Ubah', 'Change')}
                 </button>
               </div>
             </div>
           </div>
 
+          {showVerify && <div className="card"><div className="card-body"><div className="field"><label htmlFor="verification-evidence">{t('Bukti dan keterangan', 'Evidence and description')}</label><textarea id="verification-evidence" value={evidence} onChange={(event) => setEvidence(event.target.value)} minLength={20} maxLength={1000} rows={5} placeholder={t('Jelaskan lembaga, pengalaman, atau bukti kegiatan pengamatan Anda.', 'Describe your institution, experience, or observation evidence.')} /></div><button type="button" className="btn primary full" disabled={submitting} onClick={submitVerification}>{submitting ? t('Mengirim…', 'Submitting…') : t('Kirim pengajuan', 'Submit request')}</button></div></div>}
           <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn secondary full" onClick={() => tell(t('Fitur belum tersedia (demo).', 'Feature not available (demo).'))}>
+            {!['pending','verified'].includes(account.verification) && <button className="btn secondary full" onClick={() => setShowVerify(!showVerify)}>
               <ShieldCheck size={16} /> {t('Ajukan Verifikasi', 'Request Verification')}
-            </button>
+            </button>}
             <button className="btn secondary full" onClick={logout}>
               <LogOut size={16} /> {t('Keluar', 'Sign out')}
             </button>

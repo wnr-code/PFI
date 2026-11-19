@@ -1,4 +1,9 @@
-# Cloudflare Pages + Workers configuration for PFI (Pusat Falak Indonesia)
+# Dibuat/diperbarui: 2026-11-19
+# Dibuat oleh: AEP
+# GitHub: https://github.com/wnr-code/PFI
+# Maintainer: @wnr-code — https://github.com/wnr-code
+# Dukung pengembang: https://trakteer.id/lanteraku/tip
+# Cloudflare Pages + Workers configuration for PFI (Pusat Falaq Indonesia)
 # D1 Database: pfi-falaq
 # R2 Bucket: pfi-falaq-r2
 
@@ -24,7 +29,8 @@ database_id = "0ae91ae2-8bec-474f-b72d-1b793f951d4a"  # Disederhanakan dari dash
 binding = "r2falaq"        # Nama variabel di Worker: env.r2falaq
 bucket_name = "pfi-falaq-r2"
 
-# Environment variables (bisa di-override di Cloudflare Dashboard)
+# Public frontend configuration. The anon key identifies the Supabase Auth project;
+# it does not grant access to application data, which remains in Cloudflare D1/R2.
 [vars]
 VITE_SUPABASE_URL = "https://boennhvuoptogvcocbpx.supabase.co"
 VITE_SUPABASE_ANON_KEY = "sb_publishable_hM2Sdb3-WgLzc6-tgKc9Yg_wRyEHMtW"

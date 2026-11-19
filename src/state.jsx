@@ -1,10 +1,18 @@
+/*
+ * Dibuat/diperbarui: 2026-11-19
+ * Dibuat oleh: AEP
+ * GitHub: https://github.com/wnr-code/PFI
+ * Maintainer: @wnr-code — https://github.com/wnr-code
+ * Dukung pengembang: https://trakteer.id/lanteraku/tip
+ */
 import React, {
-  createContext, useContext, useEffect, useState, useRef, useCallback,
+  createContext, useContext, useEffect, useState, useCallback,
 } from 'react';
 import { supabase, isAuthConfigured } from './lib/supabase.js';
 import {
   authApi, api, offlineStore, offlineGet,
 } from './lib/api.js';
+import { SITES, agenda } from './lib/astro.js';
 
 const C = createContext(null);
 
@@ -19,7 +27,7 @@ const blank = () => ({
   session: null,
   lang: 'id',
   mode: 'pemula',
-  site: 'jakarta',
+  site: 'tasik',
   notify: true,
   posts: [],
   groups: [],
@@ -43,13 +51,22 @@ export function Provider({ children }) {
   );
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState('');
-  const [ready, setReady] = useState(false);
   const [online, setOnline] = useState(true);
 
   const tell = useCallback((msg) => {
     setToast(msg);
     setTimeout(() => setToast(''), 4000);
   }, []);
+
+  const setPreference = useCallback(async (field, value) => {
+    let previous;
+    setData((current) => { previous = current[field]; return { ...current, [field]: value }; });
+    try { await api('/api/preferences', 'PUT', { [field]: value }); }
+    catch (error) {
+      setData((current) => ({ ...current, [field]: previous }));
+      tell(error.message || 'Pengaturan gagal disimpan.');
+    }
+  }, [tell]);
 
   const session = useCallback((s) => {
     setData((d) => ({ ...d, account: s?.account ?? null, session: s?.session ?? null }));
@@ -74,18 +91,17 @@ export function Provider({ children }) {
 
   const refresh = useCallback(async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const account = session?.user
-        ? {
-            id: session.user.id,
-            name: session.user.user_metadata?.name ?? session.user.email,
-            email: session.user.email,
-            role: session.user.user_metadata?.role ?? 'observer',
-            org: session.user.user_metadata?.org ?? '',
-            verification: session.user.user_metadata?.verification ?? 'none',
-          }
-        : null;
-      setData((d) => ({ ...d, account, session }));
+      const { data: identity } = await authApi.getIdentitySession();
+      const serverSession = await api('/api/session');
+      const account = serverSession?.account ?? null;
+      const prefs = serverSession?.prefs && typeof serverSession.prefs === 'object' ? serverSession.prefs : {};
+      setData((d) => ({
+        ...d, account, session: identity.session ?? null,
+        lang: ['id', 'en'].includes(prefs.lang) ? prefs.lang : d.lang,
+        mode: ['pemula', 'profesional'].includes(prefs.mode) ? prefs.mode : d.mode,
+        site: SITES.some((item) => item.id === prefs.site) ? prefs.site : d.site,
+        notify: typeof prefs.notify === 'boolean' ? prefs.notify : d.notify,
+      }));
 
       // Fetch posts from API (with offline fallback)
       try {
@@ -104,16 +120,9 @@ export function Provider({ children }) {
   }, []);
 
   useEffect(() => {
-    // Listen to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, sess) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        await refresh();
-      } else if (event === 'SIGNED_OUT') {
-        session(null);
-        setData((d) => ({ ...d, posts: [] }));
-      }
+    const { data: { subscription } } = authApi.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_OUT') refresh();
     });
-
     // Initial load
     refresh();
 
@@ -150,21 +159,30 @@ export function Provider({ children }) {
 
   const t = (id, en) => (data.lang === 'en' ? (en ?? id) : id);
 
+  const loc = SITES.find((item) => item.id === data.site) || SITES[0];
+  const events = agenda(new Date(), loc);
+  const refreshPosts = refresh;
+
   const value = {
     data,
+    page: route.split('/')[0],
+    loc,
+    events,
+    refreshPosts,
     update,
     toggle,
     route,
     lang: data.lang,
-    setLang: (l) => update({ lang: l }),
+    setLang: (l) => setPreference('lang', l),
     mode: data.mode,
-    setMode: (m) => update({ mode: m }),
+    setMode: (m) => setPreference('mode', m),
     site: data.site,
-    setSite: (s) => update({ site: s }),
+    setSite: (s) => setPreference('site', s),
+    setNotify: (value) => setPreference('notify', value),
     t,
     tell,
     toast,
-    ready,
+    ready: data.ready,
     online,
     refresh,
     signIn,
