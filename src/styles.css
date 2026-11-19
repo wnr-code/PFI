@@ -926,3 +926,23 @@ select,input,textarea{font-size:15px;line-height:1.5}
 .policy-action{display:flex;align-items:flex-start;gap:12px;padding:16px;border:1px solid rgba(214,174,98,.28);border-radius:12px;background:rgba(214,174,98,.07);color:#e4c989}.policy-action>svg{flex-shrink:0;margin-top:2px}.policy-action b{font-size:13px}.policy-action p{font-size:11px;color:#aebed1;line-height:1.65;margin:5px 0}.policy-action a{display:inline-block;margin-top:7px;color:#f1d394;font-size:12px;font-weight:800}
 .policy-foot{display:flex;align-items:center;gap:9px;color:#91a3ba;font-size:11px;padding:4px 2px}.policy-foot svg{color:var(--gold);flex-shrink:0}
 @media(max-width:760px){.policy-blocks{grid-template-columns:1fr}.policy-hero{padding:20px}.policy-block{padding:15px}}
+
+/* Institution partnership preparation draft */
+.institution-prep{padding:18px;display:flex;flex-direction:column;gap:16px}
+.institution-prep-head{display:flex;gap:12px;align-items:flex-start}
+.institution-prep-head>div:last-child{min-width:0}
+.institution-prep-head b{font-size:13px}
+.institution-prep-head p{font-size:11px;line-height:1.65;color:var(--muted);margin-top:5px}
+.institution-prep-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.institution-field{min-width:0}
+.institution-field>span{font-size:11px}
+.institution-field input,.institution-field select,.institution-field textarea,.institution-draft-result textarea{width:100%;min-width:0;padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface2);color:var(--ink);font-size:12px;outline:none}
+.institution-field input:focus,.institution-field select:focus,.institution-field textarea:focus,.institution-draft-result textarea:focus{border-color:var(--gold)}
+.institution-field-wide{grid-column:1/-1}
+.institution-prep-actions{grid-column:1/-1;display:flex;justify-content:flex-start}
+.institution-draft-result{display:flex;flex-direction:column;gap:10px;padding-top:14px;border-top:1px solid var(--line)}
+.institution-draft-result textarea{line-height:1.6;resize:vertical}
+.institution-draft-result .btn{align-self:flex-start}
+.institution-prep-disclaimer{display:flex;gap:8px;align-items:flex-start;color:var(--muted);font-size:10px;line-height:1.65}
+.institution-prep-disclaimer svg{flex-shrink:0;margin-top:1px;color:var(--gold)}
+@media(max-width:640px){.institution-prep-grid{grid-template-columns:1fr}.institution-field-wide{grid-column:auto}.institution-prep{padding:14px}}

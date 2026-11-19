@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { usePFI } from '../state.jsx';
-import { ArrowLeft, BookOpen, CheckCircle2, Info, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, BookOpen, CheckCircle2, Info, ShieldCheck, ClipboardCopy, ClipboardCheck, Building2 } from 'lucide-react';
 
 const GUIDES = {
  membership: {
@@ -59,6 +59,47 @@ const GUIDES = {
  }
 };
 
+function InstitutionPrepForm({t,lang}){
+ const english=lang==='en';
+ const [form,setForm]=useState({institution:'',type:'',region:'',representative:'',position:'',contact:'',website:'',purpose:''});
+ const [draft,setDraft]=useState('');
+ const [copied,setCopied]=useState(false);
+ const update=(key,value)=>{setForm(current=>({...current,[key]:value}));setCopied(false);};
+ const makeDraft=()=>{
+  const labels=english
+   ? ['Institution name','Institution type','City / region','Representative name','Representative position','Official contact','Website / public profile','Partnership purpose']
+   : ['Nama lembaga','Jenis lembaga','Kota / wilayah','Nama perwakilan','Jabatan perwakilan','Kontak resmi','Situs / profil publik','Tujuan kemitraan'];
+  const values=[form.institution,form.type,form.region,form.representative,form.position,form.contact,form.website,form.purpose];
+  const result='DRAF PERSIAPAN PENGAJUAN KEMITRAAN PFI\\n'+labels.map((label,i)=>label+': '+(values[i].trim()||'-')).join('\\n')+'\\n\\n'+(english?'This is a preparation draft only. It has not been submitted to PFI.':'Ini hanya draf persiapan. Data belum dikirim atau didaftarkan ke PFI.');
+  setDraft(result);setCopied(false);return result;
+ };
+ const copyDraft=async()=>{
+  const text=draft||makeDraft();
+  try{await navigator.clipboard.writeText(text);setCopied(true);}
+  catch{setCopied(false);}
+ };
+ const fields=[
+  ['institution',t('Nama resmi lembaga *','Official institution name *'),'text',120],
+  ['type',t('Jenis lembaga *','Institution type *'),'select',0],
+  ['region',t('Kota / wilayah kegiatan *','City / activity region *'),'text',120],
+  ['representative',t('Nama perwakilan *','Representative name *'),'text',100],
+  ['position',t('Jabatan di lembaga *','Institutional position *'),'text',100],
+  ['contact',t('Kontak resmi (email / telepon) *','Official contact (email / phone) *'),'text',120],
+  ['website',t('Situs atau profil publik (opsional)','Website or public profile (optional)'),'url',180],
+  ['purpose',t('Tujuan dan bidang kerja sama (opsional)','Purpose and proposed collaboration (optional)'),'textarea',500],
+ ];
+ const institutionTypes=[t('Pilih jenis lembaga','Choose institution type'),t('Pesantren / madrasah','Pesantren / Islamic school'),t('Organisasi kemasyarakatan','Civil / community organization'),t('Perguruan tinggi','University / college'),t('Observatorium / komunitas astronomi','Observatory / astronomy community'),t('Lembaga pemerintah','Government institution'),t('Lainnya','Other')];
+ return <section className="card institution-prep">
+  <div className="institution-prep-head"><div className="settings-guide-icon"><Building2 size={20}/></div><div><b>{t('Draf Persiapan Pengajuan Lembaga','Institution Application Preparation Draft')}</b><p>{t('Isi data dasar untuk menyiapkan surat atau pesan pengajuan. Formulir ini belum mengirim data ke server PFI.','Enter basic details to prepare an application letter or message. This form does not send data to PFI servers.')}</p></div></div>
+  <form onSubmit={event=>{event.preventDefault();makeDraft();}} className="institution-prep-grid">
+   {fields.map(([key,label,type,max])=><label className={'field institution-field '+(type==='textarea'?'institution-field-wide':'')} key={key}><span>{label}</span>{type==='select'?<select value={form[key]} onChange={event=>update(key,event.target.value)} required><option value="">{institutionTypes[0]}</option>{institutionTypes.slice(1).map(option=><option key={option} value={option}>{option}</option>)}</select>:type==='textarea'?<textarea value={form[key]} maxLength={max} rows={3} onChange={event=>update(key,event.target.value)} placeholder={t('Jelaskan tujuan kerja sama secara singkat…','Briefly describe the proposed collaboration…')}/>:<input type={type} value={form[key]} maxLength={max} required={['institution','region','representative','position','contact'].includes(key)} onChange={event=>update(key,event.target.value)} />}</label>)}
+   <div className="institution-prep-actions"><button className="btn primary" type="submit">{t('Buat draf pengajuan','Prepare application draft')}</button></div>
+  </form>
+  {draft&&<div className="institution-draft-result"><label className="field"><span>{t('Draf untuk disalin','Draft to copy')}</span><textarea readOnly rows={9} value={draft} onFocus={event=>event.target.select()}/></label><button className="btn secondary" type="button" onClick={copyDraft}>{copied?<ClipboardCheck size={16}/>:<ClipboardCopy size={16}/>} {copied?t('Tersalin','Copied'):t('Salin draf','Copy draft')}</button></div>}
+  <p className="institution-prep-disclaimer"><Info size={15}/>{t('Draf hanya berada di halaman ini dan tidak disimpan ke akun. Jangan masukkan nomor identitas, dokumen rahasia, atau data pribadi yang tidak diperlukan. Pengajuan resmi dan penunjukan koordinator belum tersedia sebagai alur otomatis di aplikasi.','The draft exists only on this page and is not saved to your account. Do not enter identity numbers, confidential documents, or unnecessary personal data. Official applications and coordinator appointments are not yet automated in the app.')}</p>
+ </section>;
+}
+
 function PedomanPage({kind}){
  const {t,lang}=usePFI(); const g=GUIDES[kind]; const en=lang==='en';
  return <div className="page-wrap pfi-policy-page">
@@ -67,7 +108,7 @@ function PedomanPage({kind}){
   <div className="policy-boundary"><Info size={18}/><p>{t('Pedoman ini menjelaskan prosedur internal platform PFI. Pedoman tidak menggantikan aturan lembaga mitra, keputusan pemerintah, atau kewenangan otoritas keagamaan dan pendidikan.','This guideline describes PFI platform procedures. It does not replace partner institution rules, government decisions, or religious and educational authorities.')}</p></div>
   <div className="policy-blocks">{g.blocks.map(([title,body,titleEn,bodyEn],i)=><section className="card policy-block" key={title}><div className="policy-index">{String(i+1).padStart(2,'0')}</div><div><h2>{en?titleEn:title}</h2><p>{en?bodyEn:body}</p></div></section>)}</div>
   {kind==='verification'&&<section className="policy-action"><ShieldCheck size={19}/><div><b>{t('Siap mengajukan verifikasi pengamat?','Ready to request observer verification?')}</b><p>{t('Buka Profil, baca persyaratan di atas, lalu isi formulir verifikasi. Pengajuan akan menunggu petugas yang ditugaskan.','Open Profile, review the requirements above, then complete the verification form. Your request will wait for an assigned reviewer.')}</p><a href="#/profil">{t('Buka Profil dan ajukan','Open Profile to apply')} →</a></div></section>}
-  {kind==='institution'&&<section className="policy-action"><BookOpen size={19}/><div><b>{t('Lembaga ingin bermitra dengan PFI?','Want your institution to partner with PFI?')}</b><p>{t('Gunakan kanal pengajuan lembaga yang diumumkan pengelola. Jika fitur pendaftaran lembaga belum tersedia di aplikasi, hubungi pengelola PFI melalui kanal resmi.','Use the institution application channel announced by PFI. If institution registration is not yet available in the app, contact PFI administrators through official channels.')}</p></div></section>}
+  {kind==='institution'&&<><section className="policy-action"><BookOpen size={19}/><div><b>{t('Lembaga ingin bermitra dengan PFI?','Want your institution to partner with PFI?')}</b><p>{t('Siapkan informasi dasar melalui draf di bawah. Setelah itu, kirimkan melalui kanal resmi PFI yang diumumkan pengelola. Draf ini bukan pendaftaran resmi.','Prepare basic information using the draft below, then send it through an official PFI channel announced by administrators. This draft is not an official application.')}</p></div></section><InstitutionPrepForm t={t} lang={lang}/></>}
   {kind==='expertise'&&<section className="policy-action"><ShieldCheck size={19}/><div><b>{t('Penilaian keahlian terpisah dari verifikasi akun','Expertise review is separate from account verification')}</b><p>{t('Formulir verifikasi akun saat ini tidak otomatis mengajukan pengakuan keahlian. Jangan menganggap status akun terverifikasi sebagai sertifikasi ahli.','The current account verification form does not automatically request expertise recognition. Do not treat account verification as expert certification.')}</p></div></section>}
   <div className="policy-foot"><CheckCircle2 size={16}/>{t('Siapkan informasi yang benar dan hanya kirim dokumen melalui kanal resmi PFI.','Provide accurate information and submit documents only through official PFI channels.')}</div>
  </div>;
