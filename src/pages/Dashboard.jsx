@@ -37,7 +37,7 @@ export default function Dashboard() {
       <section className="pfi-hero" aria-label={t('Langit malam Pusat Falak Indonesia', 'PFI night sky')}>
         <img
           className="pfi-hero-image"
-          src="https://c.pxhere.com/photos/f8/54/moon_night_night_sky_nasa_earth-130004.jpg!d"
+          src="https://commons.wikimedia.org/wiki/Special:FilePath/ISS043-E-39748_-_View_of_Earth%27s_horizon_and_the_crescent_Moon.jpg?width=2400"
           alt={t('Bulan sabit di langit malam', 'Crescent moon in the night sky')}
           loading="eager"
         />
