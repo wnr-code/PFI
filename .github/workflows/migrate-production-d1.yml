@@ -78,6 +78,10 @@ jobs:
             fi
           fi
 
+          if echo "$TABLES" | grep -Eq '"name"[[:space:]]*:[[:space:]]*"groups"'; then
+            $WRANGLER --command="UPDATE groups SET name = CASE id WHEN 'nusantara' THEN 'Jaringan Nusantara' WHEN 'kelas-falak' THEN 'Kelas Falak' WHEN 'lab-hisab' THEN 'Lab Hisab' ELSE name END WHERE id IN ('nusantara','kelas-falak','lab-hisab') AND (name IS NULL OR name = '')" --yes
+          fi
+
           echo "Legacy schema compatibility checks completed."
           
       - name: Show pending Production migrations
