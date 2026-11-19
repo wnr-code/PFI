@@ -17,6 +17,7 @@ import Profil from './pages/Profil.jsx';
 import PetaRukyat from './pages/PetaRukyat.jsx';
 import Laporan from './pages/Laporan.jsx';
 import Kamus from './pages/Kamus.jsx';
+import KalkulatorLapangan from './pages/KalkulatorLapangan.jsx';
 
 const routes = {
   beranda: Dashboard,
@@ -27,6 +28,7 @@ const routes = {
   peta: PetaRukyat,
   laporan: Laporan,
   kamus: Kamus,
+  kalkulator: KalkulatorLapangan,
 };
 
 export default function App() {
