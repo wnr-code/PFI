@@ -1,0 +1,62 @@
+name: Apply Production D1 migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_database:
+        description: "Ketik tepat: APPLY-PRODUCTION-pfi-falaq"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pfi-production-d1-migrations
+  cancel-in-progress: false
+
+jobs:
+  migrate-production:
+    if: ${{ inputs.confirm_database == 'APPLY-PRODUCTION-pfi-falaq' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    steps:
+      - name: Checkout migration files
+        uses: actions/checkout@v4
+        with:
+          ref: preview/workers-build
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate Production-only configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'database_name = "pfi-falaq"' wrangler.production-migrations.toml
+          grep -q 'database_id = "0ae91ae2-8bec-474f-b72d-1b793f951d4a"' wrangler.production-migrations.toml
+          if grep -q 'b43a00c7-7ba9-4b9a-95be-a2770ab8e3ae' wrangler.production-migrations.toml; then
+            echo "Preview database ID found in Production migration config; stopping."
+            exit 1
+          fi
+
+      - name: Show pending Production migrations
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.165.0 d1 migrations list PRODUCTION_DB --remote --config wrangler.production-migrations.toml
+
+      - name: Apply migrations to Production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.165.0 d1 migrations apply PRODUCTION_DB --remote --config wrangler.production-migrations.toml
+
+      - name: Verify Production migrations
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.165.0 d1 migrations list PRODUCTION_DB --remote --config wrangler.production-migrations.toml
