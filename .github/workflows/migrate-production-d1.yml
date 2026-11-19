@@ -43,6 +43,26 @@ jobs:
             exit 1
           fi
 
+      - name: Repair legacy agendas date column if needed
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          TABLES="$(npx --yes wrangler@4.165.0 d1 execute PRODUCTION_DB --remote --config wrangler.production-migrations.toml --command='PRAGMA table_list' --json)"
+          if echo "$TABLES" | grep -Eq '"name"[[:space:]]*:[[:space:]]*"agendas"'; then
+            COLUMNS="$(npx --yes wrangler@4.165.0 d1 execute PRODUCTION_DB --remote --config wrangler.production-migrations.toml --command='PRAGMA table_info("agendas")' --json)"
+            if ! echo "$COLUMNS" | grep -Eq '"name"[[:space:]]*:[[:space:]]*"date"'; then
+              echo "Existing agendas table has no date column; adding nullable-safe default column."
+              npx --yes wrangler@4.165.0 d1 execute PRODUCTION_DB --remote --config wrangler.production-migrations.toml --command="ALTER TABLE agendas ADD COLUMN date TEXT NOT NULL DEFAULT ''" --yes
+            else
+              echo "agendas.date already exists; no schema repair needed."
+            fi
+          else
+            echo "No existing agendas table; initial migration will create it."
+          fi
+
       - name: Show pending Production migrations
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
