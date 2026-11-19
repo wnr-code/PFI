@@ -118,9 +118,19 @@ export function Provider({ children }) {
         if (serverSession?.account || !identityToken) break;
       }
       if (sequence !== refreshSequence.current) return;
-      const account = serverSession?.account ?? null;
+      const identityUser = identity.session?.user;
+      // D1 remains authoritative for roles and preferences. If profile
+      // provisioning is briefly delayed, show the verified Google identity
+      // immediately while the backend continues enforcing every permission.
+      const identityAccount = identityUser?.id && identityUser?.email ? {
+        id: identityUser.id,
+        email: identityUser.email,
+        name: identityUser.user_metadata?.name || identityUser.user_metadata?.full_name || identityUser.email,
+        org: '', bio: '', role: 'observer', verification: 'none', reviewNote: '', created: identityUser.created_at || '',
+      } : null;
+      const account = serverSession?.account ?? identityAccount;
       if (identity.session && !account) {
-        throw new Error('Login Google berhasil, tetapi profil PFI belum tersedia setelah dicoba ulang. Silakan coba sekali lagi.');
+        throw new Error('Login Google berhasil, tetapi identitas akun tidak lengkap. Silakan pilih akun Google lain.');
       }
       const prefs = serverSession?.prefs && typeof serverSession.prefs === 'object' ? serverSession.prefs : {};
       setData((d) => ({

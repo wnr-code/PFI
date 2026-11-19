@@ -265,7 +265,7 @@ async function profileFor(request, env) {
   if (!who) return null;
 
   await ensureUserSchema(env.falaq);
-  await env.falaq.prepare(`
+  const upsert = env.falaq.prepare(`
     INSERT INTO users (id, email, name, created)
     VALUES (?, ?, ?, datetime('now'))
     ON CONFLICT(id) DO UPDATE SET
@@ -273,11 +273,16 @@ async function profileFor(request, env) {
       name = CASE WHEN users.name = '' THEN excluded.name ELSE users.name END,
       updated = datetime('now')
     WHERE users.email != excluded.email OR users.name = ''
-  `).bind(who.id, who.email, who.name).run();
-
-  return await env.falaq.prepare(
+  `).bind(who.id, who.email, who.name);
+  const select = env.falaq.prepare(
     'SELECT id,email,name,org,bio,role,verification,review_note,created,prefs FROM users WHERE id = ?'
-  ).bind(who.id).first();
+  ).bind(who.id);
+
+  // D1 batch guarantees the profile read runs after its upsert on the same
+  // database transaction. Separate write/read calls can observe different
+  // points when D1 routing or replication is active.
+  const [, profileResult] = await env.falaq.batch([upsert, select]);
+  return profileResult?.results?.[0] || null;
 }
 
 async function postView(env, post, profile) {

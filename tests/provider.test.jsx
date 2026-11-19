@@ -69,6 +69,20 @@ describe('PFI provider lifecycle', () => {
     expect(screen.getByText(/anonymous$/)).toBeTruthy();
   });
 
+  it('shows verified Google identity while D1 profile provisioning catches up', async () => {
+    window.scrollTo = vi.fn();
+    authApi.getIdentitySession.mockResolvedValueOnce({ data: { session: {
+      access_token: 'fresh-google-token',
+      user: { id: 'google-fallback', email: 'fallback@example.com', user_metadata: { name: 'Identitas Google' } },
+    } } });
+    api.mockImplementation(async (path) => path === '/api/session' ? { account: null, prefs: {} } : []);
+    render(<Provider><Status /></Provider>);
+    await waitFor(
+      () => expect(screen.getByText(/^ready\|Tasikmalaya\|.*\|fallback@example\.com$/)).toBeTruthy(),
+      { timeout: 2500 }
+    );
+  });
+
   it('retries a temporarily unavailable profile without discarding Google login', async () => {
     window.scrollTo = vi.fn();
     authApi.getIdentitySession.mockResolvedValueOnce({ data: { session: { access_token: 'fresh-token' } } });
