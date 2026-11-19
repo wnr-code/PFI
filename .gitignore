@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.vite/
+playwright-report/
+test-results/
+.DS_Store
+
+# Private runtime database and original observations
+.pfi-data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+.env

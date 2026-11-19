@@ -1,0 +1,51 @@
+name = "pfi"
+main = "worker/index.js"
+compatibility_date = "2026-11-19"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+not_found_handling = "single-page-application"
+
+[[d1_databases]]
+binding = "falaq"
+database_name = "pfi-falaq"
+database_id = "0ae91ae2-8bec-474f-b72d-1b793f951d4a"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "r2falaq"
+bucket_name = "pfi-falaq-r2"
+
+[previews]
+[[previews.d1_databases]]
+binding = "falaq"
+database_name = "sanbok-pfi"
+database_id = "b43a00c7-7ba9-4b9a-95be-a2770ab8e3ae"
+
+# Preview memakai bucket R2 forumcgs.
+[[previews.r2_buckets]]
+binding = "r2falaq"
+bucket_name = "forumcgs"
+
+# Set these as Worker secrets/vars in Cloudflare Dashboard, not as VITE_*
+# frontend values. SUPABASE_ANON_KEY is a public/publishable key but is kept
+# server-side here so the Worker can validate access tokens with Supabase Auth.
+# SUPABASE_URL
+# SUPABASE_ANON_KEY
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+persist = true
+
+[observability.traces]
+enabled = false
+head_sampling_rate = 1
+persist = true
