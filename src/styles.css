@@ -915,3 +915,14 @@ select,input,textarea{font-size:15px;line-height:1.5}
 .verification-guide-link small{display:block;font-size:10px;color:#aebed1;margin-top:2px;line-height:1.5}
 .verification-guide-link>span:last-child{font-size:20px}
 @media(max-width:760px){.settings-guide-grid{grid-template-columns:1fr}.settings-guide-card{padding:14px}}
+
+/* Dedicated PFI policy pages */
+.pfi-policy-page{gap:16px}.policy-back{display:inline-flex;align-items:center;gap:8px;width:max-content;color:#d8bd83;font-size:12px;font-weight:750;text-decoration:none}
+.policy-hero{padding:25px;border:1px solid rgba(214,174,98,.22);border-radius:15px;background:radial-gradient(ellipse at 90% 0%,rgba(66,103,150,.3),transparent 48%),linear-gradient(135deg,#1b3153,#14213b 75%)}
+.policy-hero-icon{display:grid;place-items:center;width:44px;height:44px;margin-bottom:16px;border-radius:12px;background:rgba(214,174,98,.13);color:var(--gold)}
+.policy-hero h1{font-size:clamp(23px,3.5vw,32px);margin:8px 0}.policy-hero>p{max-width:760px;color:#b8c6d8;font-size:12px;line-height:1.7}
+.policy-boundary{display:flex;gap:10px;align-items:flex-start;padding:13px 15px;border:1px solid rgba(214,174,98,.22);border-radius:11px;background:rgba(214,174,98,.06);color:#e2c887}.policy-boundary svg{flex-shrink:0;margin-top:2px}.policy-boundary p{font-size:11px;line-height:1.65;color:#c9bd9f}
+.policy-blocks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.policy-block{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;padding:17px}.policy-index{font-size:11px;font-weight:850;color:var(--gold);padding-top:3px;letter-spacing:1px}.policy-block h2{font-size:13px;margin:0 0 7px}.policy-block p{font-size:11px;line-height:1.75;color:#aebed1}
+.policy-action{display:flex;align-items:flex-start;gap:12px;padding:16px;border:1px solid rgba(214,174,98,.28);border-radius:12px;background:rgba(214,174,98,.07);color:#e4c989}.policy-action>svg{flex-shrink:0;margin-top:2px}.policy-action b{font-size:13px}.policy-action p{font-size:11px;color:#aebed1;line-height:1.65;margin:5px 0}.policy-action a{display:inline-block;margin-top:7px;color:#f1d394;font-size:12px;font-weight:800}
+.policy-foot{display:flex;align-items:center;gap:9px;color:#91a3ba;font-size:11px;padding:4px 2px}.policy-foot svg{color:var(--gold);flex-shrink:0}
+@media(max-width:760px){.policy-blocks{grid-template-columns:1fr}.policy-hero{padding:20px}.policy-block{padding:15px}}

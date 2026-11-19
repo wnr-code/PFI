@@ -155,9 +155,9 @@ export default function Profil() {
                 <p>{t('Pengajuan sedang menunggu pemeriksaan petugas.', 'Your request is awaiting reviewer assessment.')}</p>
               ) : (
                 <form onSubmit={submitVerification} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <a className="verification-guide-link" href="#/panduan">
+                  <a className="verification-guide-link" href="#/pedoman-verifikasi">
                     <FileText size={16} />
-                    <span><b>{t('Baca pedoman sebelum mengajukan', 'Read the guidelines before applying')}</b><small>{t('Pelajari persyaratan bukti, proses pemeriksaan, dan arti status verifikasi.', 'Review evidence requirements, the review process, and verification status meanings.')}</small></span>
+                    <span><b>{t('Baca pedoman verifikasi pengamat sebelum mengajukan', 'Read observer verification guidelines before applying')}</b><small>{t('Periksa jenis bukti yang diperlukan dan tahapan peninjauan akun.', 'Review acceptable evidence and the account review process.')}</small></span>
                     <span aria-hidden="true">›</span>
                   </a>
                   {account.reviewNote && <p style={{ color: '#d6ae62', fontSize: 12 }}>{t('Catatan petugas:', 'Reviewer note:')} {account.reviewNote}</p>}

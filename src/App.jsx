@@ -12,6 +12,7 @@ import Laporan from './pages/Laporan.jsx';
 import Kalender from './pages/Kalender.jsx';
 import Panduan from './pages/Panduan.jsx';
 import Pengaturan from './pages/Pengaturan.jsx';
+import { PedomanKeanggotaan, PedomanLembaga, PedomanVerifikasi, PedomanKeahlian, PedomanRukyat, PedomanEtika } from './pages/PedomanDetail.jsx';
 import { SITES } from './lib/astro.js';
 import { api } from './lib/api.js';
 
@@ -26,6 +27,12 @@ const routes = {
   kalender: Kalender,
   panduan: Panduan,
   pengaturan: Pengaturan,
+  'pedoman-keanggotaan': PedomanKeanggotaan,
+  'pedoman-lembaga': PedomanLembaga,
+  'pedoman-verifikasi': PedomanVerifikasi,
+  'pedoman-keahlian': PedomanKeahlian,
+  'pedoman-rukyat': PedomanRukyat,
+  'pedoman-etika': PedomanEtika,
 };
 
 function AuxiliaryModal() {
