@@ -62,6 +62,7 @@ export default function PetaRukyat() {
   const [currentLocation, setCurrentLocation] = useState(null);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState('');
+  const [mapReady, setMapReady] = useState(false);
   const [skySiteId, setSkySiteId] = useState('tasik');
   const [skyNow, setSkyNow] = useState(() => new Date());
   const [issTrack, setIssTrack] = useState(null);
@@ -330,6 +331,7 @@ export default function PetaRukyat() {
       baseTiles.addTo(map);
       markersLayer.current = L.layerGroup().addTo(map);
       mapInstance.current = map;
+      setMapReady(true);
       const renderMarkers = () => {
         markersLayer.current?.clearLayers();
         located.forEach((report) => {
@@ -357,6 +359,7 @@ export default function PetaRukyat() {
         mapInstance.current.remove();
         mapInstance.current = null;
         markersLayer.current = null;
+        setMapReady(false);
         userMarkerRef.current = null;
         userAccuracyRef.current = null;
       }
@@ -388,7 +391,7 @@ export default function PetaRukyat() {
       }),
     }).addTo(map);
     userMarkerRef.current.bindTooltip(t('Posisi saya · GPS', 'My location · GPS'), { direction: 'top' });
-  }, [mode, currentLocation, t]);
+  }, [mode, currentLocation, mapReady, t]);
 
   const openCoordinates = selected
     ? 'https://www.openstreetmap.org/?mlat=' + encodeURIComponent(selected.latitude) + '&mlon=' + encodeURIComponent(selected.longitude) + '#map=10/' + encodeURIComponent(selected.latitude) + '/' + encodeURIComponent(selected.longitude)
