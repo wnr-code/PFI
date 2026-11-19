@@ -9,6 +9,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../src/lib/supabase.js', () => ({
+  initializeIdentity: vi.fn(async () => null),
   supabase: { auth: { getSession: vi.fn(async () => ({ data: { session: { access_token: 'google-identity-token' } } })) } },
 }));
 

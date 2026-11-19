@@ -17,8 +17,35 @@ export const supabase = createClient(url || fallbackUrl, anonKey || 'identity-no
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true,
+    // OAuth callback is exchanged explicitly before the application requests
+    // its Cloudflare session, preventing a race on slower mobile browsers.
+    detectSessionInUrl: false,
     flowType: 'pkce',
     storageKey: 'pfi.google.identity',
   },
 });
+
+let initialization;
+export function initializeIdentity() {
+  if (initialization) return initialization;
+  initialization = (async () => {
+    if (typeof window === 'undefined' || !isAuthConfigured()) return null;
+    const callback = new URL(window.location.href);
+    const code = callback.searchParams.get('code');
+    const oauthError = callback.searchParams.get('error_description') || callback.searchParams.get('error');
+    if (oauthError) {
+      callback.searchParams.delete('error');
+      callback.searchParams.delete('error_code');
+      callback.searchParams.delete('error_description');
+      window.history.replaceState({}, document.title, `${callback.pathname}${callback.search}${callback.hash || '#/beranda'}`);
+      throw new Error(decodeURIComponent(oauthError.replaceAll('+', ' ')));
+    }
+    if (!code) return null;
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    callback.searchParams.delete('code');
+    window.history.replaceState({}, document.title, `${callback.pathname}${callback.search}${callback.hash || '#/beranda'}`);
+    if (error) throw error;
+    return data.session || null;
+  })();
+  return initialization;
+}
