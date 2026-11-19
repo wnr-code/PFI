@@ -8,6 +8,8 @@ import { position, lunar, SITES, phaseNames } from '../lib/astro.js';
 import { MapPin, RefreshCw, Globe2, Map as MapIcon, X, ExternalLink, Activity, Satellite, Clock3 } from 'lucide-react';
 
 const GLOBE_SCRIPT = 'https://unpkg.com/globe.gl';
+const SATELLITE_SCRIPT = 'https://unpkg.com/satellite.js/dist/satellite.min.js';
+const ISS_GP_URL = 'https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=JSON';
 const LEAFLET_SCRIPT = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
 const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
 const EARTH_TEXTURE = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
@@ -58,6 +60,8 @@ export default function PetaRukyat() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [skySiteId, setSkySiteId] = useState('tasik');
   const [skyNow, setSkyNow] = useState(() => new Date());
+  const [issTrack, setIssTrack] = useState(null);
+  const [issError, setIssError] = useState('');
   const globeHost = useRef(null);
   const mapHost = useRef(null);
   const globeInstance = useRef(null);
@@ -86,6 +90,72 @@ export default function PetaRukyat() {
     setSelected(null);
     loadReports();
   }, [data.account?.id, loadReports]);
+
+  // ISS: elemen orbit OMM dari CelesTrak, posisi dihitung dengan propagator SGP4.
+  // Cache 2 jam agar tidak membebani layanan data orbit publik.
+  useEffect(() => {
+    let cancelled = false;
+    const cacheKey = 'pfi-iss-omm-v1';
+    const loadOrbit = async () => {
+      try {
+        let payload = null;
+        try {
+          const cached = JSON.parse(window.localStorage.getItem(cacheKey) || 'null');
+          if (cached?.savedAt && Date.now() - cached.savedAt < 2 * 60 * 60 * 1000 && cached?.data?.[0]?.EPOCH) payload = cached.data;
+        } catch { /* Cache rusak akan diambil ulang dari sumber. */ }
+        if (!payload) {
+          const response = await fetch(ISS_GP_URL, { headers: { Accept: 'application/json' } });
+          if (!response.ok) throw new Error('CelesTrak HTTP ' + response.status);
+          const data = await response.json();
+          if (!Array.isArray(data) || !data[0]?.EPOCH) throw new Error('Format elemen orbit ISS tidak valid.');
+          payload = data;
+          try { window.localStorage.setItem(cacheKey, JSON.stringify({ savedAt: Date.now(), data: payload })); } catch { /* Cache opsional. */ }
+        }
+        if (!cancelled) {
+          setIssTrack({ omm: payload[0], fetchedAt: new Date() });
+          setIssError('');
+        }
+      } catch (error) {
+        if (!cancelled) setIssError(error?.message || 'Data orbit ISS tidak dapat dimuat.');
+      }
+    };
+    loadOrbit();
+    return () => { cancelled = true; };
+  }, []);
+
+  const issPosition = useMemo(() => {
+    if (!issTrack?.omm) return null;
+    try {
+      const sat = window.satellite;
+      if (!sat?.json2satrec || !sat?.propagate || !sat?.gstime || !sat?.eciToGeodetic) return null;
+      const satrec = sat.json2satrec(issTrack.omm);
+      const now = skyNow;
+      const result = sat.propagate(satrec, now);
+      if (!result?.position) return null;
+      const geo = sat.eciToGeodetic(result.position, sat.gstime(now));
+      const toDeg = sat.degreesLat || ((rad) => rad * 180 / Math.PI);
+      const toLon = sat.degreesLong || ((rad) => rad * 180 / Math.PI);
+      return { lat: toDeg(geo.latitude), lng: toLon(geo.longitude), altitudeKm: geo.height, name: issTrack.omm.OBJECT_NAME || 'ISS (ZARYA)' };
+    } catch { return null; }
+  }, [issTrack, skyNow]);
+
+  const issOrbitPath = useMemo(() => {
+    if (!issTrack?.omm) return null;
+    try {
+      const sat = window.satellite;
+      if (!sat?.json2satrec || !sat?.propagate || !sat?.gstime || !sat?.eciToGeodetic) return null;
+      const satrec = sat.json2satrec(issTrack.omm);
+      const points = [];
+      for (let minute = 0; minute <= 95; minute += 2) {
+        const date = new Date(skyNow.getTime() + minute * 60000);
+        const result = sat.propagate(satrec, date);
+        if (!result?.position) continue;
+        const geo = sat.eciToGeodetic(result.position, sat.gstime(date));
+        points.push({ lat: sat.degreesLat(geo.latitude), lng: sat.degreesLong(geo.longitude) });
+      }
+      return points.length > 2 ? { points, name: 'ISS' } : null;
+    } catch { return null; }
+  }, [issTrack, skyNow]);
 
   // Refresh berkala hanya mengambil laporan yang benar-benar tersimpan di PFI.
   useEffect(() => {
@@ -122,7 +192,7 @@ export default function PetaRukyat() {
     let cancelled = false;
     let observer;
     setLibraryError('');
-    loadScript(GLOBE_SCRIPT, 'Globe').then((GlobeFactory) => {
+    Promise.all([loadScript(GLOBE_SCRIPT, 'Globe'), loadScript(SATELLITE_SCRIPT, 'satellite')]).then(([GlobeFactory]) => {
       if (cancelled || !globeHost.current) return;
       const host = globeHost.current;
       const globe = new GlobeFactory(host, { animateIn: true })
@@ -141,6 +211,25 @@ export default function PetaRukyat() {
         .pointColor(() => '#ffd166')
         .pointResolution(12)
         .onPointClick((point) => setSelected(point))
+        .pathsData(issOrbitPath ? [issOrbitPath] : [])
+        .pathPoints((d) => d.points)
+        .pathPointLat((p) => p.lat)
+        .pathPointLng((p) => p.lng)
+        .pathColor(() => '#65e6ff')
+        .pathStroke(0.65)
+        .pathDashLength(0.12)
+        .pathDashGap(0.025)
+        .pathDashAnimateTime(4500)
+        .htmlElementsData(issPosition ? [issPosition] : [])
+        .htmlLat((d) => d.lat)
+        .htmlLng((d) => d.lng)
+        .htmlElement(() => {
+          const el = document.createElement('div');
+          el.className = 'pfi-iss-marker';
+          el.innerHTML = '<span class="pfi-iss-pulse"></span><b>ISS</b>';
+          el.style.pointerEvents = 'none';
+          return el;
+        })
         .ringsData(located)
         .ringLat((d) => Number(d.latitude))
         .ringLng((d) => Number(d.longitude))
@@ -173,7 +262,7 @@ export default function PetaRukyat() {
       }
       if (globeHost.current) globeHost.current.replaceChildren();
     };
-  }, [mode, located, t]);
+  }, [mode, located, t, issPosition, issOrbitPath]);
 
   // Leaflet: peta geografis asli dengan tile basemap, pan, zoom dan marker.
   useEffect(() => {
@@ -235,7 +324,7 @@ export default function PetaRukyat() {
   return (
     <div className="page-wrap pfi-live-page">
       <style>{".pfi-observatory-scene{position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,#102b50 0%,#050d1c 58%,#02050d 100%);border-radius:18px}\n.pfi-observatory-scene:before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 48%,transparent 34%,rgba(1,5,15,.28) 100%)}\n.pfi-cosmos-stars{position:absolute;inset:0;z-index:0;pointer-events:none;background-image:radial-gradient(1px 1px at 8% 18%,#fff 98%,transparent),radial-gradient(1.5px 1.5px at 22% 72%,#9dcaff 98%,transparent),radial-gradient(1px 1px at 76% 22%,#fff 98%,transparent),radial-gradient(2px 2px at 88% 64%,#d7e9ff 98%,transparent),radial-gradient(1px 1px at 56% 12%,#fff 98%,transparent),radial-gradient(1px 1px at 42% 86%,#9dcaff 98%,transparent);background-size:310px 260px;animation:pfiStarDrift 90s linear infinite;opacity:.72}\n@keyframes pfiStarDrift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-30px,18px,0)}}\n.pfi-observatory-hud{position:absolute;z-index:3;top:14px;left:14px;width:min(270px,calc(100% - 28px));padding:13px;border:1px solid rgba(133,183,232,.22);border-radius:14px;background:rgba(4,13,27,.76);backdrop-filter:blur(14px);box-shadow:0 12px 38px rgba(0,0,0,.28);color:#eaf4ff}\n.pfi-hud-heading{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px}.pfi-hud-heading span{font-size:10px;letter-spacing:1.2px;font-weight:800;color:#9ecbff}.pfi-hud-heading i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#65e6ad;box-shadow:0 0 10px #65e6ad;margin-right:6px}.pfi-hud-heading small,.pfi-sky-source{font-size:9px;color:#9fb2c9}\n.pfi-sky-site{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;color:#b7c9dc;margin-bottom:10px}.pfi-sky-site select{max-width:62%;min-width:0;background:#10233c;color:#eaf4ff;border:1px solid #294565;border-radius:7px;padding:6px;font-size:10px}\n.pfi-sky-readouts{display:grid;grid-template-columns:1fr 1fr;gap:7px}.pfi-sky-readouts>div{min-width:0;padding:8px;border-radius:9px;background:rgba(27,53,82,.58);border:1px solid rgba(142,184,225,.12)}.pfi-sky-readouts>div:last-child{grid-column:1/-1}.pfi-sky-readouts span,.pfi-sky-readouts small{display:block;font-size:9px;color:#a9c1db}.pfi-sky-readouts b{display:block;font-size:17px;line-height:1.3;color:#fff;margin:3px 0}.pfi-sky-readouts>div:last-child b{font-size:13px}.pfi-sky-source{display:block;margin-top:9px;line-height:1.4}
-.pfi-horizon{display:flex;align-items:center;gap:10px;margin-top:9px;padding:8px;border:1px solid rgba(142,184,225,.14);border-radius:10px;background:rgba(5,17,32,.52)}
+.pfi-iss-marker{position:relative;display:flex;align-items:center;gap:5px;color:#07111e;font-size:9px;font-weight:900;letter-spacing:.6px;transform:translate(-50%,-50%)}.pfi-iss-marker b{padding:3px 6px;border-radius:5px;background:#65e6ff;box-shadow:0 0 14px rgba(101,230,255,.75)}.pfi-iss-pulse{width:8px;height:8px;border-radius:50%;background:#65e6ff;box-shadow:0 0 0 4px rgba(101,230,255,.2),0 0 12px #65e6ff;animation:pfiIssPulse 1.8s ease-out infinite}@keyframes pfiIssPulse{0%{box-shadow:0 0 0 2px rgba(101,230,255,.45),0 0 8px #65e6ff}100%{box-shadow:0 0 0 13px rgba(101,230,255,0),0 0 15px #65e6ff}}.pfi-horizon{display:flex;align-items:center;gap:10px;margin-top:9px;padding:8px;border:1px solid rgba(142,184,225,.14);border-radius:10px;background:rgba(5,17,32,.52)}
 .pfi-horizon svg{width:112px;height:112px;flex:0 0 112px;overflow:visible}
 .pfi-horizon-legend{display:grid;gap:7px;min-width:0}.pfi-horizon-legend span{display:flex;align-items:center;gap:6px;font-size:9px;color:#b9cce0}.pfi-horizon-legend i{width:7px;height:7px;border-radius:50%;display:inline-block;flex:0 0 7px}.pfi-horizon-legend b{color:#fff;font-size:11px;margin-left:auto}
 @media(max-width:600px){.pfi-horizon svg{width:94px;height:94px;flex-basis:94px}}\n@media(max-width:600px){.pfi-observatory-hud{top:9px;left:9px;width:min(230px,calc(100% - 18px));padding:10px}.pfi-sky-readouts{gap:5px}.pfi-sky-readouts>div{padding:6px}.pfi-sky-readouts b{font-size:15px}}"}</style>
@@ -259,12 +348,13 @@ export default function PetaRukyat() {
         </header>
 
         <div className="pfi-live-toolbar">
-          <span className="pfi-live-status"><i/> {t('DATA PFI', 'PFI DATA')} · {t('TERVERIFIKASI', 'VERIFIED')}</span>
+          <span className="pfi-live-status"><i/> {t('DATA PFI', 'PFI DATA')} · {t('TERVERIFIKASI', 'VERIFIED')}</span>{issPosition && <span className="pfi-live-updated"><Satellite size={13}/> ISS · {issPosition.altitudeKm.toFixed(0)} km</span>}
           <span className="pfi-live-updated"><Clock3 size={13}/>{lastUpdated ? t('Diperbarui ', 'Updated ') + formatDate(lastUpdated) : t('Menunggu data', 'Waiting for data')}</span>
         </div>
 
         {mode === 'globe' ? <div className="pfi-globe-wrap pfi-observatory-scene"><div className="pfi-cosmos-stars" aria-hidden="true"/><div ref={globeHost} className="pfi-globe-canvas"/><div className="pfi-observatory-hud"><div className="pfi-hud-heading"><span><i/> {t('OBSERVATORIUM LANGIT', 'SKY OBSERVATORY')}</span><small>{skyNow.toLocaleTimeString(lang === 'en' ? 'en-GB' : 'id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: skySite.offset === 9 ? 'Asia/Jayapura' : skySite.offset === 8 ? 'Asia/Makassar' : 'Asia/Jakarta' })} {skySite.offset === 9 ? 'WIT' : skySite.offset === 8 ? 'WITA' : 'WIB'}</small></div><label className="pfi-sky-site">{t('Lokasi acuan', 'Reference site')}<select value={skySiteId} onChange={(event) => setSkySiteId(event.target.value)} aria-label={t('Pilih lokasi acuan astronomi', 'Choose astronomical reference site')}>{SITES.map((site) => <option key={site.id} value={site.id}>{site.city} · {site.region}</option>)}</select></label><div className="pfi-sky-readouts"><div><span>☀ {t('MATAHARI', 'SUN')}</span><b>{skyData.valid ? skyNumber(skyData.sun.alt) : '—'}</b><small>Alt {skyData.valid ? skyNumber(skyData.sun.alt) : '—'} · Az {skyData.valid ? skyNumber(skyData.sun.az) : '—'}</small></div><div><span>☾ {t('BULAN', 'MOON')}</span><b>{skyData.valid ? skyNumber(skyData.moon.alt) : '—'}</b><small>Alt {skyData.valid ? skyNumber(skyData.moon.alt) : '—'} · Az {skyData.valid ? skyNumber(skyData.moon.az) : '—'}</small></div><div><span>{t('FASE BULAN', 'MOON PHASE')}</span><b>{phaseLabel}</b><small>{skyData.valid ? skyData.phase.illumination.toFixed(1) + '% ' + t('terang', 'illuminated') : '—'}</small></div></div><div className="pfi-horizon"><svg viewBox="0 0 200 200" role="img" aria-label={t('Diagram posisi Matahari dan Bulan di kubah langit', 'Sun and Moon positions on the sky dome')}><circle cx="100" cy="100" r="72" fill="rgba(98,157,216,.08)" stroke="rgba(174,211,247,.55)" strokeWidth="1.2"/><circle cx="100" cy="100" r="48" fill="none" stroke="rgba(174,211,247,.22)" strokeDasharray="3 4"/><circle cx="100" cy="100" r="24" fill="none" stroke="rgba(174,211,247,.18)" strokeDasharray="2 4"/><path d="M100 20V180 M20 100H180" stroke="rgba(174,211,247,.18)" strokeWidth="1"/><path d="M100 28 L96 36 L104 36 Z" fill="#d8eaff"/><text x="100" y="13" fill="#d8eaff" fontSize="9" textAnchor="middle">U</text><text x="188" y="103" fill="#d8eaff" fontSize="9" textAnchor="middle">T</text><text x="100" y="194" fill="#d8eaff" fontSize="9" textAnchor="middle">S</text><text x="12" y="103" fill="#d8eaff" fontSize="9" textAnchor="middle">B</text>{sunPoint && <g><circle cx={sunPoint.x} cy={sunPoint.y} r="7" fill="#ffc857" stroke="#fff0b3" strokeWidth="1.5"/><circle cx={sunPoint.x} cy={sunPoint.y} r="12" fill="none" stroke="rgba(255,200,87,.4)"/></g>}{moonPoint && <g><circle cx={moonPoint.x} cy={moonPoint.y} r="6" fill="#a9d7ff" stroke="#e4f4ff" strokeWidth="1.5"/></g>}</svg><div className="pfi-horizon-legend"><span><i style={{background:'#ffc857'}}/>☀ {t('Matahari', 'Sun')} <b>{skyData.valid ? skyNumber(skyData.sun.az) : '—'}</b></span><span><i style={{background:'#a9d7ff'}}/>☾ {t('Bulan', 'Moon')} <b>{skyData.valid ? skyNumber(skyData.moon.az) : '—'}</b></span><small>{t('Titik di dalam lingkaran menunjukkan benda langit di atas ufuk.', 'Points inside the circle indicate objects above the horizon.')}</small></div></div><small className="pfi-sky-source">{t('Posisi dihitung secara astronomis untuk lokasi acuan terpilih; bukan data teleskop live.', 'Positions are astronomically calculated for the selected reference site; not live telescope data.')}</small></div><div className="pfi-globe-hint"><span>{t('GESER UNTUK MEMUTAR', 'DRAG TO ROTATE')}</span><span>{t('SCROLL / CUBIT UNTUK ZOOM', 'SCROLL / PINCH TO ZOOM')}</span></div></div> : <div className="pfi-map-wrap"><div ref={mapHost} className="pfi-leaflet-map"/></div>}
 
+        {issError && <div className="pfi-map-error"><Satellite size={18}/><span>{t('Data orbit ISS tidak tersedia. Globe tetap menampilkan data rukyat.', 'ISS orbital data unavailable. The globe will still show rukyat data.')} ({issError})</span></div>}
         {libraryError && <div className="pfi-map-error"><Satellite size={18}/><span>{libraryError} {t('Periksa koneksi internet lalu coba lagi.', 'Check your internet connection and try again.')}</span></div>}
 
         <div className="pfi-live-footer">
@@ -294,7 +384,7 @@ export default function PetaRukyat() {
         </div>}
       </section>
 
-      <div className="pfi-live-explain"><MapPin size={17}/><span>{t('Setiap titik adalah laporan rukyat nyata yang sudah diverifikasi. Gelombang berdenyut hanya efek visual penanda lokasi, bukan pergerakan data atau hasil pengamatan palsu.', 'Every marker represents a real verified rukyat report. Pulses are visual location effects, not fabricated moving data or observation results.')}</span></div>
+      <div className="pfi-live-explain"><MapPin size={17}/><span>{t('Titik kuning menunjukkan laporan rukyat terverifikasi. Garis biru dan label ISS dihitung dari elemen orbit CelesTrak menggunakan SGP4; lintasan merupakan prediksi orbit, bukan feed posisi GPS satelit.', 'Yellow points are verified rukyat reports. The blue path and ISS label are calculated from CelesTrak orbital elements using SGP4; the path is an orbital prediction, not a live satellite GPS feed.')}</span></div>
 
       <section className="card pfi-report-list-card">
         <div className="card-header"><h2>{t('Laporan Rukyat Terbaru', 'Latest Rukyat Reports')}</h2><span className="pfi-report-total">{reports.length}</span></div>
