@@ -53,6 +53,7 @@ export function Provider({ children }) {
   const [toast, setToast] = useState('');
   const [online, setOnline] = useState(true);
   const refreshSequence = useRef(0);
+  const signedOutRequested = useRef(false);
 
   const tell = useCallback((msg) => {
     setToast(msg);
@@ -86,6 +87,7 @@ export function Provider({ children }) {
 
   const logout = async () => {
     // Invalidate in-flight authenticated refreshes and clear private UI first.
+    signedOutRequested.current = true;
     refreshSequence.current += 1;
     session(null);
     go('beranda');
@@ -150,6 +152,7 @@ export function Provider({ children }) {
   useEffect(() => {
     let authRefreshTimer;
     const { data: { subscription } } = authApi.onAuthStateChange((event, authEventSession) => {
+      if (signedOutRequested.current && authEventSession) return;
       if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_OUT') {
         // Supabase recommends using the event's session instead of calling
         // getSession again. Defer API work until its internal auth lock exits.
@@ -165,6 +168,7 @@ export function Provider({ children }) {
     const onOnline = () => setOnline(true);
     const onOffline = () => setOnline(false);
     const onAuthExpired = () => {
+      signedOutRequested.current = true;
       refreshSequence.current += 1;
       session(null);
     };
