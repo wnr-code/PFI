@@ -10,10 +10,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../src/lib/supabase.js', () => ({
   initializeIdentity: vi.fn(async () => null),
-  supabase: { auth: { getSession: vi.fn(async () => ({ data: { session: { access_token: 'google-identity-token' } } })) } },
+  supabase: { auth: {
+    getSession: vi.fn(async () => ({ data: { session: { access_token: 'google-identity-token' } } })),
+    signOut: vi.fn(async () => ({ error: null })),
+  } },
 }));
 
-import { api } from '../src/lib/api.js';
+import { api, authApi } from '../src/lib/api.js';
+import { supabase } from '../src/lib/supabase.js';
 
 describe('Cloudflare API identity boundary', () => {
   beforeEach(() => { globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } })); });
@@ -33,6 +37,11 @@ describe('Cloudflare API identity boundary', () => {
     const [, options] = globalThis.fetch.mock.calls[0];
     expect(options.headers['Content-Type']).toBeUndefined();
     expect(options.body).toBe(form);
+  });
+
+  it('signs out locally without depending on a provider-wide revoke', async () => {
+    await authApi.signOut();
+    expect(supabase.auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
   });
 
   it('surfaces a Cloudflare API error', async () => {

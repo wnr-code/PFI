@@ -47,7 +47,12 @@ export const authApi = {
     provider: 'google',
     options: { redirectTo: `${window.location.origin}${window.location.pathname}` },
   }),
-  signOut: () => supabase.auth.signOut(),
+  signOut: async () => {
+    // PFI uses bearer tokens only; ending the local identity session is enough
+    // and remains reliable even when the provider's global revoke is unavailable.
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
+    if (error) throw error;
+  },
   getIdentitySession: async () => {
     await initializeIdentity();
     return supabase.auth.getSession();
