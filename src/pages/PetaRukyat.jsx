@@ -517,7 +517,11 @@ export default function PetaRukyat() {
         </div>}
       </section>
 
-      <div className="pfi-live-explain"><MapPin size={17}/><span>{t('Titik kuning menunjukkan laporan rukyat terverifikasi. Garis biru dan label ISS dihitung dari elemen orbit CelesTrak menggunakan SGP4; lintasan merupakan prediksi orbit, bukan feed posisi GPS satelit.', 'Yellow points are verified rukyat reports. The blue path and ISS label are calculated from CelesTrak orbital elements using SGP4; the path is an orbital prediction, not a live satellite GPS feed.')}</span></div>
+      <div className="pfi-map-explainers">
+        <div className="pfi-live-explain pfi-beginner-explain"><Satellite size={19}/><span><b>{t('Apa itu ISS?', 'What is the ISS?')}</b>{t('ISS adalah Stasiun Luar Angkasa Internasional—laboratorium berawak yang mengelilingi Bumi pada ketinggian sekitar 400 km. Garis biru memperkirakan jalur yang akan dilewatinya. ISS ditampilkan sebagai pengetahuan astronomi tambahan dan tidak menentukan terlihat atau tidaknya hilal.', 'The ISS is the International Space Station—a crewed laboratory orbiting Earth at roughly 400 km altitude. The blue line estimates its path. It is shown as additional astronomy education and does not determine crescent visibility.')}</span></div>
+        <div className="pfi-live-explain"><MapPin size={19}/><span><b>{t('Cara membaca peta', 'How to read the map')}</b>{t('Titik kuning adalah lokasi laporan rukyat yang telah diperiksa dan disetujui. Pilih titik untuk melihat pengamat, waktu, cuaca, hasil, dan foto lapangan.', 'Yellow points mark reviewed and approved rukyat reports. Select a point to view the observer, time, weather, result, and field photo.')}</span></div>
+        <details className="pfi-technical-note"><summary>{t('Seberapa akurat posisi ISS?', 'How accurate is the ISS position?')}</summary><p>{t('Posisi dan jalur biru dihitung dari data orbit publik. Jalur ini merupakan perkiraan yang dapat sedikit berbeda dari posisi sebenarnya dan bukan sinyal lokasi langsung dari ISS.', 'The position and blue path are calculated from public orbital data. The path is an estimate that may differ slightly from the actual position and is not a live location signal from the ISS.')}</p></details>
+      </div>
 
       <section className="card pfi-report-list-card">
         <div className="card-header"><h2>{t('Laporan Rukyat Terbaru', 'Latest Rukyat Reports')}</h2><span className="pfi-report-total">{reports.length}</span></div>
