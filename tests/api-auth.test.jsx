@@ -52,6 +52,15 @@ describe('Cloudflare API identity boundary', () => {
     expect(supabase.auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
   });
 
+  it('clears local identity and broadcasts expiry on a 401 response', async () => {
+    const expired = vi.fn();
+    window.addEventListener('pfi:auth-expired', expired, { once: true });
+    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ error: 'invalid token' }), { status: 401, headers: { 'content-type': 'application/json' } }));
+    await expect(api('/api/preferences', 'PUT', { site: 'tasik' })).rejects.toMatchObject({ code: 'AUTH_SESSION_EXPIRED' });
+    expect(supabase.auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(expired).toHaveBeenCalledOnce();
+  });
+
   it('surfaces a Cloudflare API error', async () => {
     globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ error: 'Data D1 tidak tersedia.' }), { status: 503, headers: { 'content-type': 'application/json' } }));
     await expect(api('/api/posts')).rejects.toThrow('Data D1 tidak tersedia.');

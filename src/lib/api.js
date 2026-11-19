@@ -33,7 +33,15 @@ export async function api(path, method = 'GET', body = null, identityToken = nul
   });
   const contentType = res.headers.get('content-type') || '';
   const payload = contentType.includes('application/json') ? await res.json() : await res.text();
-  if (res.status === 401) throw new Error('Sesi Google berakhir. Silakan masuk kembali.');
+  if (res.status === 401) {
+    // Expired/revoked bearer tokens must immediately clear the persisted
+    // identity session so every part of the UI returns to signed-out state.
+    await supabase.auth.signOut({ scope: 'local' }).catch(() => null);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('pfi:auth-expired'));
+    const error = new Error('Sesi Google berakhir. Silakan masuk kembali.');
+    error.code = 'AUTH_SESSION_EXPIRED';
+    throw error;
+  }
   if (!res.ok) {
     const message = payload?.error || payload?.message || `Permintaan gagal (${res.status})`;
     const detail = payload?.detail ? ` ${payload.detail}` : '';
@@ -53,7 +61,8 @@ export const authApi = {
     // PFI uses bearer tokens only; ending the local identity session is enough
     // and remains reliable even when the provider's global revoke is unavailable.
     const { error } = await supabase.auth.signOut({ scope: 'local' });
-    if (error) throw error;
+    // Missing session means the desired signed-out state is already reached.
+    if (error && error.name !== 'AuthSessionMissingError') throw error;
   },
   getIdentitySession: async () => {
     await initializeIdentity();
