@@ -6,6 +6,7 @@
  * Dukung pengembang: https://trakteer.id/lanteraku/tip
  */
 import React from 'react';
+import { Check, Copy } from 'lucide-react';
 import { usePFI } from './state.jsx';
 import { Sidebar, Topbar, BottomNav } from './components/Shell.jsx';
 import { AuthModal } from './components/AuthModal.jsx';
@@ -33,7 +34,21 @@ const routes = {
 
 export default function App() {
   const { page, modal, toast, ready } = usePFI();
+  const [copied, setCopied] = React.useState(false);
   const Page = routes[page] || Dashboard;
+  const hasErrorCode = /Kode:\s*\S+/.test(toast);
+
+  React.useEffect(() => setCopied(false), [toast]);
+
+  const copyError = async () => {
+    try {
+      await navigator.clipboard.writeText(toast);
+      setCopied(true);
+    } catch {
+      // Clipboard access can be blocked by browser policy; keep the text visible.
+      setCopied(false);
+    }
+  };
 
   return (
     <div className="app">
@@ -61,6 +76,15 @@ export default function App() {
         aria-live="polite"
       >
         <span>{toast}</span>
+        {hasErrorCode && <button
+          type="button"
+          className="toast-copy"
+          onClick={copyError}
+          aria-label={copied ? 'Kode kesalahan tersalin' : 'Salin kode kesalahan'}
+          title={copied ? 'Tersalin' : 'Salin kode kesalahan'}
+        >
+          {copied ? <Check size={17} /> : <Copy size={17} />}
+        </button>}
       </div>
     </div>
   );
