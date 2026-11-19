@@ -21,7 +21,7 @@ const TABS = [
 ];
 
 export default function Komunitas() {
-  const { data, t, lang, tell, loc } = usePFI();
+  const { data, t, lang, tell, loc, update } = usePFI();
   const [tab, setTab] = useState('beranda');
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,9 +75,20 @@ export default function Komunitas() {
         catch (photoError) { tell(t('Laporan tersimpan, tetapi foto gagal diunggah: ', 'Report saved, but photo upload failed: ') + photoError.message); }
       }
       setNewPost('');
-      const latest = await api('/api/posts');
-      setPosts(latest);
-      await offlineStore('posts', latest);
+      setTab(postType === 'rukyat' ? 'rukyat' : 'diskusi');
+      // The 201 response is authoritative: show it immediately instead of
+      // waiting for a follow-up list request that may briefly lag behind.
+      setPosts((current) => [created, ...current.filter((post) => post.id !== created.id)]);
+      update((current) => ({ posts: [created, ...(current.posts || []).filter((post) => post.id !== created.id)] }));
+      try {
+        const latest = await api('/api/posts');
+        const merged = latest.some((post) => post.id === created.id) ? latest : [created, ...latest];
+        setPosts(merged);
+        update({ posts: merged });
+        await offlineStore('posts', merged);
+      } catch {
+        await offlineStore('posts', [created, ...posts.filter((post) => post.id !== created.id)]);
+      }
       tell(t('Postingan berhasil dibuat.', 'Post created.'));
     } catch (e) {
       tell(e.message || 'Gagal membuat postingan.');
