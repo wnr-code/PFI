@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { usePFI } from '../state.jsx';
 import { zone } from '../lib/astro.js';
 import { api } from '../lib/api.js';
-import { CalendarDays, ChevronLeft, ChevronRight, MoonStar, MapPin, Clock, Info } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, MoonStar, MapPin, Clock, Info, Trash2 } from 'lucide-react';
 
 const MONTHS = [
   'Januari','Februari','Maret','April','Mei','Juni',
