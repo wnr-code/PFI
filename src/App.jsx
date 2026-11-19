@@ -7,6 +7,7 @@ import Hisab from './pages/Hisab.jsx';
 import Astronomi from './pages/Astronomi.jsx';
 import Komunitas from './pages/Komunitas.jsx';
 import Profil from './pages/Profil.jsx';
+import ValidasiLembaga from './pages/ValidasiLembaga.jsx';
 import PetaRukyat from './pages/PetaRukyat.jsx';
 import Laporan from './pages/Laporan.jsx';
 import Kalender from './pages/Kalender.jsx';
@@ -22,6 +23,7 @@ const routes = {
   astronomi: Astronomi,
   komunitas: Komunitas,
   profil: Profil,
+  'validasi-lembaga': ValidasiLembaga,
   peta: PetaRukyat,
   laporan: Laporan,
   kalender: Kalender,

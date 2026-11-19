@@ -946,3 +946,22 @@ select,input,textarea{font-size:15px;line-height:1.5}
 .institution-prep-disclaimer{display:flex;gap:8px;align-items:flex-start;color:var(--muted);font-size:10px;line-height:1.65}
 .institution-prep-disclaimer svg{flex-shrink:0;margin-top:1px;color:var(--gold)}
 @media(max-width:640px){.institution-prep-grid{grid-template-columns:1fr}.institution-field-wide{grid-column:auto}.institution-prep{padding:14px}}
+
+/* Partner institution validation workspace */
+.validation-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px 0;font-size:13px}
+.validation-toolbar .btn{display:inline-flex;align-items:center;gap:7px}
+.validation-list{display:grid;gap:14px}
+.validation-card{padding:18px;display:flex;flex-direction:column;gap:14px}
+.validation-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.validation-card-head h2{font-size:17px;margin-top:5px}
+.validation-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.validation-details p{display:flex;align-items:flex-start;gap:8px;min-width:0;font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.validation-details svg{flex-shrink:0;color:var(--gold)}
+.validation-details a{color:var(--gold);overflow-wrap:anywhere}
+.validation-purpose{padding:12px;border-radius:9px;background:var(--surface2);font-size:12px}
+.validation-purpose p{margin-top:5px;color:var(--muted);line-height:1.6}
+.validation-actions{display:flex;flex-wrap:wrap;gap:8px}
+.validation-actions .btn{font-size:11px}
+.institution-application-status{padding:13px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);font-size:12px}
+.institution-application-status p{margin-top:6px;color:var(--muted);line-height:1.6}
+@media(max-width:640px){.validation-details{grid-template-columns:1fr}.validation-card{padding:14px}.validation-actions{display:grid;grid-template-columns:1fr}.validation-toolbar{align-items:flex-start}}
