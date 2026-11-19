@@ -42,12 +42,12 @@ export function AuthModal() {
       <header className="modal-head"><div><span className="eyebrow">PFI · FALAQ INDONESIA</span><h2 id="modal-title">{t('Masuk ke PFI', 'Sign in to PFI')}</h2></div><button type="button" className="close-btn" onClick={close} aria-label={t('Tutup dialog', 'Close dialog')}>✕</button></header>
       <div className="modal-body">
         <div className="auth-shield"><ShieldCheck size={28}/></div>
-        <p className="auth-intro">{t('Gunakan akun Google sebagai identitas. Seluruh data aplikasi tetap disimpan dan dikelola di Cloudflare D1/R2.', 'Use Google only for identity. All application data remains stored and managed in Cloudflare D1/R2.')}</p>
+        <p className="auth-intro">{t('Gunakan akun Google untuk masuk dengan cepat dan aman. PFI hanya menerima informasi dasar akun yang diperlukan untuk mengenali Anda.', 'Use your Google account to sign in quickly and securely. PFI only receives the basic account information needed to identify you.')}</p>
         {err && <div className="error-msg" role="alert">{err}</div>}
         <button ref={buttonRef} type="button" className="btn-google" onClick={signIn} disabled={busy || !configured}><LogIn size={19}/>{busy ? t('Menghubungkan…', 'Connecting…') : t('Lanjutkan dengan Google', 'Continue with Google')}</button>
         {!configured && <p className="demo-note">{t('Administrator perlu mengisi VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY untuk mengaktifkan Google OAuth.', 'The administrator must configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable Google OAuth.')}</p>}
-        <div className="auth-data-policy"><b>{t('Pembagian layanan', 'Service separation')}</b><span>Google/Supabase Auth · {t('identitas saja', 'identity only')}</span><span>Cloudflare Worker + D1/R2 · {t('semua data PFI', 'all PFI data')}</span></div>
-        <p className="demo-footer">{t('PFI tidak menggunakan database Supabase untuk data aplikasi.', 'PFI does not use the Supabase database for application data.')}</p>
+        <div className="auth-data-policy"><b>{t('Privasi saat masuk', 'Sign-in privacy')}</b><span>{t('Google digunakan hanya untuk memverifikasi identitas Anda', 'Google is used only to verify your identity')}</span><span>{t('Laporan, foto, dan aktivitas dikelola oleh PFI', 'Reports, photos, and activity are managed by PFI')}</span></div>
+        <p className="demo-footer">{t('PFI tidak pernah meminta kata sandi Google Anda.', 'PFI never asks for your Google password.')}</p>
       </div>
     </section>
   </div>;

@@ -56,7 +56,8 @@ describe('PFI UI smoke tests in Happy DOM', () => {
   it('renders the dashboard with current astronomy data', () => {
     render(<Dashboard />);
     expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/ilmu falaq/i);
-    expect(screen.getByText(/Fase Bulan/i)).toBeTruthy();
+    expect(screen.getAllByText(/Fase Bulan/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { name: /Kamus istilah Falaq/i })).toBeTruthy();
   });
 
   it('keeps the 3D globe and 2D map in separate renderer hosts', () => {
@@ -89,7 +90,8 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     render(<AuthModal />);
     expect(screen.getByRole('button', { name: /Lanjutkan dengan Google/i })).toBeTruthy();
     expect(document.querySelector('input[type="password"]')).toBeFalsy();
-    expect(screen.getByText(/Cloudflare D1\/R2/i)).toBeTruthy();
+    expect(screen.getByText(/tidak pernah meminta kata sandi Google/i)).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/Cloudflare D1|R2|Supabase/i);
   });
 
   it.each([
