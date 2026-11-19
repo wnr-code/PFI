@@ -858,3 +858,34 @@ select,input,textarea{font-size:15px;line-height:1.5}
   .pfi-map-wrap{overflow:hidden;border-radius:0}
   .pfi-leaflet-map{width:100%;height:100%;min-height:340px}
 }
+
+/* ---------- PFI member guide ---------- */
+.pfi-guide{gap:18px}
+.guide-hero{position:relative;overflow:hidden;padding:30px;border:1px solid rgba(214,174,98,.22);border-radius:16px;background:radial-gradient(ellipse at 90% 0%,rgba(66,103,150,.38),transparent 48%),linear-gradient(135deg,#1b3153,#14213b 70%);box-shadow:var(--shadow)}
+.guide-hero:after{content:"";position:absolute;width:220px;height:220px;border:1px solid rgba(214,174,98,.13);border-radius:50%;right:-75px;top:-105px;box-shadow:0 0 0 24px rgba(214,174,98,.025),0 0 0 50px rgba(214,174,98,.02)}
+.guide-hero-icon{width:48px;height:48px;display:grid;place-items:center;border-radius:14px;background:rgba(214,174,98,.13);color:var(--gold);margin-bottom:20px}
+.guide-hero h1{font-size:clamp(27px,4vw,38px);letter-spacing:-1px;margin:8px 0}
+.guide-hero>p{max-width:680px;color:#b8c6d8;font-size:13px}
+.guide-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+.guide-tags span{font-size:10px;color:#e3c17e;border:1px solid rgba(214,174,98,.25);background:rgba(214,174,98,.07);padding:5px 10px;border-radius:99px}
+.guide-notice{display:flex;gap:12px;align-items:flex-start;padding:15px 17px;border:1px solid rgba(214,174,98,.24);border-radius:12px;background:rgba(214,174,98,.07);color:#e2c887}
+.guide-notice svg{flex-shrink:0;margin-top:2px}
+.guide-notice p{font-size:12px;color:#d5c9a9;line-height:1.65}
+.guide-section-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.guide-card{padding:18px}
+.guide-card-heading{display:grid;grid-template-columns:32px 40px minmax(0,1fr);align-items:start;gap:10px}
+.guide-number{font-size:11px;font-weight:800;color:var(--gold);padding-top:10px;letter-spacing:1px}
+.guide-card-icon{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:rgba(214,174,98,.1);color:var(--gold)}
+.guide-card-heading h2{font-size:15px;margin:2px 0 5px}
+.guide-card-heading p{font-size:11px;color:#9fb0c4;line-height:1.6}
+.guide-points{display:grid;gap:12px;margin:18px 0 0 42px}
+.guide-point{display:grid;grid-template-columns:20px minmax(0,1fr);gap:8px}
+.guide-point-mark{color:var(--gold);padding-top:2px}
+.guide-point b{font-size:12px;color:#e8eef7}
+.guide-point p{font-size:11px;color:#91a3ba;line-height:1.6;margin-top:2px}
+.guide-etiquette ul{padding-left:20px;margin:16px 0 0 42px;color:#aebed1;font-size:12px;line-height:1.9}
+.guide-etiquette li{padding-left:4px}
+.guide-footer{display:flex;align-items:flex-start;gap:10px;padding:8px 4px;color:#8fa3b8}
+.guide-footer svg{flex-shrink:0;color:var(--gold);margin-top:2px}
+.guide-footer p{font-size:11px;line-height:1.7}
+@media(max-width:760px){.guide-section-list{grid-template-columns:1fr}.guide-hero{padding:23px 19px}.guide-card{padding:16px}.guide-card-heading{grid-template-columns:26px 36px minmax(0,1fr);gap:8px}.guide-card-icon{width:36px;height:36px}.guide-points{margin-left:34px}.guide-etiquette ul{margin-left:34px}}
