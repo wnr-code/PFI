@@ -24,6 +24,7 @@ export default function Komunitas() {
   const [tab, setTab] = useState('semua');
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [showComposer, setShowComposer] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [newPost, setNewPost] = useState('');
@@ -34,12 +35,16 @@ export default function Komunitas() {
     let cancelled = false;
     (async () => {
       try {
-        const p = await api('/api/posts');
+        const response = await api('/api/posts');
+        const p = Array.isArray(response) ? response : [];
         await offlineStore('posts', p);
         if (!cancelled) setPosts(p);
       } catch (e) {
         const cached = await offlineGet('posts');
-        if (!cancelled) setPosts(cached || []);
+        if (!cancelled) {
+          setPosts(Array.isArray(cached) ? cached : []);
+          setLoadError(e?.message || t('Linimasa gagal dimuat.', 'Timeline could not be loaded.'));
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -157,6 +162,8 @@ export default function Komunitas() {
           <button type="submit" className="community-submit" disabled={submitting || newPost.trim().length < 3}><Send size={17}/>{submitting ? t('Mengirim…', 'Sending…') : postType === 'rukyat' ? t('Kirim untuk ditinjau', 'Submit for review') : t('Publikasikan diskusi', 'Publish discussion')}</button>
         </form>
       </section>}
+
+      {loadError && <div className="community-load-warning" role="alert"><span>{loadError}</span><button type="button" onClick={() => window.location.reload()}>{t('Muat ulang', 'Reload')}</button></div>}
 
       <section className="community-feed-head"><div><span>{t('LINIMASA', 'TIMELINE')}</span><h2>{tab === 'semua' ? t('Kiriman terbaru', 'Latest posts') : TABS.find((item) => item.id === tab)?.label}</h2></div><small>{filtered.length} {t('kiriman', 'posts')}</small></section>
 

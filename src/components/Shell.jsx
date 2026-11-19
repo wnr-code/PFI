@@ -185,7 +185,7 @@ export function Topbar() {
           aria-label={data.account ? t('Buka profil', 'Open profile') : t('Masuk dengan Google', 'Sign in with Google')}
         >
           {data.account
-            ? <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=PFI" alt="" />
+            ? <img src={data.account.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.account.name)}`} alt="" referrerPolicy="no-referrer" />
             : <span className="login-icon"><LogIn size={20} aria-hidden="true" /></span>}
           <b>
             {data.account

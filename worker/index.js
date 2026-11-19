@@ -227,13 +227,14 @@ async function identity(request, env) {
     console.error('PFI identity response is incomplete', { hasId: Boolean(user?.id), hasEmail: Boolean(user?.email) });
     return null;
   }
-  return { id: user.id, email: user.email, name: user.user_metadata?.name || user.user_metadata?.full_name || user.email };
+  return { id: user.id, email: user.email, name: user.user_metadata?.name || user.user_metadata?.full_name || user.email, avatarUrl: user.user_metadata?.avatar_url || user.user_metadata?.picture || '' };
 }
 
 const requiredUserColumns = {
   name: "TEXT NOT NULL DEFAULT ''",
   org: "TEXT NOT NULL DEFAULT ''",
   bio: "TEXT NOT NULL DEFAULT ''",
+  avatar_url: "TEXT NOT NULL DEFAULT ''",
   role: "TEXT NOT NULL DEFAULT 'observer'",
   verification: "TEXT NOT NULL DEFAULT 'none'",
   evidence: "TEXT NOT NULL DEFAULT ''",
@@ -266,16 +267,17 @@ async function profileFor(request, env) {
 
   await ensureUserSchema(env.falaq);
   const upsert = env.falaq.prepare(`
-    INSERT INTO users (id, email, name, created)
-    VALUES (?, ?, ?, datetime('now'))
+    INSERT INTO users (id, email, name, avatar_url, created)
+    VALUES (?, ?, ?, ?, datetime('now'))
     ON CONFLICT(id) DO UPDATE SET
       email = excluded.email,
       name = CASE WHEN users.name = '' THEN excluded.name ELSE users.name END,
+      avatar_url = CASE WHEN users.avatar_url = '' THEN excluded.avatar_url ELSE users.avatar_url END,
       updated = datetime('now')
-    WHERE users.email != excluded.email OR users.name = ''
-  `).bind(who.id, who.email, who.name);
+    WHERE users.email != excluded.email OR users.name = '' OR users.avatar_url = ''
+  `).bind(who.id, who.email, who.name, who.avatarUrl);
   const select = env.falaq.prepare(
-    'SELECT id,email,name,org,bio,role,verification,review_note,created,prefs FROM users WHERE id = ?'
+    'SELECT id,email,name,org,bio,avatar_url,role,verification,review_note,created,prefs FROM users WHERE id = ?'
   ).bind(who.id);
 
   // D1 batch guarantees the profile read runs after its upsert on the same
@@ -508,7 +510,7 @@ export default {
         return json({
           account: {
             id: profile.id, name: profile.name, email: profile.email,
-            org: profile.org, bio: profile.bio, role: profile.role,
+            org: profile.org, bio: profile.bio, avatarUrl: profile.avatar_url, role: profile.role,
             verification: profile.verification, reviewNote: profile.review_note,
             created: profile.created,
           },
@@ -704,15 +706,21 @@ export default {
         const name = typeof body.name === 'string' ? body.name.trim() : '';
         const org = typeof body.org === 'string' ? body.org.trim() : '';
         const bio = typeof body.bio === 'string' ? body.bio.trim() : '';
-        if (name.length < 2 || name.length > 80 || org.length > 120 || bio.length > 360) {
+        const avatarUrl = typeof body.avatarUrl === 'string' ? body.avatarUrl.trim() : '';
+        let safeAvatarUrl = '';
+        if (avatarUrl) {
+          try { const parsed = new URL(avatarUrl); if (parsed.protocol !== 'https:') throw new Error(); safeAvatarUrl = parsed.href; }
+          catch { return fail(400, 'Alamat foto profil harus berupa URL HTTPS yang valid.'); }
+        }
+        if (name.length < 2 || name.length > 80 || org.length > 120 || bio.length > 360 || safeAvatarUrl.length > 1000) {
           return fail(400, 'Nama, organisasi, atau bio tidak sesuai batas karakter.');
         }
-        await env.falaq.prepare('UPDATE users SET name=?,org=?,bio=?,updated=? WHERE id=?')
-          .bind(name, org, bio, new Date().toISOString(), profile.id).run();
+        await env.falaq.prepare('UPDATE users SET name=?,org=?,bio=?,avatar_url=?,updated=? WHERE id=?')
+          .bind(name, org, bio, safeAvatarUrl, new Date().toISOString(), profile.id).run();
         const updated = await env.falaq.prepare(
-          'SELECT id,email,name,org,bio,role,verification,review_note,created FROM users WHERE id=?'
+          'SELECT id,email,name,org,bio,avatar_url,role,verification,review_note,created FROM users WHERE id=?'
         ).bind(profile.id).first();
-        return json({ id: updated.id, email: updated.email, name: updated.name, org: updated.org, bio: updated.bio, role: updated.role, verification: updated.verification, reviewNote: updated.review_note, created: updated.created });
+        return json({ id: updated.id, email: updated.email, name: updated.name, org: updated.org, bio: updated.bio, avatarUrl: updated.avatar_url, role: updated.role, verification: updated.verification, reviewNote: updated.review_note, created: updated.created });
       }
 
       if (url.pathname === '/api/preferences' && request.method === 'PUT') {

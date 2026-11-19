@@ -126,9 +126,9 @@ export function Provider({ children }) {
         id: identityUser.id,
         email: identityUser.email,
         name: identityUser.user_metadata?.name || identityUser.user_metadata?.full_name || identityUser.email,
-        org: '', bio: '', role: 'observer', verification: 'none', reviewNote: '', created: identityUser.created_at || '',
+        org: '', bio: '', avatarUrl: identityUser.user_metadata?.avatar_url || identityUser.user_metadata?.picture || '', role: 'observer', verification: 'none', reviewNote: '', created: identityUser.created_at || '',
       } : null;
-      const account = serverSession?.account ?? identityAccount;
+      const account = serverSession?.account ? { ...serverSession.account, avatarUrl: serverSession.account.avatarUrl || identityAccount?.avatarUrl || '' } : identityAccount;
       if (identity.session && !account) {
         throw new Error('Login Google berhasil, tetapi identitas akun tidak lengkap. Silakan pilih akun Google lain.');
       }

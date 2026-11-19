@@ -26,10 +26,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout
+      - name: Checkout Production source
         uses: actions/checkout@v4
         with:
-          ref: preview/workers-build
+          ref: main
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
