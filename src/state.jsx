@@ -84,10 +84,18 @@ export function Provider({ children }) {
   };
 
   const logout = async () => {
-    await authApi.signOut();
+    // Clear private UI immediately, then remove the persisted local session.
     session(null);
-    await refresh();
-    tell('Anda telah keluar.');
+    try {
+      await authApi.signOut();
+      await refresh();
+      go('beranda');
+      tell('Anda telah keluar.');
+    } catch (error) {
+      // Re-read the session so a failed sign-out never leaves misleading UI.
+      await refresh();
+      tell(error?.message || 'Tidak dapat keluar. Silakan coba kembali.');
+    }
   };
 
   const refresh = useCallback(async () => {
