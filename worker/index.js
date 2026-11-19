@@ -391,7 +391,43 @@ export default {
 
     try {
       if (url.pathname === '/api/health' && request.method === 'GET') {
-        return json({ status: 'ok', runtime: 'cloudflare-workers', database: 'd1', storage: 'r2', migrationPhase: 1 });
+        // Report real dependency readiness without exposing credentials or IDs.
+        const requiredTables = [
+          'users', 'groups', 'memberships', 'group_coordinators', 'calculations',
+          'posts', 'photos', 'likes', 'comments', 'reviews', 'agendas',
+          'institution_applications', 'partner_institutions', 'institution_application_reviews',
+        ];
+        let database = 'unavailable';
+        let missingTables = [...requiredTables];
+        try {
+          if (!env.falaq?.prepare) throw new Error('D1 binding is unavailable');
+          const ping = await env.falaq.prepare('SELECT 1 AS ok').first();
+          if (ping?.ok !== 1) throw new Error('D1 health query failed');
+          database = 'ok';
+          const result = await env.falaq.prepare(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name IN (" +
+            requiredTables.map(() => '?').join(',') + ')'
+          ).bind(...requiredTables).all();
+          const found = new Set((result.results || []).map((row) => row.name));
+          missingTables = requiredTables.filter((name) => !found.has(name));
+        } catch (error) {
+          console.error('PFI health check failed:', error?.message || error);
+        }
+        const authConfigured = Boolean(env.SUPABASE_URL && env.SUPABASE_ANON_KEY);
+        const storageConfigured = Boolean(
+          env.r2falaq && typeof env.r2falaq.put === 'function' && typeof env.r2falaq.get === 'function'
+        );
+        const schemaReady = missingTables.length === 0;
+        const ready = database === 'ok' && schemaReady && authConfigured;
+        return json({
+          status: ready ? 'ok' : 'degraded',
+          runtime: 'cloudflare-workers',
+          database,
+          schema: { ready: schemaReady, missingTables },
+          authentication: authConfigured ? 'configured' : 'missing_configuration',
+          photoStorage: storageConfigured ? 'configured' : 'missing_binding',
+          migrationPhase: 1,
+        }, ready ? 200 : 503);
       }
 
       if (url.pathname === '/api/session' && request.method === 'GET') {
