@@ -112,10 +112,17 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     expect(document.body.textContent).not.toMatch(/Cloudflare D1|R2|Supabase/i);
   });
 
+  it('renders the professional profile for an authenticated member', () => {
+    context.data.account = { id: 'member-1', name: 'Aep Falaq', email: 'aep@example.test', org: 'PFI', bio: '', role: 'observer', verification: 'verified', created: '2026-01-01T00:00:00Z', avatarUrl: 'https://example.test/avatar.jpg' };
+    render(<Profil />);
+    expect(document.querySelector('.profile-cover h1')).toBeTruthy();
+    expect(document.querySelector('.verified-mark')).toBeTruthy();
+    context.data.account = null;
+  });
+
   it.each([
     ['Astronomi', Astronomi, '.page-head h1'],
     ['Komunitas', Komunitas, '.community-hero h1'],
-    ['Profil', Profil, '.page-head h1'],
     ['Laporan', Laporan, '.page-head h1'],
   ])('renders the %s page without a runtime crash', (_name, Page, headingSelector) => {
     render(<Page />);

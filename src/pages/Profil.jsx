@@ -1,141 +1,78 @@
-/*
- * Dibuat/diperbarui: 2026-11-19
- * Dibuat oleh: AEP
- * GitHub: https://github.com/wnr-code/PFI
- * Maintainer: @wnr-code — https://github.com/wnr-code
- * Dukung pengembang: https://trakteer.id/lanteraku/tip
- */
+/* Profil anggota PFI */
 import React, { useState } from 'react';
 import { usePFI } from '../state.jsx';
 import { api } from '../lib/api.js';
-import { User, CreditCard, Share2, LogIn, LogOut, Bell, ShieldCheck, FileText } from 'lucide-react';
+import { Bell, Camera, Check, Edit3, Globe2, LogOut, Medal, Save, ShieldCheck, Sparkles, UserRound, X } from 'lucide-react';
+
+const roleInfo = {
+  observer: ['Pengamat', 'Observer'], reviewer: ['Reviewer', 'Reviewer'], admin: ['Administrator', 'Administrator'],
+};
 
 export default function Profil() {
-  const { data, t, logout, tell, setLang, setNotify, open } = usePFI();
+  const { data, t, logout, tell, setLang, setNotify, update } = usePFI();
+  const account = data.account;
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [showVerify, setShowVerify] = useState(false);
   const [evidence, setEvidence] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState(() => ({ name: account?.name || '', org: account?.org || '', bio: account?.bio || '', avatarUrl: account?.avatarUrl || '' }));
 
-  const account = data.account;
-  const isDemo = !account;
+  if (!account) return null;
+  const verified = account.verification === 'verified';
+  const role = roleInfo[account.role] || roleInfo.observer;
+  const initials = account.name.split(' ').map((word) => word[0]).join('').slice(0, 2);
 
+  const saveProfile = async (event) => {
+    event.preventDefault(); setSaving(true);
+    try {
+      const next = await api('/api/profile', 'PUT', form);
+      update({ account: next }); setForm({ name: next.name, org: next.org || '', bio: next.bio || '', avatarUrl: next.avatarUrl || '' });
+      setEditing(false); tell(t('Profil berhasil diperbarui.', 'Profile updated.'));
+    } catch (error) { tell(error.message); } finally { setSaving(false); }
+  };
   const submitVerification = async () => {
     if (evidence.trim().length < 20) return tell(t('Keterangan bukti minimal 20 karakter.', 'Evidence must be at least 20 characters.'));
     setSubmitting(true);
-    try { await api('/api/verification', 'POST', { evidence: evidence.trim() }); tell(t('Pengajuan verifikasi berhasil dikirim.', 'Verification request submitted.')); setShowVerify(false); }
+    try { await api('/api/verification', 'POST', { evidence: evidence.trim() }); update({ account: { ...account, verification: 'pending' } }); tell(t('Pengajuan verifikasi berhasil dikirim.', 'Verification request submitted.')); setShowVerify(false); }
     catch (error) { tell(error.message); } finally { setSubmitting(false); }
   };
 
-  const handleDonasi = () => { tell(t('Kanal donasi resmi sedang disiapkan. Jangan mengirim dana ke rekening yang tidak diumumkan melalui kanal resmi PFI.', 'The official donation channel is being prepared. Do not send funds to accounts not announced by official PFI channels.')); };
+  return <div className="page-wrap profile-page">
+    <section className="profile-cover">
+      <div className="profile-cover-copy"><span>PFI MEMBER SPACE</span><h1>{t('Profil Anggota', 'Member Profile')}</h1><p>{t('Identitas, reputasi, dan kontribusi Anda di jaringan pengamat falaq Indonesia.', 'Your identity, reputation, and contribution in Indonesia’s astronomy observer network.')}</p></div>
+      <button className="profile-edit" onClick={() => setEditing(!editing)}>{editing ? <X size={16}/> : <Edit3 size={16}/>} {editing ? t('Batal', 'Cancel') : t('Edit profil', 'Edit profile')}</button>
+    </section>
 
-  return (
-    <div className="page-wrap">
-      <div className="page-head">
-        <div className="eyebrow"><i /> {t('PROFIL PENGGUNA', 'USER PROFILE')}</div>
-        <h1>{isDemo ? t('Profil Demo', 'Demo Profile') : t('Profil Anda', 'Your Profile')}</h1>
-        <p>{t('Kelola akun, verifikasi, dan donasi untuk mendukung PFI.', 'Manage account, verification, and donations to support PFI.')}</p>
+    <section className="profile-identity">
+      <div className="profile-avatar-frame" title={t('Bingkai Kontributor PFI', 'PFI Contributor frame')}>
+        {account.avatarUrl ? <img src={account.avatarUrl} alt={account.name} referrerPolicy="no-referrer"/> : <span>{initials}</span>}
+        <i><Sparkles size={12}/></i>
       </div>
+      <div className="profile-person">
+        <div className="profile-name"><h2>{account.name}</h2>{verified && <span className="verified-mark" title={t('Akun terverifikasi', 'Verified account')}><Check size={13}/></span>}</div>
+        <p>{account.org || t('Anggota Pusat Falaq Indonesia', 'Pusat Falaq Indonesia member')}</p>
+        <div className="profile-badges"><span className={`role-badge ${account.role}`}><UserRound size={12}/>{t(...role)}</span><span className="frame-badge"><Medal size={12}/>{t('Bingkai Kontributor', 'Contributor frame')}</span></div>
+      </div>
+      <div className="profile-trust"><small>{t('STATUS AKUN', 'ACCOUNT STATUS')}</small><b>{verified ? t('Terverifikasi', 'Verified') : account.verification === 'pending' ? t('Sedang ditinjau', 'Under review') : t('Belum terverifikasi', 'Not verified')}</b><span>{verified ? t('Identitas telah diperiksa PFI', 'Identity reviewed by PFI') : t('Lengkapi profil dan ajukan verifikasi', 'Complete your profile and request verification')}</span></div>
+    </section>
 
-      {isDemo && (
-        <div style={{ padding: 16, background: 'rgba(214,174,98,0.1)', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 16 }}>
-          <p style={{ fontSize: 12, color: '#d6ae62', marginBottom: 8 }}>{t('Mode Demo', 'Demo Mode')}</p>
-          <p style={{ fontSize: 12, color: '#c7d1df' }}>
-            {t('Masuk dengan Google untuk mengakses profil, preferensi, dan pengiriman laporan.', 'Sign in with Google to access your profile, preferences, and report submission.')}
-          </p>
-          <button className="btn primary" style={{ marginTop: 14 }} onClick={() => open('auth')}>
-            <LogIn size={17}/> {t('Masuk dengan Google', 'Sign in with Google')}
-          </button>
-        </div>
-      )}
+    <div className="profile-layout">
+      <main>
+        {editing ? <form className="profile-panel profile-form" onSubmit={saveProfile}>
+          <header><div><span>{t('PENGATURAN PROFIL', 'PROFILE SETTINGS')}</span><h2>{t('Ubah informasi publik', 'Edit public information')}</h2></div><Camera size={20}/></header>
+          <div className="profile-fields"><label>{t('Nama lengkap', 'Full name')}<input value={form.name} onChange={e => setForm({...form, name:e.target.value})} minLength={2} maxLength={80} required/></label><label>{t('Organisasi / lembaga', 'Organization')}<input value={form.org} onChange={e => setForm({...form, org:e.target.value})} maxLength={120}/></label><label className="wide">{t('Tentang Anda', 'About you')}<textarea value={form.bio} onChange={e => setForm({...form, bio:e.target.value})} maxLength={360} rows={4} placeholder={t('Ceritakan bidang dan pengalaman pengamatan Anda…', 'Share your field and observation experience…')}/><small>{form.bio.length}/360</small></label><label className="wide">{t('URL foto profil', 'Profile photo URL')}<input type="url" value={form.avatarUrl} onChange={e => setForm({...form, avatarUrl:e.target.value})} placeholder="https://…"/><small>{t('Foto Google digunakan otomatis. Tempel URL HTTPS lain untuk menggantinya.', 'Your Google photo is used automatically. Paste another HTTPS URL to replace it.')}</small></label></div>
+          <button className="btn primary" disabled={saving}><Save size={16}/>{saving ? t('Menyimpan…', 'Saving…') : t('Simpan perubahan', 'Save changes')}</button>
+        </form> : <section className="profile-panel profile-about"><header><div><span>{t('TENTANG', 'ABOUT')}</span><h2>{t('Profil profesional', 'Professional profile')}</h2></div><UserRound size={20}/></header><p>{account.bio || t('Belum ada bio. Tambahkan bidang keahlian, pengalaman rukyat, atau kegiatan falaq Anda agar anggota lain lebih mengenal Anda.', 'No bio yet. Add your expertise, observation experience, or astronomy activities so other members can know you better.')}</p><dl><div><dt>{t('Email akun', 'Account email')}</dt><dd>{account.email}</dd></div><div><dt>{t('Bergabung', 'Joined')}</dt><dd>{account.created ? new Date(account.created).toLocaleDateString(data.lang === 'id' ? 'id-ID' : 'en-US', {month:'long', year:'numeric'}) : '—'}</dd></div></dl></section>}
 
-      {!isDemo && (
-        <>
-          <div className="card" style={{ marginBottom: 16 }}>
-            <div className="card-body">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-                <div className="avatar" style={{ width: 64, height: 64, fontSize: 24 }}>
-                  {account.name.split(' ').map((w) => w[0]).join('')}
-                </div>
-                <div>
-                  <h2 style={{ fontSize: 20, marginBottom: 4 }}>{account.name}</h2>
-                  <div style={{ fontSize: 12, color: '#8fa3b8' }}>{account.email}</div>
-                  {account.org && <div style={{ fontSize: 11, color: '#c7d1df', marginTop: 2 }}>{account.org}</div>}
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
-                <div className="result-box">
-                  <span className="label">{t('Peran', 'Role')}</span>
-                  <b>{account.role}</b>
-                </div>
-                <div className="result-box">
-                  <span className="label">{t('Verifikasi', 'Verification')}</span>
-                  <b>
-                    <span className={`pill ${account.verification === 'verified' ? 'verified' : 'pending'}`} style={{ fontSize: 9, padding: '4px 8px' }}>
-                      {account.verification === 'verified' ? t('Terverifikasi', 'Verified') : account.verification === 'pending' ? t('Menunggu', 'Pending') : t('Belum', 'None')}
-                    </span>
-                  </b>
-                </div>
-              </div>
-            </div>
-          </div>
+        {showVerify && <section className="profile-panel verify-panel"><header><div><span>{t('VERIFIKASI', 'VERIFICATION')}</span><h2>{t('Ajukan tanda centang', 'Request verified mark')}</h2></div><ShieldCheck size={20}/></header><p>{t('Jelaskan lembaga, pengalaman, atau bukti kegiatan pengamatan Anda.', 'Describe your institution, experience, or observation evidence.')}</p><textarea value={evidence} onChange={e=>setEvidence(e.target.value)} rows={5} maxLength={1000}/><button className="btn primary" disabled={submitting} onClick={submitVerification}>{submitting ? t('Mengirim…','Submitting…') : t('Kirim pengajuan','Submit request')}</button></section>}
+      </main>
 
-          <div className="card" style={{ marginBottom: 16 }}>
-            <div className="card-header">
-              <h2>{t('Donasi untuk PFI', 'Donate to PFI')}</h2>
-            </div>
-            <div className="card-body">
-              <p>{t('Donasi Anda membantu mengembangkan aplikasi PFI sebagai jaringan pengamat hilal seluruh Indonesia.', 'Your donation helps develop PFI as a crescent watch network across Indonesia.')}</p>
-              <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-                <button className="btn secondary full" onClick={handleDonasi}>
-                  <CreditCard size={18} /> {t('Donasi via QRIS', 'Donate via QRIS')}
-                </button>
-                <button className="btn secondary full" onClick={handleDonasi}>
-                  <FileText size={18} /> {t('Rekening Bank', 'Bank Transfer')}
-                </button>
-              </div>
-              <div style={{ marginTop: 16, padding: 12, background: 'rgba(214,174,98,0.05)', borderRadius: 6, fontSize: 11, color: '#8fa3b8' }}>
-                {t('Informasi rekening hanya akan diumumkan melalui kanal resmi PFI.', 'Bank details will only be announced through official PFI channels.')}
-              </div>
-            </div>
-          </div>
-
-          <div className="card" style={{ marginBottom: 16 }}>
-            <div className="card-header">
-              <h2>{t('Pengaturan', 'Settings')}</h2>
-            </div>
-            <div className="card-body">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderBottom: '1px solid var(--line)' }}>
-                <div>
-                  <b>{t('Peringatan Agenda', 'Event Reminders')}</b>
-                  <div style={{ fontSize: 11, color: '#8fa3b8' }}>{t('Aktifkan pengingat agenda astronomi', 'Enable astronomical event reminders')}</div>
-                </div>
-                <button type="button" role="switch" aria-checked={data.notify} aria-label={t('Pengingat agenda', 'Agenda reminders')} onClick={() => setNotify(!data.notify)} style={{ width: 44, height: 24, background: data.notify ? 'var(--gold)' : 'var(--line)', borderRadius: 12, position: 'relative' }}>
-                  <div style={{ position: 'absolute', top: 2, left: data.notify ? 22 : 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left .2s' }} />
-                </button>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12 }}>
-                <div>
-                  <b>{t('Bahasa', 'Language')}</b>
-                  <div style={{ fontSize: 11, color: '#8fa3b8' }}>{data.lang === 'id' ? 'Indonesia' : 'English'}</div>
-                </div>
-                <button className="btn secondary" onClick={() => setLang(data.lang === 'id' ? 'en' : 'id')}>
-                  {t('Ubah', 'Change')}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {showVerify && <div className="card"><div className="card-body"><div className="field"><label htmlFor="verification-evidence">{t('Bukti dan keterangan', 'Evidence and description')}</label><textarea id="verification-evidence" value={evidence} onChange={(event) => setEvidence(event.target.value)} minLength={20} maxLength={1000} rows={5} placeholder={t('Jelaskan lembaga, pengalaman, atau bukti kegiatan pengamatan Anda.', 'Describe your institution, experience, or observation evidence.')} /></div><button type="button" className="btn primary full" disabled={submitting} onClick={submitVerification}>{submitting ? t('Mengirim…', 'Submitting…') : t('Kirim pengajuan', 'Submit request')}</button></div></div>}
-          <div style={{ display: 'flex', gap: 10 }}>
-            {!['pending','verified'].includes(account.verification) && <button className="btn secondary full" onClick={() => setShowVerify(!showVerify)}>
-              <ShieldCheck size={16} /> {t('Ajukan Verifikasi', 'Request Verification')}
-            </button>}
-            <button className="btn secondary full" onClick={logout}>
-              <LogOut size={16} /> {t('Keluar', 'Sign out')}
-            </button>
-          </div>
-        </>
-      )}
+      <aside className="profile-sidebar">
+        <section className="profile-panel"><header><div><span>{t('PREFERENSI', 'PREFERENCES')}</span><h2>{t('Pengaturan akun', 'Account settings')}</h2></div></header><div className="setting-row"><div><Bell size={16}/><span><b>{t('Peringatan agenda','Event reminders')}</b><small>{data.notify ? t('Aktif','On') : t('Nonaktif','Off')}</small></span></div><button role="switch" aria-checked={data.notify} className={`profile-switch ${data.notify?'on':''}`} onClick={()=>setNotify(!data.notify)}><i/></button></div><div className="setting-row"><div><Globe2 size={16}/><span><b>{t('Bahasa','Language')}</b><small>{data.lang==='id'?'Indonesia':'English'}</small></span></div><button className="mini-action" onClick={()=>setLang(data.lang==='id'?'en':'id')}>{t('Ubah','Change')}</button></div></section>
+        {!['pending','verified'].includes(account.verification) && <button className="profile-verify-action" onClick={()=>setShowVerify(!showVerify)}><ShieldCheck size={20}/><span><b>{t('Dapatkan tanda terverifikasi','Get verified')}</b><small>{t('Ajukan pemeriksaan identitas','Request an identity review')}</small></span></button>}
+        <button className="profile-logout" onClick={logout}><LogOut size={16}/>{t('Keluar dari akun','Sign out')}</button>
+      </aside>
     </div>
-  );
+  </div>;
 }
