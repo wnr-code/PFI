@@ -31,8 +31,18 @@ function json(data, status = 200, headers = {}) {
   });
 }
 
-function fail(status, message) {
-  return json({ error: message }, status);
+function fail(status, message, diagnostic = null) {
+  return json({ error: message, ...(diagnostic || {}) }, status);
+}
+
+function publicDiagnostic(error) {
+  const message = String(error?.message || error || 'Unknown error');
+  if (/UNIQUE constraint failed/i.test(message)) return { code: 'DATABASE_UNIQUE_CONFLICT', detail: 'Data akun bertabrakan dengan akun yang sudah tersimpan.' };
+  if (/no such table|no such column/i.test(message)) return { code: 'DATABASE_SCHEMA_MISMATCH', detail: 'Struktur basis data Production belum sesuai dengan aplikasi.' };
+  if (/D1|SQLITE|database/i.test(message)) return { code: 'DATABASE_OPERATION_FAILED', detail: 'Penyimpanan profil akun gagal diproses.' };
+  if (/Supabase identity verification is not configured/i.test(message)) return { code: 'IDENTITY_NOT_CONFIGURED', detail: 'Konfigurasi verifikasi identitas belum lengkap.' };
+  if (/fetch|network|upstream/i.test(message)) return { code: 'IDENTITY_UPSTREAM_FAILED', detail: 'Layanan verifikasi identitas tidak dapat dihubungi.' };
+  return { code: 'INTERNAL_ERROR', detail: 'Terjadi kesalahan internal yang belum dikenali.' };
 }
 
 // Accept both Worker runtime names and the existing Vite-prefixed names.
@@ -396,6 +406,7 @@ async function getPhoto(request, env, id) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const requestId = crypto.randomUUID();
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: { ...JSON_HEADERS, allow: 'GET,POST,PUT,DELETE,OPTIONS' } });
     }
@@ -961,10 +972,22 @@ export default {
         return fail(501, 'Fitur ini sedang dalam proses migrasi ke Cloudflare Workers.');
       }
 
-      return env.ASSETS.fetch(request);
+      return await env.ASSETS.fetch(request);
     } catch (error) {
-      console.error('PFI Worker error:', error?.message || error);
-      return fail(500, 'Layanan PFI belum dapat menyelesaikan permintaan.');
+      const diagnostic = publicDiagnostic(error);
+      console.error('PFI Worker error', {
+        requestId,
+        method: request.method,
+        path: url.pathname,
+        code: diagnostic.code,
+        message: error?.message || String(error),
+        stack: error?.stack,
+        cause: error?.cause,
+      });
+      return fail(500, 'Layanan PFI belum dapat menyelesaikan permintaan.', {
+        ...diagnostic,
+        requestId,
+      });
     }
   },
 };
