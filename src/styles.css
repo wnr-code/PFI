@@ -821,8 +821,8 @@ select,input,textarea{font-size:15px;line-height:1.5}
 .pfi-location-accuracy,.pfi-location-error{padding:6px 9px;border:1px solid rgba(147,197,253,.25);border-radius:8px;background:rgba(8,25,47,.94);color:#bfdbfe;font-size:10px;line-height:1.4;pointer-events:auto}
 .pfi-location-error{color:#fecaca;border-color:rgba(248,113,113,.35);max-width:100%}
 .pfi-user-location-marker{background:transparent!important;border:0!important}
-.pfi-user-location-core{position:absolute;left:5px;top:5px;display:grid;place-items:center;width:20px;height:20px;border:3px solid #fff;border-radius:50%;background:#2588ff;box-shadow:0 0 0 2px #0756b5,0 2px 12px rgba(0,0,0,.55)}
-.pfi-user-location-core span{font-size:9px;line-height:1;color:#fff}
+.pfi-user-location-core{position:absolute;left:3px;top:3px;display:grid;place-items:center;width:24px;height:24px;border:2px solid #fff;border-radius:50% 50% 50% 12%;transform:rotate(-45deg);background:linear-gradient(145deg,#60a5fa,#1264d8);box-shadow:0 0 0 2px #0756b5,0 3px 13px rgba(0,0,0,.55)}
+.pfi-user-location-core svg{width:14px;height:14px;transform:rotate(45deg);filter:drop-shadow(0 1px 1px rgba(0,0,0,.25))}
 .pfi-user-location-pulse{position:absolute;left:0;top:0;width:30px;height:30px;border:2px solid rgba(59,130,246,.8);border-radius:50%;animation:pfiUserGpsPulse 1.8s ease-out infinite}
 @keyframes pfiUserGpsPulse{0%{transform:scale(.55);opacity:.95}100%{transform:scale(1.45);opacity:0}}
 @media(max-width:600px){.pfi-map-location-tools{top:9px;right:9px}.pfi-locate-button{min-height:40px;padding:9px 11px;font-size:11px}}
