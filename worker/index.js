@@ -110,7 +110,7 @@ export function canReviewInstitutionApplication(application, profile) {
   return Boolean(application && profile &&
     ['reviewer', 'admin'].includes(profile.role) &&
     application.applicant_user_id !== profile.id &&
-    application.status === 'pending');
+    ['pending', 'revision'].includes(application.status));
 }
 
 // Normalize observation metadata before it enters the scientific record.
@@ -740,7 +740,7 @@ export default {
         const now = new Date().toISOString();
         const statements = [
           env.falaq.prepare(`UPDATE institution_applications
-            SET status=?,review_note=?,reviewed_by=?,reviewed_at=?,updated=? WHERE id=? AND status='pending'`)
+            SET status=?,review_note=?,reviewed_by=?,reviewed_at=?,updated=? WHERE id=? AND status IN ('pending','revision')`)
             .bind(decision,note,profile.id,now,now,id),
           env.falaq.prepare(`INSERT INTO institution_application_reviews
             (id,application_id,reviewer_user_id,decision,note,created) VALUES (?,?,?,?,?,?)`)
