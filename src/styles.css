@@ -889,3 +889,29 @@ select,input,textarea{font-size:15px;line-height:1.5}
 .guide-footer svg{flex-shrink:0;color:var(--gold);margin-top:2px}
 .guide-footer p{font-size:11px;line-height:1.7}
 @media(max-width:760px){.guide-section-list{grid-template-columns:1fr}.guide-hero{padding:23px 19px}.guide-card{padding:16px}.guide-card-heading{grid-template-columns:26px 36px minmax(0,1fr);gap:8px}.guide-card-icon{width:36px;height:36px}.guide-points{margin-left:34px}.guide-etiquette ul{margin-left:34px}}
+
+/* ---------- Settings and guideline centre ---------- */
+.pfi-settings{gap:18px}
+.settings-intro{display:flex;align-items:flex-start;gap:14px;padding:18px;border:1px solid rgba(214,174,98,.22);border-radius:14px;background:linear-gradient(120deg,rgba(214,174,98,.09),rgba(27,42,71,.7))}
+.settings-intro-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:rgba(214,174,98,.13);color:var(--gold);flex-shrink:0}
+.settings-intro b{font-size:14px;color:#f0d69e}
+.settings-intro p{font-size:12px;color:#aebed1;line-height:1.65;margin-top:4px}
+.settings-guide-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.settings-guide-card{display:flex;align-items:flex-start;gap:13px;padding:17px;transition:border-color .18s,transform .18s}
+.settings-guide-card:hover{border-color:rgba(214,174,98,.5);transform:translateY(-1px)}
+.settings-guide-icon{width:40px;height:40px;display:grid;place-items:center;flex-shrink:0;border-radius:11px;background:rgba(214,174,98,.1);color:var(--gold)}
+.settings-guide-copy{flex:1;min-width:0}
+.settings-guide-copy small{font-size:9px;letter-spacing:1px;color:var(--gold);font-weight:800}
+.settings-guide-copy h2{font-size:13px;margin:4px 0}
+.settings-guide-copy p{font-size:11px;color:#91a3ba;line-height:1.6}
+.settings-guide-arrow{flex-shrink:0;color:#91a3ba;margin-top:8px}
+.settings-note{display:flex;gap:10px;align-items:flex-start;color:#91a3ba;padding:8px 2px}
+.settings-note svg{flex-shrink:0;color:var(--gold);margin-top:2px}
+.settings-note p{font-size:11px;line-height:1.65}
+.verification-guide-link{display:flex;align-items:center;gap:11px;padding:12px;border:1px solid rgba(214,174,98,.3);border-radius:10px;background:rgba(214,174,98,.07);color:#e7d09b}
+.verification-guide-link>svg{flex-shrink:0}
+.verification-guide-link>span:nth-child(2){flex:1;min-width:0}
+.verification-guide-link b{display:block;font-size:12px}
+.verification-guide-link small{display:block;font-size:10px;color:#aebed1;margin-top:2px;line-height:1.5}
+.verification-guide-link>span:last-child{font-size:20px}
+@media(max-width:760px){.settings-guide-grid{grid-template-columns:1fr}.settings-guide-card{padding:14px}}
