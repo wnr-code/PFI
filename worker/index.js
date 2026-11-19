@@ -724,7 +724,7 @@ export default {
         ).bind(id).first();
         if (!application) return fail(404, 'Pengajuan lembaga tidak ditemukan.');
         if (application.applicant_user_id === profile.id) return fail(403, 'Petugas tidak boleh memeriksa pengajuannya sendiri.');
-        if (application.status !== 'pending') return fail(409, 'Pengajuan ini tidak sedang menunggu pemeriksaan.');
+        if (!['pending','revision'].includes(application.status)) return fail(409, 'Pengajuan ini tidak sedang menunggu pemeriksaan.');
         const body = await request.json().catch(() => null);
         const decision = body?.decision;
         const note = typeof body?.note === 'string' ? body.note.trim() : '';
