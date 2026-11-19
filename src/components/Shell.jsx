@@ -6,7 +6,7 @@ import { usePFI, go } from '../state.jsx';
 import {
   House, Calculator, Orbit, UsersRound, UserRound, MapPinned, Files,
   Bell, ChevronRight, MapPin, ChevronDown, GraduationCap, FlaskConical,
-  ChevronsUpDown, LayoutDashboard, CreditCard, Share2, LogOut, CalendarDays, MoreHorizontal, X, BookOpen,
+  ChevronsUpDown, LayoutDashboard, CreditCard, Share2, LogOut, CalendarDays, MoreHorizontal, X, BookOpen, Settings,
 } from 'lucide-react';
 
 export const navMain = [
@@ -21,7 +21,8 @@ export const navMore = [
   ['peta', 'Peta Rukyat', 'Observation Map', MapPinned],
   ['laporan', 'Pusat Laporan', 'Report Centre', Files],
   ['kalender', 'Kalender Hijriah', 'Hijri Calendar', CalendarDays],
-  ['panduan', 'Panduan PFI', 'PFI Guide', BookOpen],
+  ['panduan', 'Panduan Umum', 'General Guide', BookOpen],
+  ['pengaturan', 'Pengaturan', 'Settings', Settings],
 ];
 
 function Observatory() {
