@@ -217,9 +217,16 @@ async function identity(request, env) {
       authorization: `Bearer ${match[1]}`,
     },
   });
-  if (!response.ok) return null;
+  if (!response.ok) {
+    const reason = await response.text().catch(() => '');
+    console.error('PFI identity token rejected', { status: response.status, reason: reason.slice(0, 300) });
+    return null;
+  }
   const user = await response.json();
-  if (!user?.id || !user?.email) return null;
+  if (!user?.id || !user?.email) {
+    console.error('PFI identity response is incomplete', { hasId: Boolean(user?.id), hasEmail: Boolean(user?.email) });
+    return null;
+  }
   return { id: user.id, email: user.email, name: user.user_metadata?.name || user.user_metadata?.full_name || user.email };
 }
 
