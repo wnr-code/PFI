@@ -37,3 +37,5 @@ export default function Pengaturan() {
     </div>
   );
 }
+
+// PFI settings page: guideline links are centralized here.
