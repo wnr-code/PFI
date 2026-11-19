@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 export default function Dashboard() {
-  const { t, lang, loc, events } = usePFI();
+  const { t, lang, loc, events, data } = usePFI();
   const now = new Date();
   const hijri = hijriText(now, loc, lang, false);
   const moon = useMemo(() => lunar(now), [loc]);
@@ -25,7 +25,7 @@ export default function Dashboard() {
     { id: 'hisab', label: t('Hisab awal bulan', 'New month calculation'), description: t('Kriteria MABIMS dan data ephemeris', 'MABIMS criteria and ephemeris data'), icon: Calculator },
     { id: 'astronomi', label: t('Simulasi hilal', 'Crescent simulation'), description: t('Posisi bulan dari lokasi terpilih', 'Moon position from the selected site'), icon: Telescope },
     { id: 'peta', label: t('Peta rukyat', 'Observation map'), description: t('Pantau laporan terverifikasi', 'Monitor verified reports'), icon: MapPin },
-    { id: 'komunitas', label: t('Komunitas', 'Community'), description: t('Diskusi dan laporan lapangan', 'Discussion and field reports'), icon: UsersRound },
+    ...(data.account ? [{ id: 'komunitas', label: t('Komunitas', 'Community'), description: t('Diskusi dan laporan lapangan', 'Discussion and field reports'), icon: UsersRound }] : []),
   ];
 
   const schedule = [

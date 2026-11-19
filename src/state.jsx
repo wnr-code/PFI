@@ -115,13 +115,20 @@ export function Provider({ children }) {
 
       setData((d) => ({ ...d, ready: true }));
     } catch (e) {
-      setData((d) => ({ ...d, ready: true }));
+      setData((d) => ({ ...d, account: null, session: null, ready: true }));
+      tell(e?.message || 'Sesi Google tidak dapat dimuat. Silakan masuk kembali.');
     }
-  }, []);
+  }, [tell]);
 
   useEffect(() => {
+    let authRefreshTimer;
     const { data: { subscription } } = authApi.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_OUT') refresh();
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_OUT') {
+        // Supabase warns against calling another auth method from inside this
+        // callback. Defer the refresh until its internal auth lock is released.
+        clearTimeout(authRefreshTimer);
+        authRefreshTimer = setTimeout(() => refresh(), 0);
+      }
     });
     // Initial load
     refresh();
@@ -141,6 +148,7 @@ export function Provider({ children }) {
     window.addEventListener('hashchange', onHashChange);
 
     return () => {
+      clearTimeout(authRefreshTimer);
       subscription?.unsubscribe();
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);

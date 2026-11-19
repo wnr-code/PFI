@@ -10,6 +10,9 @@ import { initializeIdentity, supabase } from './supabase.js';
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 async function accessToken() {
+  // Every authenticated API call must wait for a possible PKCE callback.
+  // This also protects calls made outside the initial Provider refresh.
+  await initializeIdentity();
   const { data } = await supabase.auth.getSession();
   return data.session?.access_token || null;
 }
