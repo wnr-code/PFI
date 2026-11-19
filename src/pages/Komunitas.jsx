@@ -9,22 +9,23 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { usePFI, go } from '../state.jsx';
 import { api, offlineStore, offlineGet } from '../lib/api.js';
 import {
-  MessageCircle, UsersRound, Search, Send, ImageUp, FileText, MapPin,
-  Clock, CheckCircle2, Share2, ChevronRight,
+  MessageCircle, UsersRound, Send, FileText, MapPin,
+  CheckCircle2, ChevronRight, Plus, X, Telescope,
 } from 'lucide-react';
 
 const TABS = [
-  { id: 'beranda', label: 'Beranda', icon: UsersRound },
+  { id: 'semua', label: 'Semua', icon: UsersRound },
   { id: 'diskusi', label: 'Diskusi', icon: MessageCircle },
-  { id: 'rukyat', label: 'Rukyat', icon: FileText },
-  { id: 'berita', label: 'Berita', icon: Share2 },
+  { id: 'rukyat', label: 'Rukyat', icon: Telescope },
 ];
 
 export default function Komunitas() {
   const { data, t, lang, tell, loc, update } = usePFI();
-  const [tab, setTab] = useState('beranda');
+  const [tab, setTab] = useState('semua');
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showComposer, setShowComposer] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [newPost, setNewPost] = useState('');
   const [postType, setPostType] = useState('diskusi');
   const [rukyat, setRukyat] = useState({ lat: '', lon: '', instrument: '', weather: '', result: 'Tidak terlihat', observedAt: '', photo: null });
@@ -54,7 +55,8 @@ export default function Komunitas() {
 
   const createPost = async (e) => {
     e.preventDefault();
-    if (!newPost.trim()) return;
+    if (!newPost.trim() || submitting) return;
+    setSubmitting(true);
     try {
       const payload = { type: postType, title: newPost.slice(0, 60), body: newPost, city: loc.city };
       if (postType === 'rukyat') {
@@ -89,9 +91,12 @@ export default function Komunitas() {
       } catch {
         await offlineStore('posts', [created, ...posts.filter((post) => post.id !== created.id)]);
       }
+      setShowComposer(false);
       tell(t('Postingan berhasil dibuat.', 'Post created.'));
     } catch (e) {
       tell(e.message || 'Gagal membuat postingan.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -104,81 +109,76 @@ export default function Komunitas() {
   };
 
   return (
-    <div className="page-wrap">
-      <div className="page-head">
-        <div className="eyebrow"><i /> {t('KOMUNITAS RUKYAT', 'CRESCENT WATCH COMMUNITY')}</div>
-        <h1>{t('Berbagi pengamatan hilal bersama', 'Share crescent observations together')}</h1>
-        <p>{t('Laporan pribadi memerlukan tinjauan dan bukan penetapan resmi awal bulan.', 'Personal reports require review and are not official new month declarations.')}</p>
-      </div>
-
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        {TABS.map((tb) => (
-          <button
-            key={tb.id}
-            className={`btn ${tab === tb.id ? 'primary' : 'secondary'} full`}
-            onClick={() => setTab(tb.id)}
-          >
-            <tb.icon size={16} /> {tb.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="card">
-        <div className="card-body">
-          <form onSubmit={createPost} className="community-composer">
-            <div className="field"><label htmlFor="post-type">{t('Jenis kiriman', 'Post type')}</label><select id="post-type" value={postType} onChange={(e) => setPostType(e.target.value)}><option value="diskusi">{t('Diskusi umum', 'General discussion')}</option><option value="rukyat">{t('Laporan Rukyat', 'Crescent report')}</option></select></div>
-            <div className="field"><label htmlFor="post-body">{t('Catatan', 'Notes')}</label><textarea id="post-body" value={newPost} onChange={(e) => setNewPost(e.target.value)} placeholder={t('Bagikan pembahasan atau hasil pengamatan secara jelas…', 'Share a discussion or observation clearly…')} minLength={3} maxLength={4000} required rows={4}/><small className="field-hint">{newPost.length}/4000</small></div>
-            {postType === 'rukyat' && <div className="rukyat-form-grid">
-              <div className="field"><label htmlFor="rukyat-lat">Latitude</label><input id="rukyat-lat" type="number" step="any" min="-90" max="90" value={rukyat.lat} onChange={(e) => setRukyat({...rukyat,lat:e.target.value})} required/></div>
-              <div className="field"><label htmlFor="rukyat-lon">Longitude</label><input id="rukyat-lon" type="number" step="any" min="-180" max="180" value={rukyat.lon} onChange={(e) => setRukyat({...rukyat,lon:e.target.value})} required/></div>
-              <div className="field"><label htmlFor="rukyat-time">{t('Waktu pengamatan', 'Observation time')}</label><input id="rukyat-time" type="datetime-local" value={rukyat.observedAt} onChange={(e) => setRukyat({...rukyat,observedAt:e.target.value})} required/></div>
-              <div className="field"><label htmlFor="rukyat-tool">{t('Instrumen', 'Instrument')}</label><input id="rukyat-tool" value={rukyat.instrument} onChange={(e) => setRukyat({...rukyat,instrument:e.target.value})} minLength={2} maxLength={180} required placeholder={t('Teleskop/binokular', 'Telescope/binoculars')}/></div>
-              <div className="field"><label htmlFor="rukyat-weather">{t('Cuaca', 'Weather')}</label><input id="rukyat-weather" value={rukyat.weather} onChange={(e) => setRukyat({...rukyat,weather:e.target.value})} minLength={2} maxLength={100} required placeholder={t('Cerah, berawan…', 'Clear, cloudy…')}/></div>
-              <div className="field"><label htmlFor="rukyat-result">{t('Hasil', 'Result')}</label><select id="rukyat-result" value={rukyat.result} onChange={(e) => setRukyat({...rukyat,result:e.target.value})}><option>Tidak terlihat</option><option>Terlihat</option></select></div>
-              <div className="field rukyat-photo"><label htmlFor="rukyat-photo">{t('Foto asli (maks. 3 MB)', 'Original photo (max. 3 MB)')}</label><input id="rukyat-photo" type="file" accept="image/jpeg,image/png,image/webp" required onChange={(e) => { const file=e.target.files?.[0]; if(!file)return; if(file.size>3*1024*1024){tell(t('Foto maksimal 3 MB.','Photo must be under 3 MB.'));e.target.value='';return;} setRukyat({...rukyat,photo:file}); }}/></div>
-            </div>}
-            <button type="submit" className="btn primary"><Send size={16}/>{postType === 'rukyat' ? t('Kirim untuk ditinjau', 'Submit for review') : t('Bagikan diskusi', 'Share discussion')}</button>
-          </form>
+    <div className="page-wrap community-page">
+      <section className="community-hero">
+        <div>
+          <div className="eyebrow"><i /> {t('RUANG PENGAMAT', 'OBSERVER SPACE')}</div>
+          <h1>{t('Komunitas Falaq', 'Falaq Community')}</h1>
+          <p>{t('Diskusi, catatan lapangan, dan laporan rukyat dari pengamat di seluruh Indonesia.', 'Discussions, field notes, and crescent reports from observers across Indonesia.')}</p>
         </div>
+        <div className="community-summary" aria-label={t('Ringkasan komunitas', 'Community summary')}>
+          <span><b>{posts.length}</b>{t('kiriman', 'posts')}</span>
+          <span><b>{posts.filter((post) => post.type === 'rukyat').length}</b>{t('laporan rukyat', 'reports')}</span>
+        </div>
+      </section>
+
+      <div className="community-toolbar">
+        <div className="community-tabs" role="tablist" aria-label={t('Filter kiriman', 'Post filters')}>
+          {TABS.map((tb) => (
+            <button key={tb.id} role="tab" aria-selected={tab === tb.id} className={tab === tb.id ? 'active' : ''} onClick={() => setTab(tb.id)}>
+              <tb.icon size={16} /> {t(tb.label, tb.id === 'semua' ? 'All' : tb.label)}
+              <small>{tb.id === 'semua' ? posts.length : posts.filter((post) => post.type === tb.id).length}</small>
+            </button>
+          ))}
+        </div>
+        <button className={`community-create ${showComposer ? 'active' : ''}`} onClick={() => setShowComposer((value) => !value)}>
+          {showComposer ? <X size={18}/> : <Plus size={18}/>}
+          {showComposer ? t('Tutup', 'Close') : t('Buat kiriman', 'Create post')}
+        </button>
       </div>
+
+      {showComposer && <section className="community-compose-card">
+        <header><div><span>{t('KIRIMAN BARU', 'NEW POST')}</span><h2>{postType === 'rukyat' ? t('Laporan pengamatan', 'Observation report') : t('Mulai diskusi', 'Start a discussion')}</h2></div><FileText size={22}/></header>
+        <form onSubmit={createPost} className="community-composer">
+          <div className="community-type-picker">
+            <button type="button" className={postType === 'diskusi' ? 'active' : ''} onClick={() => setPostType('diskusi')}><MessageCircle size={17}/>{t('Diskusi', 'Discussion')}</button>
+            <button type="button" className={postType === 'rukyat' ? 'active' : ''} onClick={() => setPostType('rukyat')}><Telescope size={17}/>{t('Laporan Rukyat', 'Crescent report')}</button>
+          </div>
+          <div className="field community-notes"><label htmlFor="post-body">{t('Apa yang ingin Anda bagikan?', 'What would you like to share?')}</label><textarea id="post-body" value={newPost} onChange={(e) => setNewPost(e.target.value)} placeholder={t('Tuliskan catatan secara jelas dan bermanfaat…', 'Write a clear and useful note…')} minLength={3} maxLength={4000} required rows={4}/><small className="field-hint">{newPost.length}/4000</small></div>
+          {postType === 'rukyat' && <div className="rukyat-form-grid">
+            <div className="field"><label htmlFor="rukyat-lat">Latitude</label><input id="rukyat-lat" type="number" step="any" min="-90" max="90" value={rukyat.lat} onChange={(e) => setRukyat({...rukyat,lat:e.target.value})} required/></div>
+            <div className="field"><label htmlFor="rukyat-lon">Longitude</label><input id="rukyat-lon" type="number" step="any" min="-180" max="180" value={rukyat.lon} onChange={(e) => setRukyat({...rukyat,lon:e.target.value})} required/></div>
+            <div className="field"><label htmlFor="rukyat-time">{t('Waktu pengamatan', 'Observation time')}</label><input id="rukyat-time" type="datetime-local" value={rukyat.observedAt} onChange={(e) => setRukyat({...rukyat,observedAt:e.target.value})} required/></div>
+            <div className="field"><label htmlFor="rukyat-tool">{t('Instrumen', 'Instrument')}</label><input id="rukyat-tool" value={rukyat.instrument} onChange={(e) => setRukyat({...rukyat,instrument:e.target.value})} minLength={2} maxLength={180} required placeholder={t('Teleskop/binokular', 'Telescope/binoculars')}/></div>
+            <div className="field"><label htmlFor="rukyat-weather">{t('Cuaca', 'Weather')}</label><input id="rukyat-weather" value={rukyat.weather} onChange={(e) => setRukyat({...rukyat,weather:e.target.value})} minLength={2} maxLength={100} required placeholder={t('Cerah, berawan…', 'Clear, cloudy…')}/></div>
+            <div className="field"><label htmlFor="rukyat-result">{t('Hasil', 'Result')}</label><select id="rukyat-result" value={rukyat.result} onChange={(e) => setRukyat({...rukyat,result:e.target.value})}><option>Tidak terlihat</option><option>Terlihat</option></select></div>
+            <div className="field rukyat-photo"><label htmlFor="rukyat-photo">{t('Foto asli (maks. 3 MB)', 'Original photo (max. 3 MB)')}</label><input id="rukyat-photo" type="file" accept="image/jpeg,image/png,image/webp" required onChange={(e) => { const file=e.target.files?.[0]; if(!file)return; if(file.size>3*1024*1024){tell(t('Foto maksimal 3 MB.','Photo must be under 3 MB.'));e.target.value='';return;} setRukyat({...rukyat,photo:file}); }}/></div>
+          </div>}
+          <button type="submit" className="community-submit" disabled={submitting || newPost.trim().length < 3}><Send size={17}/>{submitting ? t('Mengirim…', 'Sending…') : postType === 'rukyat' ? t('Kirim untuk ditinjau', 'Submit for review') : t('Publikasikan diskusi', 'Publish discussion')}</button>
+        </form>
+      </section>}
+
+      <section className="community-feed-head"><div><span>{t('LINIMASA', 'TIMELINE')}</span><h2>{tab === 'semua' ? t('Kiriman terbaru', 'Latest posts') : TABS.find((item) => item.id === tab)?.label}</h2></div><small>{filtered.length} {t('kiriman', 'posts')}</small></section>
 
       {loading ? (
-        <div style={{ padding: 60, textAlign: 'center', color: '#747f8e' }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>{t('Memuat…', 'Loading…')}</div>
-        </div>
+        <div className="community-state"><span className="loading-orbit"/><b>{t('Memuat linimasa…', 'Loading timeline…')}</b></div>
       ) : filtered.length === 0 ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#747f8e' }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>{t('Belum ada postingan', 'No posts yet')}</div>
-          <p>{t('Jadilah yang pertama membagikan pengamatan.', 'Be the first to share an observation.')}</p>
-        </div>
+        <div className="community-state empty"><MessageCircle size={30}/><b>{t('Belum ada kiriman', 'No posts yet')}</b><p>{t('Mulai percakapan yang bermanfaat untuk sesama pengamat.', 'Start a useful conversation with fellow observers.')}</p></div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="community-feed">
           {filtered.map((p) => (
-            <div key={p.id} className="post-card">
-              <div className="post-header">
-                <div className="avatar">{p.author?.split(' ').map((w) => w[0]).join('') ?? '?'}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <b style={{ fontSize: 13, display: 'block' }}>{p.author}</b>
-                  <div style={{ fontSize: 11, color: '#8fa3b8', display: 'flex', gap: 8 }}>
-                    <span>{p.city}</span>
-                    <span>{formatDate(p.date)}</span>
-                    {p.status === 'verified' && <span className="pill verified" style={{ fontSize: 9, padding: '2px 6px' }}>{t('Terverifikasi', 'Verified')}</span>}
-                  </div>
-                </div>
-              </div>
-              <div className="post-body">{p.body}</div>
-              <div className="post-actions">
-                <button className="btn icon" onClick={() => tell(t('Like', 'Liked'))}>
-                  <CheckCircle2 size={16} />
-                </button>
-                <button className="btn icon">
-                  <MessageCircle size={16} />
-                </button>
-                <button className="btn icon" onClick={() => go(`komunitas/${p.id}`)}>
-                  <ChevronRight size={14} />
-                </button>
-              </div>
-            </div>
+            <article key={p.id} className={`community-post ${p.type}`}>
+              <header>
+                <div className="avatar">{p.author?.split(' ').map((w) => w[0]).join('').slice(0,2) ?? '?'}</div>
+                <div className="community-author"><b>{p.author || t('Pengamat', 'Observer')}</b><span><MapPin size={12}/>{p.city || '—'}<i/>{formatDate(p.date)}</span></div>
+                <span className="community-kind">{p.type === 'rukyat' ? <Telescope size={13}/> : <MessageCircle size={13}/>} {p.type === 'rukyat' ? 'Rukyat' : 'Diskusi'}</span>
+              </header>
+              <div className="community-post-body">{p.title && p.title !== p.body ? <h3>{p.title}</h3> : null}<p>{p.body}</p></div>
+              <footer>
+                <div>{p.status === 'verified' ? <span className="post-status verified"><CheckCircle2 size={13}/>{t('Terverifikasi', 'Verified')}</span> : p.type === 'rukyat' ? <span className="post-status pending">{t('Dalam tinjauan', 'Under review')}</span> : null}</div>
+                <button onClick={() => go(`komunitas/${p.id}`)}>{t('Buka kiriman', 'Open post')}<ChevronRight size={15}/></button>
+              </footer>
+            </article>
           ))}
         </div>
       )}

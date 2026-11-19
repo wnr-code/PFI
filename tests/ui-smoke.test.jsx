@@ -113,12 +113,12 @@ describe('PFI UI smoke tests in Happy DOM', () => {
   });
 
   it.each([
-    ['Astronomi', Astronomi],
-    ['Komunitas', Komunitas],
-    ['Profil', Profil],
-    ['Laporan', Laporan],
-  ])('renders the %s page without a runtime crash', (_name, Page) => {
+    ['Astronomi', Astronomi, '.page-head h1'],
+    ['Komunitas', Komunitas, '.community-hero h1'],
+    ['Profil', Profil, '.page-head h1'],
+    ['Laporan', Laporan, '.page-head h1'],
+  ])('renders the %s page without a runtime crash', (_name, Page, headingSelector) => {
     render(<Page />);
-    expect(document.querySelector('.page-head h1')).toBeTruthy();
+    expect(document.querySelector(headingSelector)).toBeTruthy();
   });
 });

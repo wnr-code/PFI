@@ -7,7 +7,7 @@
  */
 import React from 'react';
 import { Check, Copy } from 'lucide-react';
-import { usePFI } from './state.jsx';
+import { go, usePFI } from './state.jsx';
 import { Sidebar, Topbar, BottomNav } from './components/Shell.jsx';
 import { AuthModal } from './components/AuthModal.jsx';
 import Dashboard from './pages/Dashboard.jsx';
@@ -33,12 +33,16 @@ const routes = {
 };
 
 export default function App() {
-  const { page, modal, toast, ready } = usePFI();
+  const { page, modal, toast, ready, data } = usePFI();
   const [copied, setCopied] = React.useState(false);
-  const Page = routes[page] || Dashboard;
+  const privateRoute = page === 'komunitas' || page === 'profil';
+  const Page = privateRoute && !data.account ? Dashboard : (routes[page] || Dashboard);
   const hasErrorCode = /Kode:\s*\S+/.test(toast);
 
   React.useEffect(() => setCopied(false), [toast]);
+  React.useEffect(() => {
+    if (ready && privateRoute && !data.account) go('beranda');
+  }, [ready, privateRoute, data.account]);
 
   const copyError = async () => {
     try {
