@@ -96,6 +96,37 @@ function AuxiliaryModal() {
   );
 }
 
+class PageErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error) {
+    console.error('PFI page render error:', error);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <section className="card page-error" role="alert">
+          <div className="card-body">
+            <h2>Halaman mengalami kendala</h2>
+            <p>Bagian halaman ini gagal ditampilkan. Navigasi PFI tetap dapat digunakan.</p>
+            <details>
+              <summary>Lihat detail teknis</summary>
+              <code>{String(this.state.error?.message || this.state.error)}</code>
+            </details>
+            <button className="btn secondary" onClick={() => this.setState({ error: null })}>Coba tampilkan kembali</button>
+          </div>
+        </section>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   const { page, modal, data, ready, toast } = usePFI();
   const Page = routes[page] || Dashboard;
@@ -112,7 +143,7 @@ export default function App() {
                 PFI dimuat…
               </div>
             ) : (
-              <Page />
+              <PageErrorBoundary key={page}><Page /></PageErrorBoundary>
             )}
           </div>
         </main>
