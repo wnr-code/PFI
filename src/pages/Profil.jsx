@@ -11,6 +11,8 @@ export default function Profil() {
 
   const account = data.account;
   const isDemo = !account;
+  const roleLabels = { observer: 'Anggota / Pengamat', reviewer: 'Tim Validasi Data', admin: 'Administrator Platform' };
+  const roleLabel = roleLabels[account?.role] || 'Anggota / Pengamat';
 
   const submitVerification = async (event) => {
     event.preventDefault();
@@ -89,7 +91,7 @@ export default function Profil() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
                 <div className="result-box">
                   <span className="label">{t('Peran', 'Role')}</span>
-                  <b>{account.role}</b>
+                  <b>{roleLabel}</b>
                 </div>
                 <div className="result-box">
                   <span className="label">{t('Verifikasi', 'Verification')}</span>
@@ -145,6 +147,24 @@ export default function Profil() {
           </div>
 
           <div className="card" style={{ marginBottom: 16 }}>
+            <div className="card-header"><h2>{t('Panduan Peran dan Keahlian PFI', 'PFI Roles and Expertise Guide')}</h2></div>
+            <div className="card-body">
+              <p style={{ marginBottom: 12 }}>{t('Peran akun mengatur izin di aplikasi. Peran ini tidak otomatis menunjukkan gelar, keilmuan, jabatan organisasi, atau kewenangan menetapkan awal bulan.', 'Account roles control app permissions. They do not automatically represent academic credentials, religious authority, organizational office, or authority to determine the start of a month.')}</p>
+              <div style={{ display: 'grid', gap: 12 }}>
+                <div><b>Anggota / Pengamat (observer)</b><p style={{ fontSize: 12, color: '#8fa3b8', margin: '4px 0 0' }}>{t('Akun standar untuk membaca komunitas, bergabung kelompok, berdiskusi, dan mengirim data pengamatan.', 'Standard account for community participation and submitting observations.')}</p></div>
+                <div><b>Tim Validasi Data (reviewer)</b><p style={{ fontSize: 12, color: '#8fa3b8', margin: '4px 0 0' }}>{t('Petugas yang diberi izin memeriksa kelengkapan dan konsistensi laporan serta berkas verifikasi. Bukan pengesah resmi hasil sidang isbat.', 'Authorized staff who review completeness and consistency of reports and verification submissions. Not an official authority for isbat decisions.')}</p></div>
+                <div><b>Administrator Platform (admin)</b><p style={{ fontSize: 12, color: '#8fa3b8', margin: '4px 0 0' }}>{t('Istilah teknis untuk pengelola aplikasi. Mengatur konfigurasi dan akses sistem melalui backend/database. Bukan gelar keagamaan atau jabatan ketua organisasi.', 'Technical term for the application operator. Manages configuration and system access through backend/database. Not a religious title or organizational chair.')}</p></div>
+                <div><b>Koordinator Kelompok</b><p style={{ fontSize: 12, color: '#8fa3b8', margin: '4px 0 0' }}>{t('Penugasan dalam satu kelompok untuk mengoordinasikan anggota dan agenda. Tidak otomatis menjadi admin platform.', 'A role within one group to coordinate members and agendas. Does not grant platform administrator access.')}</p></div>
+              </div>
+              <div style={{ borderTop: '1px solid var(--line)', marginTop: 14, paddingTop: 12 }}>
+                <b>Ahli Falak / Ulama / Kiai / Ustaz</b>
+                <p style={{ fontSize: 12, color: '#8fa3b8', margin: '4px 0 0' }}>{t('Keahlian atau latar keilmuan, bukan role akses aplikasi. Termasuk ulama, kiai, ustaz, guru atau pengasuh pesantren, ahli hisab, dan praktisi rukyat. Mereka dapat memiliki jalur pendidikan pesantren, talaqqi/guru, pengalaman hisab-rukyat, maupun pendidikan akademik. Cantumkan keterangan yang benar pada bukti verifikasi; PFI tidak menyamakan gelar atau sanad keilmuan yang berbeda.', 'Expertise or scholarly background, not an app permission role. This includes ulama, kiai, ustaz, pesantren teachers, hisab specialists, and rukyat practitioners. Describe the actual learning and experience in verification evidence.')}</p>
+              </div>
+              <p style={{ fontSize: 11, color: '#d6ae62', marginTop: 12 }}>{t('Status laporan: terkirim → ditinjau → terverifikasi secara teknis / perlu revisi. Verifikasi PFI bukan penetapan resmi awal bulan Hijriah.', 'Report status: submitted → under review → technically verified / revision required. PFI review is not an official Hijri month determination.')}</p>
+            </div>
+          </div>
+
+          <div className="card" style={{ marginBottom: 16 }}>
             <div className="card-header"><h2>{t('Verifikasi Pengamat', 'Observer Verification')}</h2></div>
             <div className="card-body">
               {account.verification === 'verified' ? (
@@ -155,7 +175,7 @@ export default function Profil() {
                 <form onSubmit={submitVerification} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {account.reviewNote && <p style={{ color: '#d6ae62', fontSize: 12 }}>{t('Catatan petugas:', 'Reviewer note:')} {account.reviewNote}</p>}
                   <label className="field">
-                    <span>{t('Jelaskan pengalaman atau bukti kompetensi falak (20–1.000 karakter)', 'Describe your falak experience or credentials (20–1,000 characters)')}</span>
+                    <span>{t('Ceritakan pengalaman, pendidikan, pesantren/lembaga, guru pembimbing, atau kegiatan falak (20–1.000 karakter)', 'Describe your experience, education, pesantren/institution, teacher, or falak activities (20–1,000 characters)')}</span>
                     <textarea value={evidence} onChange={(event) => setEvidence(event.target.value)} minLength={20} maxLength={1000} rows={4} required />
                   </label>
                   <button className="btn secondary full" type="submit" disabled={verificationBusy}>
