@@ -179,6 +179,11 @@ export default function PetaRukyat() {
   };
   const sunPoint = horizonPoint(skyData.sun);
   const moonPoint = horizonPoint(skyData.moon);
+  const issPositionRef = useRef(null);
+  const issOrbitPathRef = useRef(null);
+  issPositionRef.current = issPosition;
+  issOrbitPathRef.current = issOrbitPath;
+
   const formatDate = (value) => {
     if (!value) return '—';
     const date = new Date(value);
@@ -211,25 +216,6 @@ export default function PetaRukyat() {
         .pointColor(() => '#ffd166')
         .pointResolution(12)
         .onPointClick((point) => setSelected(point))
-        .pathsData(issOrbitPath ? [issOrbitPath] : [])
-        .pathPoints((d) => d.points)
-        .pathPointLat((p) => p.lat)
-        .pathPointLng((p) => p.lng)
-        .pathColor(() => '#65e6ff')
-        .pathStroke(0.65)
-        .pathDashLength(0.12)
-        .pathDashGap(0.025)
-        .pathDashAnimateTime(4500)
-        .htmlElementsData(issPosition ? [issPosition] : [])
-        .htmlLat((d) => d.lat)
-        .htmlLng((d) => d.lng)
-        .htmlElement(() => {
-          const el = document.createElement('div');
-          el.className = 'pfi-iss-marker';
-          el.innerHTML = '<span class="pfi-iss-pulse"></span><b>ISS</b>';
-          el.style.pointerEvents = 'none';
-          return el;
-        })
         .ringsData(located)
         .ringLat((d) => Number(d.latitude))
         .ringLng((d) => Number(d.longitude))
@@ -244,6 +230,24 @@ export default function PetaRukyat() {
       globe.controls().enableDamping = true;
       globe.pointOfView({ lat: -2, lng: 118, altitude: 2.1 }, 1200);
       globeInstance.current = globe;
+      const renderSatellite = () => {
+        const currentPosition = issPositionRef.current;
+        const currentPath = issOrbitPathRef.current;
+        globe.pathsData(currentPath ? [currentPath] : []);
+        globe.pathPoints((d) => d.points).pathPointLat((p) => p.lat).pathPointLng((p) => p.lng)
+          .pathColor(() => '#65e6ff').pathStroke(0.65).pathDashLength(0.12)
+          .pathDashGap(0.025).pathDashAnimateTime(4500);
+        globe.htmlElementsData(currentPosition ? [currentPosition] : [])
+          .htmlLat((d) => d.lat).htmlLng((d) => d.lng)
+          .htmlElement(() => {
+            const el = document.createElement('div');
+            el.className = 'pfi-iss-marker';
+            el.innerHTML = '<span class="pfi-iss-pulse"></span><b>ISS</b>';
+            el.style.pointerEvents = 'none';
+            return el;
+          });
+      };
+      renderSatellite();
       observer = new ResizeObserver(() => {
         if (globeInstance.current && host.clientWidth) {
           globeInstance.current.width(host.clientWidth).height(host.clientHeight || 440);
@@ -262,7 +266,15 @@ export default function PetaRukyat() {
       }
       if (globeHost.current) globeHost.current.replaceChildren();
     };
-  }, [mode, located, t, issPosition, issOrbitPath]);
+  }, [mode, located, t]);
+
+  // Perbarui posisi dan lintasan ISS tanpa membongkar ulang renderer globe.
+  useEffect(() => {
+    const globe = globeInstance.current;
+    if (!globe || mode !== 'globe') return;
+    globe.pathsData(issOrbitPath ? [issOrbitPath] : []);
+    globe.htmlElementsData(issPosition ? [issPosition] : []);
+  }, [mode, issPosition, issOrbitPath]);
 
   // Leaflet: peta geografis asli dengan tile basemap, pan, zoom dan marker.
   useEffect(() => {
