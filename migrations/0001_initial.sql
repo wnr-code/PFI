@@ -11,7 +11,6 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT NOT NULL,
   org TEXT NOT NULL DEFAULT '',
   bio TEXT NOT NULL DEFAULT '',
-  avatar_url TEXT NOT NULL DEFAULT '',
   role TEXT NOT NULL DEFAULT 'observer'
     CHECK (role IN ('observer','reviewer','admin')),
   verification TEXT NOT NULL DEFAULT 'none'
