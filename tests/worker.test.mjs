@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker, { canReviewEntity, canViewGroup, canViewPost, groupSlug, normalizeRukyatDetails, uploadContentLengthStatus } from '../worker/index.js';
+import worker, { canReviewEntity, canViewGroup, canViewPost, ensureUserSchema, groupSlug, normalizeRukyatDetails, uploadContentLengthStatus } from '../worker/index.js';
 import { SITES, calculateHisab, clock, lunar, sunsetTime } from '../src/lib/astro.js';
 
 test('Worker health endpoint verifies D1 schema and authentication configuration', async () => {
@@ -68,6 +68,23 @@ test('Worker health endpoint reports missing runtime dependencies', async () => 
   assert.equal(body.status, 'degraded');
   assert.equal(body.database, 'unavailable');
   assert.equal(body.authentication, 'missing_configuration');
+});
+
+test('legacy Production user tables are upgraded without replacing existing data', async () => {
+  const added = [];
+  const database = {
+    prepare(sql) {
+      if (sql === 'PRAGMA table_info(users)') {
+        return { all: async () => ({ results: [{ name: 'id' }, { name: 'email' }] }) };
+      }
+      return { run: async () => { added.push(sql); } };
+    },
+  };
+  await ensureUserSchema(database);
+  assert.equal(added.length, 10);
+  assert.ok(added.some((sql) => sql.startsWith('ALTER TABLE users ADD COLUMN name ')));
+  assert.ok(added.some((sql) => sql.startsWith('ALTER TABLE users ADD COLUMN prefs ')));
+  assert.ok(added.every((sql) => sql.startsWith('ALTER TABLE users ADD COLUMN ')));
 });
 
 test('Worker failures include a safe diagnostic code and traceable request reference', async () => {
