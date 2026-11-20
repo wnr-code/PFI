@@ -260,6 +260,19 @@ test('real-time eclipse timeline activates only inside observed contact times', 
   assert.equal(typeof during.visible, 'boolean');
 });
 
+test('an eclipse in progress below the local horizon is not labelled LIVE', () => {
+  // The 3 March 2026 lunar eclipse starts before moonrise in Tasikmalaya.
+  const tasik = SITES.find((site) => site.id === 'tasik');
+  const event = eclipseTimeline(new Date('2026-03-03T08:46:00Z'), tasik).find((item) => item.body === 'Moon');
+  assert.equal(event.withinContacts, true);
+  assert.equal(event.visible, true); // A later part of the contact sequence is observable.
+  assert.equal(event.currentVisible, false);
+  assert.equal(event.active, false);
+  assert.equal(event.phase, 'below-horizon');
+  assert.ok(event.progress > 0 && event.progress < 1);
+  assert.ok(event.contacts.current < 0);
+});
+
 test('Ad-Durrul Aniq negative-altitude rule follows the published Syakban 1434 Sampang example', () => {
   const sampang = { id: 'sampang', city: 'Sampang', region: 'Jawa Timur', site: 'Sampang', lat: -7.2, lon: 113.25, elev: 5, offset: 7 };
   const result = calculateHisab({ start: '2013-07-09', day: 1, month: 9, year: 1434 }, sampang);
