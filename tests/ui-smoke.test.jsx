@@ -8,8 +8,9 @@
 // @vitest-environment happy-dom
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { SITES, agenda } from '../src/lib/astro.js';
+import { api } from '../src/lib/api.js';
 
 const loc = SITES[0];
 const context = {
@@ -89,6 +90,30 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     expect(mapButton.getAttribute('aria-pressed')).toBe('true');
     expect(document.querySelector('.pfi-globe-canvas')).toBeFalsy();
     expect(document.querySelector('.pfi-leaflet-map')).toBeTruthy();
+  });
+
+  it('shows a branded orbit animation while refreshing map reports', async () => {
+    let finish;
+    api.mockReturnValueOnce(new Promise((resolve) => { finish = resolve; }));
+    render(<PetaRukyat />);
+    expect((await screen.findByRole('status')).textContent).toMatch(/Memperbarui jaringan rukyat/i);
+    expect(document.querySelector('.pfi-refresh-logo img')?.getAttribute('src')).toBe('/images/pfi-brand.png');
+    finish([]);
+    await waitFor(() => expect(screen.queryByText(/Memperbarui jaringan rukyat/i)).toBeFalsy());
+  });
+
+  it('opens verified map reports in a draggable translucent bottom sheet', async () => {
+    api.mockResolvedValueOnce([{ id: 'report-1', type: 'rukyat', city: 'Tasikmalaya', title: 'Rukyat Ramadan', author: 'Ahmad', latitude: -7.3, longitude: 108.2, status: 'verified', date: '2026-11-20T10:00:00Z' }]);
+    render(<PetaRukyat />);
+    const report = await screen.findByRole('button', { name: /Tasikmalaya/i });
+    fireEvent.click(report);
+    expect(document.querySelector('.pfi-map-bottom-sheet.peek')).toBeTruthy();
+    expect(screen.getByAltText(/Ilustrasi pengamatan hilal/i)).toBeTruthy();
+    const handle = screen.getByRole('button', { name: /Perluas detail/i });
+    fireEvent.touchStart(handle, { touches: [{ clientY: 220 }] });
+    fireEvent.touchMove(handle, { touches: [{ clientY: 120 }] });
+    fireEvent.touchEnd(handle);
+    expect(document.querySelector('.pfi-map-bottom-sheet.expanded')).toBeTruthy();
   });
 
   it('renders Hisab controls without unresolved component errors', () => {
