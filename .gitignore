@@ -11,3 +11,7 @@ test-results/
 *.sqlite-shm
 *.sqlite-wal
 .env
+
+# Paket pindahan repo undangan (tidak di-commit)
+weding-java-repo.zip
+weding-java-repo.bundle
