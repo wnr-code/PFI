@@ -887,3 +887,52 @@ input:disabled,select:disabled,textarea:disabled,button:disabled{cursor:not-allo
 @keyframes homeMoonFloat{50%{transform:translateY(-5px);box-shadow:inset -22px -18px 30px rgba(3,8,15,.72),0 0 62px rgba(224,193,125,.22)}}
 @keyframes homeMarkerPulse{50%{opacity:.55;box-shadow:0 0 0 8px rgba(125,201,232,.04),0 0 18px currentColor}}
 @media(prefers-reduced-motion:reduce){.observatory-hero:before,.lunar-instrument .lunar-orbit,.lunar-body,.lunar-marker{animation:none!important}}
+/* Hisab results must remain readable when a wide layout is scaled onto a phone. */
+.hisab-dual-results{font-size:16px}
+.hisab-result-intro p{font-size:13px;line-height:1.6}
+.hisab-time-strip span,.detail-metrics span{font-size:11px;line-height:1.45;letter-spacing:.45px}
+.hisab-time-strip b{font-size:clamp(22px,2.2vw,28px)}
+.hisab-time-strip small{font-size:11px}
+.model-tabs button{min-height:46px;font-size:13px}
+.model-comparison header{font-size:11px}
+.model-comparison span{font-size:13px;line-height:1.45}
+.model-comparison strong{font-size:14px;line-height:1.45}
+.model-detail-head small{font-size:10px}
+.model-detail-head h3{font-size:21px}
+.model-detail-head p{font-size:12px;line-height:1.55}
+.model-detail-head>span{font-size:11px}
+.detail-metrics article{padding:18px}
+/* The kitab model has 16 metrics: fill its otherwise empty final desktop row. */
+.model-detail-head.kitab+.detail-metrics article:last-child:nth-child(3n+1){grid-column:1/-1}
+.detail-metrics b{margin-top:9px;font-size:17px;line-height:1.4;white-space:normal;overflow:visible;text-overflow:clip}
+.detail-metrics small{font-size:11px;line-height:1.45}
+.kitab-trace>header small{font-size:10px}
+.kitab-trace>header h4{font-size:15px}
+.kitab-trace>header>span{font-size:11px}
+.kitab-trace-row{min-width:760px;padding:13px 18px}
+.kitab-trace-row.heading{font-size:10px}
+.kitab-trace-row strong,.kitab-trace-row code{font-size:12px;line-height:1.45}
+.kitab-trace-row span{font-size:13px}
+.kitab-trace-row small{font-size:11px}
+.formula-note p{font-size:12px;line-height:1.7}
+.calculation-audit>header b{font-size:13px}
+.calculation-audit>header small{font-size:11px}
+.calculation-audit>div small{font-size:10px}
+.calculation-audit>div b{font-size:12px;line-height:1.45;white-space:normal;overflow:visible;text-overflow:clip}
+.model-agreement b,.hisab-conclusion b{font-size:13px}
+.model-agreement p,.hisab-conclusion p{font-size:12px;line-height:1.65}
+.pdf-layout-choice,.pdf-layout-choice select{font-size:11px}
+.pdf-login-required b{font-size:13px}.pdf-login-required p{font-size:12px}
+@media(max-width:700px){
+  .hisab-result-intro{padding:20px}
+  .hisab-time-strip article{padding:17px 20px}
+  .model-comparison header,.model-comparison>div{min-width:680px;padding:15px 17px}
+  .detail-metrics{grid-template-columns:1fr 1fr}
+  .model-detail-head.kitab+.detail-metrics article:last-child:nth-child(3n+1){grid-column:auto}
+  .kitab-trace>header{align-items:flex-start;flex-direction:column}
+}
+@media(max-width:450px){
+  .detail-metrics{grid-template-columns:1fr}
+  .detail-metrics b{font-size:18px}
+  .hisab-time-strip b{font-size:23px}
+}

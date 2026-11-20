@@ -152,7 +152,7 @@ describe('PFI UI smoke tests in Happy DOM', () => {
   it('explains kitab correction terms through dismissible information tips', async () => {
     render(<Hisab />);
     fireEvent.click(screen.getByRole('button', { name: /Hitung Sekarang/i }));
-    fireEvent.click(await screen.findByRole('button', { name: /^Ad-Durrul Aniq$/i }));
+    fireEvent.click(await screen.findByRole('tab', { name: /^Ad-Durrul Aniq$/i }));
     expect(await screen.findByText(/Urutan perhitungan dan rujukan/i)).toBeTruthy();
     expect(screen.getByText('P = HP × cos hc')).toBeTruthy();
     expect(screen.getByText('C = acos(cos z × cos Y)')).toBeTruthy();
