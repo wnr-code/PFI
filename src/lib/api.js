@@ -28,7 +28,9 @@ export async function api(path, method = 'GET', body = null, identityToken = und
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers,
-    credentials: 'include',
+    // PFI authentication is bearer-only. Explicitly omit cookies so a stale
+    // browser credential can never influence which application account loads.
+    credentials: 'omit',
     body: body ? (isForm ? body : JSON.stringify(body)) : undefined,
   });
   const contentType = res.headers.get('content-type') || '';
@@ -56,7 +58,12 @@ export async function api(path, method = 'GET', body = null, identityToken = und
 export const authApi = {
   signInWithGoogle: () => supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: `${window.location.origin}${window.location.pathname}` },
+    options: {
+      redirectTo: `${window.location.origin}${window.location.pathname}`,
+      // Never silently reuse the Google account left active in the browser.
+      // The person signing in must deliberately choose the intended identity.
+      queryParams: { prompt: 'select_account' },
+    },
   }),
   signOut: async () => {
     // PFI uses bearer tokens only; ending the local identity session is enough
