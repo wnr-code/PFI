@@ -249,6 +249,7 @@ const requiredUserColumns = {
   org: "TEXT NOT NULL DEFAULT ''",
   bio: "TEXT NOT NULL DEFAULT ''",
   avatar_url: "TEXT NOT NULL DEFAULT ''",
+  cover_theme: "TEXT NOT NULL DEFAULT 'orbit'",
   role: "TEXT NOT NULL DEFAULT 'observer'",
   verification: "TEXT NOT NULL DEFAULT 'none'",
   evidence: "TEXT NOT NULL DEFAULT ''",
@@ -291,7 +292,7 @@ async function profileFor(request, env) {
     WHERE users.email != excluded.email OR users.name = '' OR users.avatar_url = ''
   `).bind(who.id, who.email, who.name, who.avatarUrl);
   const select = env.falaq.prepare(
-    'SELECT id,email,name,org,bio,avatar_url,role,verification,review_note,created,prefs FROM users WHERE id = ?'
+    'SELECT id,email,name,org,bio,avatar_url,cover_theme,role,verification,review_note,created,prefs FROM users WHERE id = ?'
   ).bind(who.id);
 
   // D1 batch guarantees the profile read runs after its upsert on the same
@@ -524,7 +525,7 @@ export default {
         return json({
           account: {
             id: profile.id, name: profile.name, email: profile.email,
-            org: profile.org, bio: profile.bio, avatarUrl: profile.avatar_url, role: profile.role,
+            org: profile.org, bio: profile.bio, avatarUrl: profile.avatar_url, coverTheme: profile.cover_theme, role: profile.role,
             verification: profile.verification, reviewNote: profile.review_note,
             created: profile.created,
           },
@@ -721,6 +722,9 @@ export default {
         const org = typeof body.org === 'string' ? body.org.trim() : '';
         const bio = typeof body.bio === 'string' ? body.bio.trim() : '';
         const avatarUrl = typeof body.avatarUrl === 'string' ? body.avatarUrl.trim() : '';
+        const coverTheme = typeof body.coverTheme === 'string' ? body.coverTheme : 'orbit';
+        const allowedCoverThemes = ['orbit','meteors','rings','constellation'];
+        if (!allowedCoverThemes.includes(coverTheme)) return fail(400, 'Pilihan sampul profil tidak valid.');
         let safeAvatarUrl = '';
         if (avatarUrl) {
           try { const parsed = new URL(avatarUrl); if (parsed.protocol !== 'https:') throw new Error(); safeAvatarUrl = parsed.href; }
@@ -729,12 +733,12 @@ export default {
         if (name.length < 2 || name.length > 80 || org.length > 120 || bio.length > 360 || safeAvatarUrl.length > 1000) {
           return fail(400, 'Nama, organisasi, atau bio tidak sesuai batas karakter.');
         }
-        await env.falaq.prepare('UPDATE users SET name=?,org=?,bio=?,avatar_url=?,updated=? WHERE id=?')
-          .bind(name, org, bio, safeAvatarUrl, new Date().toISOString(), profile.id).run();
+        await env.falaq.prepare('UPDATE users SET name=?,org=?,bio=?,avatar_url=?,cover_theme=?,updated=? WHERE id=?')
+          .bind(name, org, bio, safeAvatarUrl, coverTheme, new Date().toISOString(), profile.id).run();
         const updated = await env.falaq.prepare(
-          'SELECT id,email,name,org,bio,avatar_url,role,verification,review_note,created FROM users WHERE id=?'
+          'SELECT id,email,name,org,bio,avatar_url,cover_theme,role,verification,review_note,created FROM users WHERE id=?'
         ).bind(profile.id).first();
-        return json({ id: updated.id, email: updated.email, name: updated.name, org: updated.org, bio: updated.bio, avatarUrl: updated.avatar_url, role: updated.role, verification: updated.verification, reviewNote: updated.review_note, created: updated.created });
+        return json({ id: updated.id, email: updated.email, name: updated.name, org: updated.org, bio: updated.bio, avatarUrl: updated.avatar_url, coverTheme: updated.cover_theme, role: updated.role, verification: updated.verification, reviewNote: updated.review_note, created: updated.created });
       }
 
       if (url.pathname === '/api/preferences' && request.method === 'PUT') {

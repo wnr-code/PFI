@@ -7,6 +7,12 @@ import { Bell, Building2, CalendarDays, Camera, Check, Edit3, FileText, Globe2, 
 const roleInfo = {
   observer: ['Pengamat', 'Observer'], reviewer: ['Reviewer', 'Reviewer'], admin: ['Administrator', 'Administrator'],
 };
+const coverThemes = [
+  ['orbit','Orbit satelit','Satellite orbit'],
+  ['meteors','Bintang jatuh','Shooting stars'],
+  ['rings','Cincin angkasa','Space rings'],
+  ['constellation','Rasi bintang','Constellation'],
+];
 
 export default function Profil() {
   const { data, t, logout, tell, setLang, setNotify, update } = usePFI();
@@ -17,8 +23,8 @@ export default function Profil() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [evidence, setEvidence] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState(() => ({ name: account?.name || '', org: account?.org || '', bio: account?.bio || '', avatarUrl: account?.avatarUrl || '' }));
-  useEffect(() => { if (account) setForm({ name: account.name || '', org: account.org || '', bio: account.bio || '', avatarUrl: account.avatarUrl || '' }); }, [account?.id, account?.name, account?.org, account?.bio, account?.avatarUrl]);
+  const [form, setForm] = useState(() => ({ name: account?.name || '', org: account?.org || '', bio: account?.bio || '', avatarUrl: account?.avatarUrl || '', coverTheme: account?.coverTheme || 'orbit' }));
+  useEffect(() => { if (account) setForm({ name: account.name || '', org: account.org || '', bio: account.bio || '', avatarUrl: account.avatarUrl || '', coverTheme: account.coverTheme || 'orbit' }); }, [account?.id, account?.name, account?.org, account?.bio, account?.avatarUrl, account?.coverTheme]);
   useEffect(() => { if (!settingsOpen) return undefined; const escape = event => event.key === 'Escape' && setSettingsOpen(false); window.addEventListener('keydown', escape); return () => window.removeEventListener('keydown', escape); }, [settingsOpen]);
   const completeness = useMemo(() => account ? Math.round(([account.name, account.email, account.org, account.bio, account.avatarUrl].filter(Boolean).length / 5) * 100) : 0, [account]);
 
@@ -31,7 +37,7 @@ export default function Profil() {
     event.preventDefault(); setSaving(true);
     try {
       const next = await api('/api/profile', 'PUT', form);
-      update({ account: next }); setForm({ name: next.name, org: next.org || '', bio: next.bio || '', avatarUrl: next.avatarUrl || '' });
+      update({ account: next }); setForm({ name: next.name, org: next.org || '', bio: next.bio || '', avatarUrl: next.avatarUrl || '', coverTheme: next.coverTheme || 'orbit' });
       setEditing(false); tell(t('Profil berhasil diperbarui.', 'Profile updated.'));
     } catch (error) { tell(error.message); } finally { setSaving(false); }
   };
@@ -43,7 +49,8 @@ export default function Profil() {
   };
 
   return <div className="page-wrap profile-page">
-    <section className="profile-cover">
+    <section className={`profile-cover cover-${account.coverTheme || 'orbit'}`}>
+      <div className="profile-cover-animation" aria-hidden="true"><i className="cover-orbit orbit-one"><b/></i><i className="cover-orbit orbit-two"><b/></i><i className="cover-meteor meteor-one"/><i className="cover-meteor meteor-two"/><i className="cover-ring ring-one"/><i className="cover-ring ring-two"/><span className="cover-stars">✦ · ✧ · ✦ · ✧</span></div>
       <div className="profile-cover-copy"><span>PFI MEMBER SPACE</span><h1>{t('Profil Anggota', 'Member Profile')}</h1><p>{t('Identitas, reputasi, dan kontribusi Anda di jaringan pengamat falaq Indonesia.', 'Your identity, reputation, and contribution in Indonesia’s astronomy observer network.')}</p></div>
       <div className="profile-cover-actions"><button className="profile-settings-trigger" onClick={() => setSettingsOpen(true)} aria-label={t('Buka pengaturan profil','Open profile settings')}><Settings2 size={19}/><span>{t('Pengaturan','Settings')}</span></button><button className="profile-edit" onClick={() => setEditing(!editing)}>{editing ? <X size={16}/> : <Edit3 size={16}/>} {editing ? t('Batal', 'Cancel') : t('Edit profil', 'Edit profile')}</button></div>
     </section>
@@ -66,6 +73,7 @@ export default function Profil() {
         {editing ? <form className="profile-panel profile-form" onSubmit={saveProfile}>
           <header><div><span>{t('PENGATURAN PROFIL', 'PROFILE SETTINGS')}</span><h2>{t('Ubah informasi publik', 'Edit public information')}</h2></div><Camera size={20}/></header>
           <div className="profile-fields"><label><span><UserRound size={15}/>{t('Nama lengkap', 'Full name')}</span><input value={form.name} onChange={e => setForm({...form, name:e.target.value})} minLength={2} maxLength={80} required/></label><label><span><Building2 size={15}/>{t('Organisasi / lembaga', 'Organization')}</span><input value={form.org} onChange={e => setForm({...form, org:e.target.value})} maxLength={120}/></label><label className="wide"><span><FileText size={15}/>{t('Tentang Anda', 'About you')}</span><textarea value={form.bio} onChange={e => setForm({...form, bio:e.target.value})} maxLength={360} rows={4} placeholder={t('Ceritakan bidang dan pengalaman pengamatan Anda…', 'Share your field and observation experience…')}/><small>{form.bio.length}/360</small></label><label className="wide"><span><Image size={15}/>{t('URL foto profil', 'Profile photo URL')}</span><input type="url" value={form.avatarUrl} onChange={e => setForm({...form, avatarUrl:e.target.value})} placeholder="https://…"/><small>{t('Foto Google digunakan otomatis. Tempel URL HTTPS lain untuk menggantinya.', 'Your Google photo is used automatically. Paste another HTTPS URL to replace it.')}</small></label></div>
+          <fieldset className="profile-cover-picker"><legend><Sparkles size={16}/>{t('Pilih animasi sampul','Choose cover animation')}</legend><div>{coverThemes.map(([id,idLabel,enLabel])=><button type="button" key={id} className={form.coverTheme===id?'selected':''} aria-pressed={form.coverTheme===id} onClick={()=>setForm({...form,coverTheme:id})}><span className={`cover-preview cover-${id}`}><i/><b/></span><strong>{t(idLabel,enLabel)}</strong>{form.coverTheme===id&&<Check size={15}/>}</button>)}</div><small>{t('Animasi hanya bersifat visual dan mengikuti pengaturan pengurangan gerakan perangkat.','Animations are visual only and respect the device reduced-motion setting.')}</small></fieldset>
           <button className="btn primary" disabled={saving}><Save size={16}/>{saving ? t('Menyimpan…', 'Saving…') : t('Simpan perubahan', 'Save changes')}</button>
         </form> : <section className="profile-panel profile-about"><header><div><span>{t('TENTANG', 'ABOUT')}</span><h2>{t('Profil profesional', 'Professional profile')}</h2></div><UserRound size={20}/></header><p>{account.bio || t('Belum ada bio. Tambahkan bidang keahlian, pengalaman rukyat, atau kegiatan falaq Anda agar anggota lain lebih mengenal Anda.', 'No bio yet. Add your expertise, observation experience, or astronomy activities so other members can know you better.')}</p><dl><div><dt><Mail size={14}/>{t('Email akun · privat', 'Account email · private')}</dt><dd>{account.email}</dd></div><div><dt><CalendarDays size={14}/>{t('Bergabung', 'Joined')}</dt><dd>{account.created ? new Date(account.created).toLocaleDateString(data.lang === 'id' ? 'id-ID' : 'en-US', {month:'long', year:'numeric'}) : '—'}</dd></div><div><dt><Medal size={14}/>{t('Peran anggota', 'Member role')}</dt><dd>{t(...role)}</dd></div><div><dt><ShieldCheck size={14}/>{t('Status verifikasi', 'Verification status')}</dt><dd>{verified?t('Terverifikasi','Verified'):account.verification==='pending'?t('Sedang ditinjau','Under review'):t('Belum terverifikasi','Not verified')}</dd></div></dl>{account.reviewNote&&<div className="profile-review-note"><ShieldCheck size={16}/><span><b>{t('Catatan peninjau','Reviewer note')}</b>{account.reviewNote}</span></div>}</section>}
 

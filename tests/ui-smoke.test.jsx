@@ -201,8 +201,10 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     fireEvent.click(screen.getByRole('button', { name: /Edit profil/i }));
     fireEvent.change(screen.getByLabelText(/Nama lengkap/i), { target: { value: 'Aep Falak' } });
     fireEvent.change(screen.getByLabelText(/Tentang Anda/i), { target: { value: 'Pengamat hilal Tasikmalaya' } });
+    fireEvent.click(screen.getByRole('button', { name: /Bintang jatuh/i }));
+    expect(screen.getByRole('button', { name: /Bintang jatuh/i }).getAttribute('aria-pressed')).toBe('true');
     fireEvent.click(screen.getByRole('button', { name: /Simpan perubahan/i }));
-    await waitFor(() => expect(api).toHaveBeenCalledWith('/api/profile', 'PUT', expect.objectContaining({ name: 'Aep Falak' })));
+    await waitFor(() => expect(api).toHaveBeenCalledWith('/api/profile', 'PUT', expect.objectContaining({ name: 'Aep Falak', coverTheme: 'meteors' })));
     context.data.account = null;
   });
 
