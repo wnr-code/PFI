@@ -65,7 +65,9 @@ export function normalizeHisabSite(siteId, location) {
   const region = typeof location.region === 'string' ? location.region.trim() : '';
   const lat = Number(location.lat), lon = Number(location.lon), elev = Number(location.elev), offset = Number(location.offset);
   if (!city || city.length > 80 || region.length > 80 || !Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lon) || lon < -180 || lon > 180 || !Number.isFinite(elev) || elev < -500 || elev > 9000 || !Number.isInteger(offset) || offset < -12 || offset > 14) return null;
-  return { id: 'custom', site: city, city, region, lat, lon, elev, offset };
+  const source = location.source === 'gps' ? 'gps' : 'manual';
+  const accuracy = source === 'gps' && Number.isFinite(Number(location.accuracy)) && Number(location.accuracy) >= 0 ? Math.min(100000, Number(location.accuracy)) : null;
+  return { id: 'custom', site: city, city, region, lat, lon, elev, offset, source, accuracy };
 }
 
 export function canViewPost(post, profile) {

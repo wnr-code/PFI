@@ -14,7 +14,7 @@ import { api } from '../lib/api.js';
 import { exportReport } from '../lib/export.js';
 import {
   Calendar, MapPin, Settings, Sun, Moon, Compass, FileDown, Share2,
-  ArrowRight, CheckCircle2, Info, History, Calculator,
+  ArrowRight, CheckCircle2, Info, History, Calculator, LocateFixed, Pencil,
 } from 'lucide-react';
 
 const BULAN_HIJRIAH = [
@@ -34,12 +34,28 @@ export default function Hisab() {
   const [bulan, setBulan] = useState(8); // Ramadan
   const [siteId, setSiteId] = useState(data.site || 'tasik');
   const [customSite, setCustomSite] = useState({ city: '', region: '', lat: '', lon: '', elev: '0', offset: '7' });
+  const [locationSource, setLocationSource] = useState('manual');
+  const [gpsAccuracy, setGpsAccuracy] = useState(null);
+  const [gpsBusy, setGpsBusy] = useState(false);
+  const [openInfo, setOpenInfo] = useState(null);
   const [metode, setMetode] = useState('comparison');
   const [resultModel, setResultModel] = useState('comparison');
   const [result, setResult] = useState(null);
   const [busy, setBusy] = useState(false);
 
-  const site = siteId === 'custom' ? { id: 'custom', site: customSite.city || t('Lokasi khusus', 'Custom location'), city: customSite.city || t('Lokasi khusus', 'Custom location'), region: customSite.region || '—', lat: Number(customSite.lat), lon: Number(customSite.lon), elev: Number(customSite.elev), offset: Number(customSite.offset) } : (SITES.find((s) => s.id === siteId) || SITES[0]);
+  const site = siteId === 'custom' ? { id: 'custom', site: customSite.city || t('Lokasi khusus', 'Custom location'), city: customSite.city || t('Lokasi khusus', 'Custom location'), region: customSite.region || '—', lat: Number(customSite.lat), lon: Number(customSite.lon), elev: Number(customSite.elev), offset: Number(customSite.offset), source: locationSource, accuracy: gpsAccuracy } : (SITES.find((s) => s.id === siteId) || SITES[0]);
+  const editCustom = (field, value) => { setCustomSite((current) => ({ ...current, [field]: value })); if (locationSource === 'gps') { setLocationSource('manual'); setGpsAccuracy(null); } };
+  const useGps = () => {
+    if (!navigator.geolocation) return tell(t('Perangkat ini tidak mendukung GPS browser.', 'This device does not support browser geolocation.'));
+    setGpsBusy(true);
+    navigator.geolocation.getCurrentPosition((position) => {
+      const { latitude, longitude, altitude, accuracy } = position.coords;
+      const browserOffset = -new Date().getTimezoneOffset() / 60;
+      setCustomSite((current) => ({ ...current, city: current.city || t('Lokasi GPS saya', 'My GPS location'), lat: latitude.toFixed(7), lon: longitude.toFixed(7), elev: Number.isFinite(altitude) ? String(Math.round(altitude)) : current.elev, offset: Number.isInteger(browserOffset) && browserOffset >= -12 && browserOffset <= 14 ? String(browserOffset) : current.offset }));
+      setLocationSource('gps'); setGpsAccuracy(Math.round(accuracy)); setGpsBusy(false);
+      tell(t('Koordinat GPS berhasil diterapkan. Periksa elevasi dan zona waktu.', 'GPS coordinates applied. Check elevation and time zone.'));
+    }, (error) => { setGpsBusy(false); tell(error.code === 1 ? t('Izin lokasi ditolak. Gunakan input manual atau izinkan lokasi di browser.', 'Location permission was denied. Use manual input or allow location in the browser.') : t('Lokasi GPS tidak dapat diperoleh. Coba di area terbuka.', 'GPS location could not be obtained. Try again outdoors.')); }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 });
+  };
 
   const hitung = async () => {
     setBusy(true);
@@ -130,7 +146,12 @@ export default function Hisab() {
               </select>
             </div>
           </div>
-          {siteId === 'custom' && <div className="custom-site-panel"><div className="custom-site-head"><MapPin size={17}/><div><b>{t('Koordinat lokasi khusus', 'Custom location coordinates')}</b><small>{t('Digunakan untuk kedua model dan tidak mengubah daftar lokasi resmi.', 'Used by both models and does not change official locations.')}</small></div></div><div className="custom-site-grid"><div className="field"><label>{t('Nama lokasi', 'Location name')}</label><input value={customSite.city} maxLength={80} onChange={e=>setCustomSite({...customSite,city:e.target.value})} placeholder="Observatorium…"/></div><div className="field"><label>{t('Wilayah', 'Region')}</label><input value={customSite.region} maxLength={80} onChange={e=>setCustomSite({...customSite,region:e.target.value})} placeholder="Kabupaten / negara"/></div><div className="field"><label>Latitude (−90…90)</label><input type="number" step="any" min="-90" max="90" value={customSite.lat} onChange={e=>setCustomSite({...customSite,lat:e.target.value})}/></div><div className="field"><label>Longitude (−180…180)</label><input type="number" step="any" min="-180" max="180" value={customSite.lon} onChange={e=>setCustomSite({...customSite,lon:e.target.value})}/></div><div className="field"><label>{t('Elevasi meter', 'Elevation metres')}</label><input type="number" min="-500" max="9000" value={customSite.elev} onChange={e=>setCustomSite({...customSite,elev:e.target.value})}/></div><div className="field"><label>{t('Zona waktu UTC', 'UTC time zone')}</label><select value={customSite.offset} onChange={e=>setCustomSite({...customSite,offset:e.target.value})}>{Array.from({length:27},(_,i)=>i-12).map(value=><option key={value} value={value}>UTC{value>=0?'+':''}{value}</option>)}</select></div></div></div>}
+          {siteId === 'custom' && <div className="custom-site-panel">
+            <div className="custom-site-head"><MapPin size={17}/><div><b>{t('Koordinat lokasi khusus', 'Custom location coordinates')}</b><small>{t('Pilih GPS atau isi manual. Kedua cara memakai rumus yang sama.', 'Choose GPS or manual entry. Both use the same formulas.')}</small></div><button type="button" className="info-popover-trigger" aria-label={t('Informasi lokasi', 'Location information')} onClick={()=>setOpenInfo(openInfo==='location'?null:'location')}><Info size={15}/></button>{openInfo==='location'&&<div className="info-popover"><button onClick={()=>setOpenInfo(null)}>×</button><b>{t('Sumber koordinat', 'Coordinate source')}</b><p>{t('GPS mengisi koordinat perangkat. Jika salah satu nilainya diedit, sumber otomatis berubah menjadi Manual agar asal data tetap jujur.', 'GPS fills device coordinates. Editing any value automatically changes the source to Manual so data provenance remains honest.')}</p></div>}</div>
+            <div className="location-methods"><button type="button" className={locationSource==='gps'?'active':''} onClick={useGps} disabled={gpsBusy}><LocateFixed size={16}/><span><b>{gpsBusy?t('Mencari GPS…','Locating…'):t('Gunakan GPS','Use GPS')}</b><small>{t('Koordinat perangkat','Device coordinates')}</small></span></button><button type="button" className={locationSource==='manual'?'active':''} onClick={()=>{setLocationSource('manual');setGpsAccuracy(null)}}><Pencil size={16}/><span><b>{t('Isi manual','Manual entry')}</b><small>{t('Koordinat dapat diketik','Editable coordinates')}</small></span></button></div>
+            <div className={`location-source-note ${locationSource}`}><b>{locationSource==='gps'?t('Sumber: GPS perangkat','Source: device GPS'):t('Sumber: input manual','Source: manual input')}</b><span>{locationSource==='gps'&&gpsAccuracy?t(` · akurasi ±${gpsAccuracy} meter`,` · accuracy ±${gpsAccuracy} metres`):''}</span><small>{locationSource==='gps'?t('Mengedit nilai di bawah akan mengubah sumber menjadi Manual.','Editing a value below will change the source to Manual.'):t('Nilai diperiksa sebelum perhitungan.','Values are validated before calculation.')}</small></div>
+            <div className="custom-site-grid"><div className="field"><label>{t('Nama lokasi', 'Location name')}</label><input value={customSite.city} maxLength={80} onChange={e=>editCustom('city',e.target.value)} placeholder="Observatorium…"/></div><div className="field"><label>{t('Wilayah', 'Region')}</label><input value={customSite.region} maxLength={80} onChange={e=>editCustom('region',e.target.value)} placeholder="Kabupaten / negara"/></div><div className="field"><label>Latitude (−90…90)</label><input type="number" step="any" min="-90" max="90" value={customSite.lat} onChange={e=>editCustom('lat',e.target.value)}/></div><div className="field"><label>Longitude (−180…180)</label><input type="number" step="any" min="-180" max="180" value={customSite.lon} onChange={e=>editCustom('lon',e.target.value)}/></div><div className="field"><label>{t('Elevasi meter', 'Elevation metres')}</label><input type="number" min="-500" max="9000" value={customSite.elev} onChange={e=>editCustom('elev',e.target.value)}/></div><div className="field"><label>{t('Zona waktu UTC', 'UTC time zone')}</label><select value={customSite.offset} onChange={e=>editCustom('offset',e.target.value)}>{Array.from({length:27},(_,i)=>i-12).map(value=><option key={value} value={value}>UTC{value>=0?'+':''}{value}</option>)}</select></div></div>
+          </div>}
           <div style={{ marginTop: 20 }}>
             <button
               className="btn primary full"

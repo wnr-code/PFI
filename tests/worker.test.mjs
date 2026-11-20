@@ -119,7 +119,10 @@ test('Worker accepts the dual-model hisab method used by the frontend', () => {
 
 test('custom hisab locations are normalized with strict coordinate limits', () => {
   const site = normalizeHisabSite('custom', { city: 'Observatorium Uji', region: 'Indonesia', lat: -7.4, lon: 108.1, elev: 700, offset: 7 });
-  assert.deepEqual(site, { id: 'custom', site: 'Observatorium Uji', city: 'Observatorium Uji', region: 'Indonesia', lat: -7.4, lon: 108.1, elev: 700, offset: 7 });
+  assert.deepEqual(site, { id: 'custom', site: 'Observatorium Uji', city: 'Observatorium Uji', region: 'Indonesia', lat: -7.4, lon: 108.1, elev: 700, offset: 7, source: 'manual', accuracy: null });
+  const gps = normalizeHisabSite('custom', { city: 'GPS', lat: -7.4, lon: 108.1, elev: 700, offset: 7, source: 'gps', accuracy: 12 });
+  assert.equal(gps.source, 'gps');
+  assert.equal(gps.accuracy, 12);
   assert.equal(normalizeHisabSite('custom', { city: 'Tidak valid', lat: 91, lon: 108, elev: 0, offset: 7 }), null);
   assert.equal(normalizeHisabSite('custom', { city: 'Tidak valid', lat: -7, lon: 108, elev: 0, offset: 7.5 }), null);
 });
