@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker, { canReviewEntity, canViewGroup, canViewPost, ensureUserSchema, groupSlug, HISAB_METHODS, normalizeRukyatDetails, uploadContentLengthStatus } from '../worker/index.js';
+import worker, { canReviewEntity, canViewGroup, canViewPost, ensureUserSchema, groupSlug, HISAB_METHODS, normalizeHisabSite, normalizeRukyatDetails, uploadContentLengthStatus } from '../worker/index.js';
 import { SITES, calculateHisab, clock, eclipseTimeline, lunar, sunsetTime } from '../src/lib/astro.js';
 
 test('Worker health endpoint verifies D1 schema and authentication configuration', async () => {
@@ -115,6 +115,13 @@ test('Worker accepts the dual-model hisab method used by the frontend', () => {
   assert.ok(HISAB_METHODS.includes('comparison'));
   assert.ok(HISAB_METHODS.includes('mabims'));
   assert.equal(HISAB_METHODS.includes('unknown'), false);
+});
+
+test('custom hisab locations are normalized with strict coordinate limits', () => {
+  const site = normalizeHisabSite('custom', { city: 'Observatorium Uji', region: 'Indonesia', lat: -7.4, lon: 108.1, elev: 700, offset: 7 });
+  assert.deepEqual(site, { id: 'custom', site: 'Observatorium Uji', city: 'Observatorium Uji', region: 'Indonesia', lat: -7.4, lon: 108.1, elev: 700, offset: 7 });
+  assert.equal(normalizeHisabSite('custom', { city: 'Tidak valid', lat: 91, lon: 108, elev: 0, offset: 7 }), null);
+  assert.equal(normalizeHisabSite('custom', { city: 'Tidak valid', lat: -7, lon: 108, elev: 0, offset: 7.5 }), null);
 });
 
 test('hisab rejects an unknown observation site before accessing D1', async () => {

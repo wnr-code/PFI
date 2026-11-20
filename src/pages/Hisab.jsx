@@ -33,16 +33,18 @@ export default function Hisab() {
   const { data, t, lang, loc, tell, update } = usePFI();
   const [bulan, setBulan] = useState(8); // Ramadan
   const [siteId, setSiteId] = useState(data.site || 'tasik');
+  const [customSite, setCustomSite] = useState({ city: '', region: '', lat: '', lon: '', elev: '0', offset: '7' });
   const [metode, setMetode] = useState('comparison');
   const [resultModel, setResultModel] = useState('comparison');
   const [result, setResult] = useState(null);
   const [busy, setBusy] = useState(false);
 
-  const site = SITES.find((s) => s.id === siteId) || SITES[0];
+  const site = siteId === 'custom' ? { id: 'custom', site: customSite.city || t('Lokasi khusus', 'Custom location'), city: customSite.city || t('Lokasi khusus', 'Custom location'), region: customSite.region || '—', lat: Number(customSite.lat), lon: Number(customSite.lon), elev: Number(customSite.elev), offset: Number(customSite.offset) } : (SITES.find((s) => s.id === siteId) || SITES[0]);
 
   const hitung = async () => {
     setBusy(true);
     try {
+      if (siteId === 'custom' && (!customSite.city.trim() || !Number.isFinite(site.lat) || site.lat < -90 || site.lat > 90 || !Number.isFinite(site.lon) || site.lon < -180 || site.lon > 180 || !Number.isFinite(site.elev) || site.elev < -500 || site.elev > 9000 || !Number.isInteger(site.offset) || site.offset < -12 || site.offset > 14)) throw new Error(t('Lengkapi lokasi khusus dengan koordinat, elevasi, dan zona waktu yang valid.', 'Complete the custom location with valid coordinates, elevation, and time zone.'));
       const candidates = periods(new Date(), site);
       const period = candidates.find((item) => item.month === bulan + 1 && new Date(item.start) >= new Date())
         || candidates.find((item) => item.month === bulan + 1);
@@ -52,6 +54,7 @@ export default function Hisab() {
       try {
         await api('/api/hisab', 'POST', {
           site: siteId,
+          location: siteId === 'custom' ? site : undefined,
           start: period.start,
           method: metode,
           result: r,
@@ -117,6 +120,7 @@ export default function Hisab() {
                     {s.city}, {s.region}
                   </option>
                 ))}
+                <option value="custom">{t('Lokasi khusus…', 'Custom location…')}</option>
               </select>
             </div>
             <div className="field">
@@ -126,6 +130,7 @@ export default function Hisab() {
               </select>
             </div>
           </div>
+          {siteId === 'custom' && <div className="custom-site-panel"><div className="custom-site-head"><MapPin size={17}/><div><b>{t('Koordinat lokasi khusus', 'Custom location coordinates')}</b><small>{t('Digunakan untuk kedua model dan tidak mengubah daftar lokasi resmi.', 'Used by both models and does not change official locations.')}</small></div></div><div className="custom-site-grid"><div className="field"><label>{t('Nama lokasi', 'Location name')}</label><input value={customSite.city} maxLength={80} onChange={e=>setCustomSite({...customSite,city:e.target.value})} placeholder="Observatorium…"/></div><div className="field"><label>{t('Wilayah', 'Region')}</label><input value={customSite.region} maxLength={80} onChange={e=>setCustomSite({...customSite,region:e.target.value})} placeholder="Kabupaten / negara"/></div><div className="field"><label>Latitude (−90…90)</label><input type="number" step="any" min="-90" max="90" value={customSite.lat} onChange={e=>setCustomSite({...customSite,lat:e.target.value})}/></div><div className="field"><label>Longitude (−180…180)</label><input type="number" step="any" min="-180" max="180" value={customSite.lon} onChange={e=>setCustomSite({...customSite,lon:e.target.value})}/></div><div className="field"><label>{t('Elevasi meter', 'Elevation metres')}</label><input type="number" min="-500" max="9000" value={customSite.elev} onChange={e=>setCustomSite({...customSite,elev:e.target.value})}/></div><div className="field"><label>{t('Zona waktu UTC', 'UTC time zone')}</label><select value={customSite.offset} onChange={e=>setCustomSite({...customSite,offset:e.target.value})}>{Array.from({length:27},(_,i)=>i-12).map(value=><option key={value} value={value}>UTC{value>=0?'+':''}{value}</option>)}</select></div></div></div>}
           <div style={{ marginTop: 20 }}>
             <button
               className="btn primary full"

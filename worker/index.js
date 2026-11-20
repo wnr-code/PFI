@@ -57,6 +57,16 @@ function supabaseRuntimeConfig(env) {
 
 // Pending rukyat reports are private to their owner and authorized reviewers.
 export const HISAB_METHODS = Object.freeze(['comparison', 'mabims']);
+export function normalizeHisabSite(siteId, location) {
+  const known = SITES.find((item) => item.id === siteId);
+  if (known) return known;
+  if (siteId !== 'custom' || !location || typeof location !== 'object') return null;
+  const city = typeof location.city === 'string' ? location.city.trim() : '';
+  const region = typeof location.region === 'string' ? location.region.trim() : '';
+  const lat = Number(location.lat), lon = Number(location.lon), elev = Number(location.elev), offset = Number(location.offset);
+  if (!city || city.length > 80 || region.length > 80 || !Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lon) || lon < -180 || lon > 180 || !Number.isFinite(elev) || elev < -500 || elev > 9000 || !Number.isInteger(offset) || offset < -12 || offset > 14) return null;
+  return { id: 'custom', site: city, city, region, lat, lon, elev, offset };
+}
 
 export function canViewPost(post, profile) {
   if (post?.type !== 'rukyat' || post.status === 'verified') return true;
@@ -527,8 +537,8 @@ export default {
       if (url.pathname === '/api/hisab' && request.method === 'POST') {
         const body = await request.json().catch(() => null);
         if (!body || typeof body !== 'object') return fail(400, 'Data permintaan tidak valid.');
-        const site = SITES.find((item) => item.id === body.site);
-        if (!site) return fail(400, 'Lokasi pengamatan tidak dikenal.');
+        const site = normalizeHisabSite(body.site, body.location);
+        if (!site) return fail(400, 'Lokasi pengamatan tidak dikenal atau koordinat lokasi khusus tidak valid.');
         const start = body.start;
         if (typeof start !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(start) || start < '1900-01-01' || start > '2099-12-31') {
           return fail(400, 'Tanggal di luar rentang.');
