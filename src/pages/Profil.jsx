@@ -75,10 +75,11 @@ export default function Profil() {
   };
 
   return <div className="page-wrap profile-page">
-    <section className={`profile-cover cover-${account.coverTheme || 'orbit'}`}>
+    <section className={`profile-cover cover-${account.coverTheme || 'orbit'}`} style={{ '--profile-cover-image': "url('/images/observatory-night.webp')" }}>
       <div className="profile-cover-animation" aria-hidden="true"><i className="cover-orbit orbit-one"><b/></i><i className="cover-orbit orbit-two"><b/></i><i className="cover-meteor meteor-one"/><i className="cover-meteor meteor-two"/><i className="cover-ring ring-one"/><i className="cover-ring ring-two"/><span className="cover-stars">✦ · ✧ · ✦ · ✧</span></div>
       <div className="profile-cover-copy"><span>PFI MEMBER SPACE</span><h1>{t('Profil Anggota', 'Member Profile')}</h1><p>{t('Identitas dan kontribusi Anda di jaringan pengamat falak Indonesia.', 'Your identity and contributions in Indonesia’s astronomy observer network.')}</p></div>
       <div className="profile-cover-actions"><button className="profile-settings-trigger" onClick={() => setSettingsOpen(true)} aria-label={t('Buka pengaturan profil','Open profile settings')}><Settings2 size={19}/><span>{t('Pengaturan','Settings')}</span></button><button className="profile-edit" onClick={() => setEditing(!editing)}>{editing ? <X size={16}/> : <Edit3 size={16}/>} {editing ? t('Batal', 'Cancel') : t('Edit profil', 'Edit profile')}</button></div>
+      <svg className="profile-cover-wave" viewBox="0 0 1440 150" preserveAspectRatio="none" aria-hidden="true"><path d="M0,68 C210,145 430,18 690,76 C960,136 1190,16 1440,70 L1440,150 L0,150 Z"/></svg>
     </section>
 
     <section className="profile-identity">
