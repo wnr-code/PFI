@@ -9,6 +9,9 @@ import { injectOrnaments, icons } from "./ornament.js";
 import { Music } from "./music.js";
 import * as api from "./api.js";
 
+/* Tandai bahwa JS aktif: elemen beranimasi baru disembunyikan lewat kelas ini. */
+document.documentElement.classList.add("js");
+
 /* ------------------------------- Pembantu -------------------------------- */
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -101,6 +104,10 @@ const NILAI = {
   ibuWanita: M.wanita.ibu,
   igPriaLabel: M.pria.instagram ? `@${M.pria.instagram.replace(/^@/, "")}` : "",
   igWanitaLabel: M.wanita.instagram ? `@${M.wanita.instagram.replace(/^@/, "")}` : "",
+  fotoJudul: CONFIG.fotoBersama?.judul || "Kebersamaan",
+  fotoKet: CONFIG.fotoBersama?.ket || "",
+  fotoCatatan: CONFIG.fotoBersama?.catatan || "",
+  pasanganScript: `${M.pria.panggilan} & ${M.wanita.panggilan}`,
   tanggal: W.tampilanTanggal,
   hijriah: W.tampilanHijriah,
   lokasiNama: CONFIG.lokasi.nama,
@@ -192,18 +199,20 @@ function renderGaleri() {
     .join("");
 }
 
+let bukaFoto = () => {};
+
 function pasangLightbox() {
   const lb = $("#lightbox");
   const img = $("#lightboxImg");
   const cap = $("#lightboxCap");
   if (!lb || !img) return;
 
-  const buka = (i) => {
+  const buka = (i, capOverride) => {
     galeriIndex = (i + CONFIG.galeri.length) % CONFIG.galeri.length;
     const g = CONFIG.galeri[galeriIndex];
     img.src = g.src;
     img.alt = g.judul;
-    cap.textContent = `${g.judul} — ${g.ket}`;
+    cap.textContent = capOverride || `${g.judul} — ${g.ket}`;
     lb.hidden = false;
     requestAnimationFrame(() => lb.classList.add("is-open"));
     document.body.classList.add("is-locked");
@@ -213,6 +222,12 @@ function pasangLightbox() {
     lb.classList.remove("is-open");
     document.body.classList.remove("is-locked");
     setTimeout(() => { lb.hidden = true; }, 320);
+  };
+
+  // Buka foto tertentu (dipakai potret mempelai & foto kebersamaan).
+  bukaFoto = (src, capOverride) => {
+    const i = CONFIG.galeri.findIndex((g) => g.src === src);
+    if (i >= 0) buka(i, capOverride);
   };
 
   on($("#gallery"), "click", (e) => {
@@ -228,6 +243,47 @@ function pasangLightbox() {
     if (e.key === "Escape") tutup();
     if (e.key === "ArrowLeft") buka(galeriIndex - 1);
     if (e.key === "ArrowRight") buka(galeriIndex + 1);
+  });
+}
+
+/* ----------------------- Foto mempelai & kebersamaan --------------------- */
+function pasangFotoSpesial() {
+  // Potret hasil "pecahan" foto bersama → bisa diperbesar.
+  $$(".person__photo").forEach((ph, i) => {
+    const orang = i === 0 ? M.pria : M.wanita;
+    ph.tabIndex = 0;
+    ph.setAttribute("role", "button");
+    ph.setAttribute("aria-label", `Perbesar foto ${orang.nama}`);
+    const buka = () => bukaFoto(orang.foto, `${orang.nama} — ${orang.panggilan}`);
+    on(ph, "click", buka);
+    on(ph, "keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        buka();
+      }
+    });
+  });
+
+  // Foto utuh (tidak dipecah) dengan animasi dua panel menyatu.
+  const F = CONFIG.fotoBersama;
+  const section = $("#kebersamaan");
+  const box = $("#splitFoto");
+  if (!section || !box) return;
+  if (!F || F.aktif === false || !F.src) {
+    section.hidden = true;
+    return;
+  }
+  section.hidden = false;
+  $$(".split__half", box).forEach((h) => {
+    h.style.backgroundImage = `url("${F.src}")`;
+  });
+  const buka = () => bukaFoto(F.src, `${F.judul} — ${F.ket}`);
+  on(box, "click", buka);
+  on(box, "keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      buka();
+    }
   });
 }
 
@@ -846,6 +902,7 @@ function mulai() {
   renderAcara();
   renderGaleri();
   pasangLightbox();
+  pasangFotoSpesial();
   pasangHitungMundur();
   pasangKalender();
   pasangPeta();

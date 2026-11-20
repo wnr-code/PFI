@@ -14,8 +14,8 @@ export const CONFIG = {
       "Undangan pernikahan Dikdik Ja'far Shiddik & Risva Iklimah Adawiyah — Minggu, 3 Januari 2027 (25 Rajab 1448 H) di Gedung Islamic Center, Singaparna, Tasikmalaya.",
     // Ganti dengan alamat situs Anda setelah deploy (dipakai untuk preview WhatsApp).
     url: "https://undangan-jafar-iklimah.pages.dev",
-    // Gambar preview saat tautan dibagikan (rasio 1200x630 disarankan).
-    gambar: "assets/img/galeri-3.jpg",
+    // Gambar preview saat tautan dibagikan.
+    gambar: "assets/img/foto-bersama.jpg",
   },
 
   /* -------------------------- Komentar pembuka --------------------------- */
@@ -43,7 +43,7 @@ export const CONFIG = {
       ibu: "Ibu Hj. Siti Wafiroh Alfiah",
       // Opsional: tautan Instagram tanpa @ (kosongkan jika tidak dipakai).
       instagram: "",
-      foto: "assets/img/galeri-1.jpg",
+      foto: "assets/img/mempelai-pria.jpg",
     },
     wanita: {
       nama: "Risva Iklimah Adawiyah",
@@ -53,10 +53,20 @@ export const CONFIG = {
       bapakAlmarhum: false,
       ibu: "Ibu Sopiah",
       instagram: "",
-      foto: "assets/img/galeri-3.jpg",
+      foto: "assets/img/mempelai-wanita.jpg",
     },
     // Nama besar yang tampil di sampul: "Ja'far & Iklimah"
     hashtag: "#JaFarIkimah",
+  },
+
+  /* --------------------------- Foto kebersamaan --------------------------- */
+  // Foto utuh (tidak dipecah). Tampil dengan animasi dua panel yang menyatu.
+  fotoBersama: {
+    aktif: true,
+    src: "assets/img/foto-bersama.jpg",
+    judul: "Kebersamaan",
+    ket: "Dua hati, satu tujuan — menuju ridho-Nya",
+    catatan: "Sentuh foto untuk melihat versi utuh",
   },
 
   /* -------------------------------- Waktu -------------------------------- */
@@ -111,19 +121,19 @@ export const CONFIG = {
   /* -------------------------------- Galeri ------------------------------- */
   galeri: [
     {
-      src: "assets/img/galeri-2.jpg",
-      judul: "Islamic Center",
-      ket: "Tempat kami mengikat janji",
+      src: "assets/img/foto-bersama.jpg",
+      judul: "Ja'far & Iklimah",
+      ket: "Kebersamaan kami",
     },
     {
-      src: "assets/img/galeri-1.jpg",
-      judul: "Dua Hati",
-      ket: "Satu tujuan, satu doa",
+      src: "assets/img/mempelai-pria.jpg",
+      judul: "Ja'far",
+      ket: "Calon mempelai pria",
     },
     {
-      src: "assets/img/galeri-3.jpg",
-      judul: "Tanda Kasih",
-      ket: "Undangan yang kami sampaikan",
+      src: "assets/img/mempelai-wanita.jpg",
+      judul: "Iklimah",
+      ket: "Calon mempelai wanita",
     },
     {
       src: "assets/img/kartu-1.jpg",

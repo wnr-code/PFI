@@ -20,12 +20,13 @@ seluler.
 | Terhubung Trakteer | Kartu **Tanda Kasih** → `https://trakteer.id/-java` |
 | Kirim ucapan / kehadiran | Formulir *Hadir / Masih Ragu / Tidak Hadir* + jumlah tamu + doa, tersimpan di D1, lengkap dengan statistik |
 | Peta | Google Maps sematan (dimuat saat mendekati layar) + tombol petunjuk arah & salin alamat |
-| Foto-foto | Galeri 5 gambar dengan pratinjau layar penuh (lightbox) |
+| Foto-foto | Foto asli: potret per wajah untuk kedua mempelai + foto utuh dengan animasi dua panel menyatu, semuanya bisa diperbesar (lightbox) |
 | Musik Islami | Instrumental maqam Hijaz yang dibangkitkan Web Audio (tanpa berkas) **atau** ganti dengan MP3 nasheed Anda |
 | Animasi hiasan Islami | Roset geometris berputar, bulan sabit mengapung, pembatas floral yang "tumbuh" saat digulir, kilau emas, partikel cahaya, bingkai mihrab |
 
 Tambahan yang sudah termasuk:
 
+- Foto bersama dipecah menjadi dua potret wajah (kartu mempelai) **dan** versi utuh yang beranimasi menyatu — sesuai permintaan.
 - Sampul dengan nama tamu personal (`?to=Nama`).
 - Hitung mundur *live* ke detik.
 - Tombol **Simpan Tanggal** (`.ics`) dan **Google Kalender**.
@@ -49,7 +50,11 @@ undangan/
 │     ├─ js/config.js             # ← SEMUA DATA UNDANGAN ADA DI SINI
 │     ├─ js/app.js · ornament.js · music.js · api.js
 │     ├─ fonts/*.woff2
-│     └─ img/*.jpg                # foto & kartu undangan
+│     └─ img/                     # foto asli, kartu undangan, favicon
+│        ├─ foto-bersama.jpg      # foto utuh (tidak dipecah)
+│        ├─ mempelai-pria.jpg     # potret wajah Ja'far
+│        ├─ mempelai-wanita.jpg   # potret wajah Iklimah
+│        └─ kartu-1.jpg, kartu-2.jpg
 ├─ worker/
 │  ├─ index.js                    # API /api/*
 │  └─ ucapan.js                   # validasi bersama (dipakai server dev & tes)
@@ -119,11 +124,37 @@ waktu: {
 > `mulai` menggerakkan hitung mundur, sedangkan `kalender.mulaiIso` /
 > `kalender.selesaiIso` memakai format UTC (`20270103T010000Z` = 08.00 WIB).
 
-### Mengganti foto
+### Foto: dipecah per wajah & versi utuh
 
-1. Simpan foto di `public/assets/img/` (disarankan lebar 1200 px, format JPG, < 250 KB).
-2. Perbarui `mempelai.pria.foto`, `mempelai.wanita.foto`, dan entri `galeri`.
-3. Beri `alt` yang bermakna — sudah otomatis memakai nama mempelai.
+Saat ini undangan memakai **satu foto bersama** yang diolah menjadi tiga berkas:
+
+| Berkas | Fungsi | Rasio |
+| --- | --- | --- |
+| `foto-bersama.jpg` | Foto utuh — tampil di bagian **Kebersamaan** dengan animasi dua panel yang menyatu, muncul lagi di galeri, dan jadi pratinjau WhatsApp | 3:2 |
+| `mempelai-pria.jpg` | Potongan wajah Ja'far untuk kartu mempelai | 3:4 |
+| `mempelai-wanita.jpg` | Potongan wajah Iklimah untuk kartu mempelai | 3:4 |
+
+Cara mengganti:
+
+1. Simpan foto ke `public/assets/img/` (JPG, lebar ± 1200 px, < 250 KB).
+2. Perbarui `mempelai.pria.foto`, `mempelai.wanita.foto`, `fotoBersama.src`, dan entri `galeri`.
+3. Untuk memotong wajah otomatis tanpa alat desain, jalankan skrip contoh
+   (butuh `npm i jimp` sekali pakai):
+
+```js
+// potong.js — sesuaikan x, y, lebar, tinggi
+import Jimp from "jimp";
+const img = await Jimp.read("foto-asli.jpg");
+await img.clone().crop(110, 140, 560, 747).quality(88)
+  .writeAsync("public/assets/img/mempelai-pria.jpg");   // rasio 3:4
+await img.clone().crop(840, 330, 520, 693).quality(88)
+  .writeAsync("public/assets/img/mempelai-wanita.jpg");
+```
+
+Animasi foto:
+
+- Potret mempelai: muncul dari bawah + gerak "napas" perlahan, dan bisa disentuh untuk diperbesar.
+- Foto bersama: dua panel kiri-kanan bergeser masuk dan menyatu, garis emas di tengah memudar, lalu keterangan muncul. Semua animasi patuh pada `prefers-reduced-motion`. Menghapus animasi cukup dengan `fotoBersama.aktif: false` (bagian disembunyikan) atau membiarkan potret tetap statis.
 
 ### Musik
 

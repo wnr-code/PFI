@@ -12,9 +12,9 @@
   <meta property="og:url" content="https://undangan-jafar-iklimah.pages.dev/" />
   <meta property="og:title" content="The Wedding of Ja'far & Iklimah" />
   <meta property="og:description" content="Minggu, 3 Januari 2027 · 25 Rajab 1448 H — Gedung Islamic Center, Singaparna, Tasikmalaya." />
-  <meta property="og:image" content="https://undangan-jafar-iklimah.pages.dev/assets/img/galeri-3.jpg" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="655" />
+  <meta property="og:image" content="https://undangan-jafar-iklimah.pages.dev/assets/img/foto-bersama.jpg" />
+  <meta property="og:image:width" content="1400" />
+  <meta property="og:image:height" content="933" />
   <meta name="twitter:card" content="summary_large_image" />
 
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
@@ -164,6 +164,28 @@
             <span data-bind="igWanitaLabel"></span>
           </a>
         </article>
+      </div>
+    </section>
+
+    <!-- Foto bersama: dua panel menyatu -->
+    <section class="section section--kebersamaan" id="kebersamaan" hidden>
+      <div class="wrap">
+        <header class="section__head reveal">
+          <span class="eyebrow">Momen</span>
+          <h2 class="section__title" data-bind="fotoJudul">Kebersamaan</h2>
+          <div class="divider" data-orn="divider" aria-hidden="true"></div>
+        </header>
+
+        <figure class="split reveal" id="splitFoto" role="button" tabindex="0" aria-label="Perbesar foto kebersamaan">
+          <div class="split__half split__half--l" aria-hidden="true"></div>
+          <div class="split__half split__half--r" aria-hidden="true"></div>
+          <span class="split__seam" aria-hidden="true"></span>
+          <figcaption class="split__cap">
+            <strong class="script" data-bind="pasanganScript">Ja'far &amp; Iklimah</strong>
+            <span data-bind="fotoKet"></span>
+          </figcaption>
+        </figure>
+        <p class="split__note reveal" data-bind="fotoCatatan"></p>
       </div>
     </section>
 
