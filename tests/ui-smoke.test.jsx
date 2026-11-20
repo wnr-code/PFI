@@ -101,6 +101,9 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     render(<Hisab />);
     fireEvent.click(screen.getByRole('button', { name: /Hitung Sekarang/i }));
     fireEvent.click(await screen.findByRole('button', { name: /^Ad-Durrul Aniq$/i }));
+    expect(await screen.findByText(/Urutan perhitungan dan rujukan/i)).toBeTruthy();
+    expect(screen.getByText('P = HP × cos hc')).toBeTruthy();
+    expect(screen.getByText('C = acos(cos z × cos Y)')).toBeTruthy();
     const info = await screen.findByRole('button', { name: /Tinggi geosentris · informasi/i });
     fireEvent.click(info);
     expect(screen.getByText(/sebelum koreksi pengamat seperti paralaks dan refraksi/i)).toBeTruthy();
