@@ -1,6 +1,6 @@
 # weding-java — Undangan Pernikahan Ja'far & Iklimah
 
-**Nama proyek:** `weding-java` · **Worker/Worker name:** `weding-java` · **Database D1:** `weding-java`
+**Repo:** https://github.com/wnr-code/weding-java · **Worker:** `weding-java` · **Database D1:** `weding-java`
 
 Undangan pernikahan **Dikdik Ja'far Shiddik** & **Risva Iklimah Adawiyah**
 — Minggu, **3 Januari 2027** / **25 Rajab 1448 H** — Gedung Islamic Center,
@@ -42,7 +42,7 @@ Tambahan yang sudah termasuk:
 ## Struktur
 
 ```
-weding-java/
+.
 ├─ public/                        # aset statis (Cloudflare Static Assets)
 │  ├─ index.html
 │  ├─ _headers                    # header keamanan & cache
@@ -74,7 +74,6 @@ weding-java/
 Tidak perlu `npm install` — server pengembangan hanya memakai modul bawaan Node.
 
 ```bash
-cd weding-java
 node server/dev.mjs          # buka http://localhost:4321
 ```
 
@@ -193,7 +192,6 @@ untuk menyembunyikan seluruh bagian tanda kasih.
 ### 4.1 Siapkan database D1
 
 ```bash
-cd weding-java
 npx --yes wrangler@4.165.0 login        # sekali saja
 npx --yes wrangler@4.165.0 d1 create weding-java
 ```
@@ -227,11 +225,10 @@ Settings → Domains & Routes → Add custom domain**, misalnya
 
 Dua workflow sudah disiapkan:
 
-- `.github/workflows/undangan-checks.yml` — tes + `wrangler deploy --dry-run`
-  setiap ada perubahan di folder `weding-java/`.
-- `.github/workflows/undangan-deploy.yml` — deploy manual dengan konfirmasi
-  tertulis. Butuh secret `CLOUDFLARE_API_TOKEN` dan `CLOUDFLARE_ACCOUNT_ID`
-  (sama seperti workflow PFI).
+- `.github/workflows/checks.yml` — tes API + `wrangler deploy --dry-run` tiap push/PR.
+- `.github/workflows/deploy.yml` — deploy manual berkonfirmasi (`DEPLOY-weding-java`).
+  Butuh secret `CLOUDFLARE_API_TOKEN` dan `CLOUDFLARE_ACCOUNT_ID` di
+  **Settings → Secrets and variables → Actions**.
 
 ---
 
