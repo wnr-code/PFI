@@ -103,7 +103,7 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     expect(screen.getByRole('button', { name: /Gunakan GPS/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Isi manual/i })).toBeTruthy();
     expect(screen.getByText(/Sumber: input manual/i)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /Informasi lokasi/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Informasi lokasi$/i }));
     expect(screen.getByText(/GPS mengisi koordinat perangkat/i)).toBeTruthy();
   });
 
