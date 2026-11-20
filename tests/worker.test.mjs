@@ -244,6 +244,28 @@ test('real-time eclipse timeline activates only inside observed contact times', 
   assert.equal(typeof during.visible, 'boolean');
 });
 
+test('Ad-Durrul Aniq negative-altitude rule follows the published Syakban 1434 Sampang example', () => {
+  const sampang = { id: 'sampang', city: 'Sampang', region: 'Jawa Timur', site: 'Sampang', lat: -7.2, lon: 113.25, elev: 5, offset: 7 };
+  const result = calculateHisab({ start: '2013-07-09', day: 1, month: 9, year: 1434 }, sampang);
+  const kitab = result.models.adDurrul;
+  // Ad-Durrul Aniq hlm. 28–30: hc−P negatif tidak ditambah Ref, Dip, dan sdc.
+  assert.ok(kitab.parallaxCorrectedAltitude < 0);
+  assert.equal(kitab.topocentricAltitude, kitab.parallaxCorrectedAltitude);
+  assert.ok(Math.abs(kitab.topocentricAltitude - (-(21 / 60 + 7 / 3600))) < 0.12);
+  assert.ok(Math.abs(kitab.elongation - (4 + 40 / 60 + 40 / 3600)) < 0.08);
+});
+
+test('Ad-Durrul Aniq model supports western time zones using the Vancouver 1434 example', () => {
+  const vancouver = { id: 'vancouver', city: 'Vancouver', region: 'Canada', site: 'Vancouver', lat: 49.25, lon: -(123 + 10 / 60), elev: 0, offset: -8 };
+  const result = calculateHisab({ start: '2013-01-13', day: 1, month: 3, year: 1434 }, vancouver);
+  const kitab = result.models.adDurrul;
+  assert.equal(clock(result.conj, vancouver), '11:44');
+  assert.equal(clock(result.sunset, vancouver), '16:37');
+  assert.ok(Math.abs(kitab.geocentricAltitude - (4 + 31 / 60 + 24 / 3600)) < 0.3);
+  assert.ok(Math.abs(kitab.topocentricAltitude - (3 + 25 / 60 + 20 / 3600)) < 0.3);
+  assert.ok(Math.abs(kitab.elongation - (5 + 25 / 60 + 36 / 3600)) < 0.3);
+});
+
 test('Ad-Durrul Aniq correction model follows the published Ramadan 1434 Banyuwangi example', () => {
   const palengkung = {
     id: 'palengkung', city: 'Banyuwangi', region: 'Jawa Timur', site: 'Trianggulasi Palengkung',

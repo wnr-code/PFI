@@ -18,13 +18,13 @@ export const SITES=[
  {id:'makassar',city:'Makassar',region:'Sulawesi Selatan',site:'Pantai Losari',lat:-5.144,lon:119.407,elev:8,offset:8},
  {id:'biak',city:'Biak',region:'Papua',site:'Pesisir Biak',lat:-1.189,lon:136.081,elev:10,offset:9}
 ];
-export const zone=l=>({7:'Asia/Jakarta',8:'Asia/Makassar',9:'Asia/Jayapura'})[l?.offset||7];
-export const zlabel=l=>({7:'WIB',8:'WITA',9:'WIT'})[l?.offset||7];
+export const zone=l=>{const offset=Number(l?.offset??7),indonesia={7:'Asia/Jakarta',8:'Asia/Makassar',9:'Asia/Jayapura'}[offset];if(indonesia)return indonesia;return `Etc/GMT${offset<=0?'+':'-'}${Math.abs(offset)}`;};
+export const zlabel=l=>({7:'WIB',8:'WITA',9:'WIT'})[Number(l?.offset??7)]||`UTC${Number(l?.offset??0)>=0?'+':''}${Number(l?.offset??0)}`;
 export const num=(n,lang='id',digits=1)=>Number(n).toLocaleString(lang==='en'?'en-GB':'id-ID',{maximumFractionDigits:digits,minimumFractionDigits:digits});
 export const dateFmt=(d,l=SITES[0],lang='id',opts={day:'numeric',month:'long',year:'numeric'})=>new Intl.DateTimeFormat(lang==='en'?'en-GB':'id-ID',{timeZone:zone(l),...opts}).format(new Date(d));
 export const clock=(d,l=SITES[0])=>new Intl.DateTimeFormat('en-GB',{timeZone:zone(l),hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(d));
 export const isoDay=(d,l=SITES[0])=>new Date(+new Date(d)+l.offset*3600000).toISOString().slice(0,10);
-export const localTime=(day,time,l=SITES[0])=>new Date(`${day}T${time}:00+${String(l.offset).padStart(2,'0')}:00`);
+export const localTime=(day,time,l=SITES[0])=>{const offset=Number(l.offset)||0,sign=offset<0?'-':'+';return new Date(`${day}T${time}:00${sign}${String(Math.abs(offset)).padStart(2,'0')}:00`);};
 export const HIJRI=['Muharam','Safar','Rabiul Awal','Rabiul Akhir','Jumadil Awal','Jumadil Akhir','Rajab','Syaban','Ramadan','Syawal','Zulkaidah','Zulhijah'];
 export const HIJRI_EN=['Muharram','Safar','Rabi I','Rabi II','Jumada I','Jumada II','Rajab',"Sha'ban",'Ramadan','Shawwal',"Dhu al-Qadah",'Dhu al-Hijjah'];
 const hFormats=new Map();
@@ -57,13 +57,16 @@ function adDurrulHilal(sunset,l,elongation){
  const dip=(1.76/60)*Math.sqrt(Math.max(0,l.elev||0));
  const refraction=moon.alt>-4.3?.0167/Math.tan(rad(moon.alt+7.31/(moon.alt+4.4))):0;
  const parallax=horizontalParallax*Math.cos(rad(moon.alt));
- const topocentricAltitude=moon.alt-parallax+refraction+dip-semiDiameter;
+ const parallaxCorrectedAltitude=moon.alt-parallax;
+ // Ad-Durrul Aniq hlm. 28: bila hc − P negatif, jangan tambahkan
+ // refraksi, dip, atau semidiameter; koreksi lanjutan hanya untuk hasil positif.
+ const topocentricAltitude=parallaxCorrectedAltitude<0?parallaxCorrectedAltitude:parallaxCorrectedAltitude+refraction+dip-semiDiameter;
  const azimuthDifference=signedAngle(moon.az-sun.az);
  const topocentricElongation=deg(Math.acos(clamp(Math.sin(rad(topocentricAltitude))*Math.sin(rad(sun.alt))+Math.cos(rad(topocentricAltitude))*Math.cos(rad(sun.alt))*Math.cos(rad(azimuthDifference)),-1,1)));
  const altitudeDifference=moon.alt-sun.alt;
  const angularDistance=deg(Math.acos(clamp(Math.cos(rad(azimuthDifference))*Math.cos(rad(altitudeDifference)),-1,1)));
  const muktsulMinutes=Math.max(0,moon.alt*4);
- return{moon,sun,geocentricAltitude:moon.alt,topocentricAltitude,horizontalParallax,parallax,refraction,dip,semiDiameter,elongation,topocentricElongation,illumination:100*Illumination('Moon',sunset).phase_fraction,muktsulMinutes,estimatedMoonset:new Date(+sunset+muktsulMinutes*60000).toISOString(),azimuthDifference,altitudeDifference,angularDistance,position:azimuthDifference<0?'south':'north',meets:topocentricAltitude>=3&&elongation>=6.4};
+ return{moon,sun,geocentricAltitude:moon.alt,parallaxCorrectedAltitude,topocentricAltitude,horizontalParallax,parallax,refraction,dip,semiDiameter,elongation,topocentricElongation,illumination:100*Illumination('Moon',sunset).phase_fraction,muktsulMinutes,estimatedMoonset:new Date(+sunset+muktsulMinutes*60000).toISOString(),azimuthDifference,altitudeDifference,angularDistance,position:azimuthDifference<0?'south':'north',meets:topocentricAltitude>=3&&elongation>=6.4};
 }
 export function calculateHisab(period,l,method='comparison'){
  if(!['comparison','mabims'].includes(method))throw new Error('Metode hisab belum didukung.');
