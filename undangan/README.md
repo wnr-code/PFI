@@ -151,9 +151,15 @@ await img.clone().crop(840, 330, 520, 693).quality(88)
   .writeAsync("public/assets/img/mempelai-wanita.jpg");
 ```
 
+> **Wajah tidak diedit.** Ketiga berkas di atas hanya hasil *crop* dari foto asli
+> (tanpa retouching, tanpa filter warna, tanpa rekayasa AI, tanpa perubahan
+> proporsi). Animasi hanya menggeser/zoom seluruh foto secara utuh — tidak
+> mengubah objek wajah.
+
 Animasi foto:
 
-- Potret mempelai: muncul dari bawah + gerak "napas" perlahan, dan bisa disentuh untuk diperbesar.
+- Potret mempelai: muncul dari bawah + gerak "napas" sangat halus (skala maksimal
+  1,03 dengan titik pusat di area wajah), dan bisa disentuh untuk diperbesar.
 - Foto bersama: dua panel kiri-kanan bergeser masuk dan menyatu, garis emas di tengah memudar, lalu keterangan muncul. Semua animasi patuh pada `prefers-reduced-motion`. Menghapus animasi cukup dengan `fotoBersama.aktif: false` (bagian disembunyikan) atau membiarkan potret tetap statis.
 
 ### Musik

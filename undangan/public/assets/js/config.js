@@ -60,6 +60,8 @@ export const CONFIG = {
   },
 
   /* --------------------------- Foto kebersamaan --------------------------- */
+  /* Catatan: semua foto adalah foto asli. Wajah tidak diedit, tidak direkayasa,
+     dan tidak diberi filter — hanya dipotong (crop) untuk potret 3:4. */
   // Foto utuh (tidak dipecah). Tampil dengan animasi dua panel yang menyatu.
   fotoBersama: {
     aktif: true,
