@@ -211,6 +211,8 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     context.data.groups = ['group-1', 'group-2'];
     render(<Profil />);
     expect(document.querySelector('.profile-cover h1')).toBeTruthy();
+    expect(document.querySelector('.profile-cover-animation')).toBeTruthy();
+    expect(document.querySelector('.profile-cover-wave path')).toBeTruthy();
     expect(document.querySelector('.verified-mark')).toBeTruthy();
     expect(screen.getByText(/Kelengkapan profil/i)).toBeTruthy();
     expect(screen.getByText(/Email akun · privat/i)).toBeTruthy();
