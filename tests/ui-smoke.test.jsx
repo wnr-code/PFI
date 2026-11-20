@@ -77,6 +77,21 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     expect(screen.getByText(/Arah dari utara sejati/i)).toBeTruthy();
     fireEvent.click(screen.getByRole('tab', { name: /Posisi Langit/i }));
     expect(screen.getByText(/Tinggi Matahari/i)).toBeTruthy();
+    expect(screen.getByText(/Input manual/i)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText(/Lintang/i), { target: { value: '91' } });
+    expect(screen.getByRole('alert').textContent).toMatch(/nilai yang valid/i);
+    expect(screen.queryByText(/Tinggi Matahari/i)).toBeFalsy();
+  });
+
+  it('marks calculator GPS coordinates as manual after they are edited', async () => {
+    const original = navigator.geolocation;
+    Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition: (success) => success({ coords: { latitude: -7.327, longitude: 108.22, altitude: 351, accuracy: 8 } }) } });
+    render(<KalkulatorLapangan />);
+    fireEvent.click(screen.getByRole('button', { name: /Gunakan GPS/i }));
+    expect(await screen.findByText(/GPS perangkat · akurasi ±8 m/i)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText(/Bujur/i), { target: { value: '108.3' } });
+    expect(screen.getByText(/Input manual/i)).toBeTruthy();
+    Object.defineProperty(navigator, 'geolocation', { configurable: true, value: original });
   });
 
   it('keeps the 3D globe and 2D map in separate renderer hosts', () => {
