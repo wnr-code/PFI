@@ -29,6 +29,7 @@ const routes = {
   astronomi: Astronomi,
   komunitas: Komunitas,
   profil: Profil,
+  u: Profil,
   peta: PetaRukyat,
   laporan: Laporan,
   kamus: Kamus,

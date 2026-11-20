@@ -15,8 +15,12 @@ const coverThemes = [
 ];
 
 export default function Profil() {
-  const { data, t, tell, setLang, setNotify, update } = usePFI();
+  const { data, t, tell, setLang, setNotify, update, route, open } = usePFI();
   const account = data.account;
+  const publicUsername = route?.split('/')[0] === 'u' ? route.split('/')[1] : '';
+  const [publicProfile, setPublicProfile] = useState(null);
+  const [publicLoading, setPublicLoading] = useState(Boolean(publicUsername));
+  const [publicError, setPublicError] = useState('');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -37,9 +41,32 @@ export default function Profil() {
     window.addEventListener('pfi:open-profile-editor', openEditor);
     return () => window.removeEventListener('pfi:open-profile-editor', openEditor);
   }, []);
+  useEffect(() => {
+    if (!publicUsername) return undefined;
+    let active = true;
+    setPublicLoading(true); setPublicError('');
+    api(`/api/users/${encodeURIComponent(publicUsername)}`, 'GET', null, null)
+      .then(profile => active && setPublicProfile(profile))
+      .catch(error => active && setPublicError(error.message))
+      .finally(() => active && setPublicLoading(false));
+    return () => { active = false; };
+  }, [publicUsername]);
   const completeness = useMemo(() => account ? Math.round(([account.name, account.email, account.org, account.bio, account.avatarUrl].filter(Boolean).length / 5) * 100) : 0, [account]);
   const contributions = useMemo(() => account ? (data.posts || []).filter(post => post.authorId === account.id).length : 0, [data.posts, account?.id]);
 
+  if (publicUsername) {
+    if (publicLoading) return <div className="profile-public-state">{t('Memuat profil…','Loading profile…')}</div>;
+    if (publicError || !publicProfile) return <div className="profile-public-state"><b>{t('Profil tidak ditemukan','Profile not found')}</b><p>{publicError}</p>{!account&&<button className="btn primary" onClick={()=>open('auth')}>{t('Masuk','Sign in')}</button>}</div>;
+    const profileRole = roleInfo[publicProfile.role] || roleInfo.observer;
+    const profileVerified = publicProfile.verification === 'verified';
+    const profileInitials = publicProfile.name.split(' ').map(word=>word[0]).join('').slice(0,2);
+    return <div className="page-wrap profile-page public-profile-page">
+      <section className={`profile-cover cover-${publicProfile.coverTheme || 'orbit'}`} style={{ '--profile-cover-image': "url('/images/observatory-night.webp')" }}><div className="profile-cover-copy"><span>PFI PUBLIC PROFILE</span><h1>{t('Profil Anggota','Member Profile')}</h1><p>{t('Identitas publik anggota Platform Falak Indonesia.','Public member identity on Platform Falak Indonesia.')}</p></div>{!account&&<button className="btn primary public-profile-login" onClick={()=>open('auth')}>{t('Masuk','Sign in')}</button>}<svg className="profile-cover-wave" viewBox="0 0 1440 150" preserveAspectRatio="none" aria-hidden="true"><path d="M0,62 C72,108 154,136 274,114 C438,84 520,34 692,72 C952,132 1186,18 1440,68 L1440,150 L0,150 Z"/></svg></section>
+      <section className="profile-identity"><div className="profile-avatar-frame">{publicProfile.avatarUrl?<img src={publicProfile.avatarUrl} alt={publicProfile.name} referrerPolicy="no-referrer"/>:<span>{profileInitials}</span>}</div><div className="profile-person"><div className="profile-name"><h2>{publicProfile.name}</h2>{profileVerified&&<span className="verified-mark" title={t('Akun terverifikasi','Verified account')}><Check size={13}/></span>}</div><span className="profile-username">@{publicProfile.username}</span><p>{publicProfile.org||t('Anggota Platform Falak Indonesia','Platform Falak Indonesia member')}</p><div className="profile-badges"><span className={`role-badge ${publicProfile.role}`}><UserRound size={12}/>{t(...profileRole)}</span></div></div></section>
+      <section className="profile-stat-strip"><div><b>{publicProfile.contributions}</b><small>{t('Kontribusi publik','Public contributions')}</small></div><div><b>{profileVerified?t('Ya','Yes'):t('Belum','Not yet')}</b><small>{t('Terverifikasi','Verified')}</small></div><div><b>{publicProfile.created?new Date(publicProfile.created).getFullYear():'—'}</b><small>{t('Bergabung','Joined')}</small></div></section>
+      <section className="profile-panel profile-about public-profile-about"><header><div><span>{t('TENTANG','ABOUT')}</span><h2>{t('Profil publik','Public profile')}</h2></div><UserRound size={20}/></header><p>{publicProfile.bio||t('Anggota ini belum menambahkan bio publik.','This member has not added a public bio.')}</p></section>
+    </div>;
+  }
   if (!account) return null;
   const verified = account.verification === 'verified';
   const role = roleInfo[account.role] || roleInfo.observer;
@@ -98,6 +125,7 @@ export default function Profil() {
       </div>
       <div className="profile-person">
         <div className="profile-name"><h2>{account.name}</h2>{verified && <span className="verified-mark" title={t('Akun terverifikasi', 'Verified account')}><Check size={13}/></span>}</div>
+        {account.username && <a className="profile-username" href={`/u/${account.username}`}>@{account.username}</a>}
         <p>{account.org || t('Anggota Platform Falak Indonesia', 'Platform Falak Indonesia member')}</p>
         <div className="profile-badges"><span className={`role-badge ${account.role}`}><UserRound size={12}/>{t(...role)}</span><span className="frame-badge"><Medal size={12}/>{t('Bingkai Kontributor', 'Contributor frame')}</span></div>
       </div>

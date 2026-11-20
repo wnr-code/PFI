@@ -8,6 +8,10 @@
 import { clearPersistedIdentity, initializeIdentity, supabase } from './supabase.js';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
+const LOGOUT_MARKER = 'pfi.explicitly-signed-out';
+const markSignedOut = () => { try { globalThis.localStorage?.setItem(LOGOUT_MARKER, '1'); } catch { /* storage can be blocked */ } };
+const clearSignedOutMarker = () => { try { globalThis.localStorage?.removeItem(LOGOUT_MARKER); } catch { /* storage can be blocked */ } };
+const wasExplicitlySignedOut = () => { try { return globalThis.localStorage?.getItem(LOGOUT_MARKER) === '1'; } catch { return false; } };
 
 async function accessToken() {
   // Every authenticated API call must wait for a possible PKCE callback.
@@ -56,18 +60,24 @@ export async function api(path, method = 'GET', body = null, identityToken = und
 
 // Supabase handles Google identity only. The Cloudflare API validates the Bearer token.
 export const authApi = {
-  signInWithGoogle: () => supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${window.location.origin}${window.location.pathname}`,
-      // Never silently reuse the Google account left active in the browser.
-      // The person signing in must deliberately choose the intended identity.
-      queryParams: { prompt: 'select_account' },
-    },
-  }),
+  signInWithGoogle: () => {
+    // A deliberate new login supersedes the logout tombstone before OAuth
+    // redirects away from the application.
+    clearSignedOutMarker();
+    return supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}${window.location.pathname}`,
+        // Never silently reuse the Google account left active in the browser.
+        // The person signing in must deliberately choose the intended identity.
+        queryParams: { prompt: 'select_account' },
+      },
+    });
+  },
   signOut: async () => {
-    // PFI uses bearer tokens only; ending the local identity session is enough
-    // and remains reliable even when the provider's global revoke is unavailable.
+    // Write the tombstone before awaiting Supabase. It blocks stale auth events
+    // and reload restoration even if sign-out is delayed or interrupted.
+    markSignedOut();
     let signOutError = null;
     try {
       const { error } = await supabase.auth.signOut({ scope: 'local' });
@@ -81,9 +91,14 @@ export const authApi = {
   },
   getIdentitySession: async () => {
     await initializeIdentity();
+    if (wasExplicitlySignedOut()) {
+      clearPersistedIdentity();
+      return { data: { session: null }, error: null };
+    }
     return supabase.auth.getSession();
   },
   onAuthStateChange: (callback) => supabase.auth.onAuthStateChange(callback),
+  isExplicitlySignedOut: wasExplicitlySignedOut,
 };
 
 const DB_NAME = 'pfi_offline';

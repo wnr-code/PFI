@@ -217,6 +217,18 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     expect(context.close).toHaveBeenCalled();
   });
 
+  it('shows only public profile data and a login action to anonymous visitors', async () => {
+    context.route = 'u/aep-saepulloh';
+    context.data.account = null;
+    api.mockResolvedValueOnce({ name: 'Aep Saepulloh', username: 'aep-saepulloh', org: 'Observatorium', bio: 'Pengamat hilal.', avatarUrl: '', coverTheme: 'orbit', role: 'observer', verification: 'verified', created: '2024-01-01T00:00:00Z', contributions: 4 });
+    render(<Profil />);
+    expect(await screen.findByText('@aep-saepulloh')).toBeTruthy();
+    expect(screen.getByText('Pengamat hilal.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Masuk' })).toBeTruthy();
+    expect(screen.queryByText(/Email akun/i)).toBeFalsy();
+    context.route = undefined;
+  });
+
   it('renders the professional profile for an authenticated member', () => {
     context.data.account = { id: 'member-1', name: 'Aep Falaq', email: 'aep@example.test', org: 'PFI', bio: '', role: 'observer', verification: 'verified', created: '2026-01-01T00:00:00Z', avatarUrl: 'https://example.test/avatar.jpg' };
     context.data.posts = [{ id: 'own-post', authorId: 'member-1' }, { id: 'other-post', authorId: 'member-2' }];
