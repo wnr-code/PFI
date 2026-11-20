@@ -97,6 +97,17 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     expect(document.querySelectorAll('select')).toHaveLength(3);
   });
 
+  it('explains kitab correction terms through dismissible information tips', async () => {
+    render(<Hisab />);
+    fireEvent.click(screen.getByRole('button', { name: /Hitung Sekarang/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Ad-Durrul Aniq$/i }));
+    const info = await screen.findByRole('button', { name: /Tinggi geosentris · informasi/i });
+    fireEvent.click(info);
+    expect(screen.getByText(/sebelum koreksi pengamat seperti paralaks dan refraksi/i)).toBeTruthy();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: /Tinggi geosentris/i })).toBeFalsy();
+  });
+
   it('offers GPS and editable manual coordinates as two location methods', () => {
     render(<Hisab />);
     fireEvent.change(document.querySelectorAll('select')[1], { target: { value: 'custom' } });
