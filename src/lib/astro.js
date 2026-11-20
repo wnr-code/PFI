@@ -67,8 +67,11 @@ function adDurrulHilal(sunset,l,elongation){
  const topocentricElongation=deg(Math.acos(clamp(Math.sin(rad(topocentricAltitude))*Math.sin(rad(sun.alt))+Math.cos(rad(topocentricAltitude))*Math.cos(rad(sun.alt))*Math.cos(rad(azimuthDifference)),-1,1)));
  const altitudeDifference=moon.alt-sun.alt;
  const angularDistance=deg(Math.acos(clamp(Math.cos(rad(azimuthDifference))*Math.cos(rad(altitudeDifference)),-1,1)));
- const muktsulMinutes=Math.max(0,moon.alt*4);
- return{moon,sun,geocentricAltitude:moon.alt,parallaxCorrectedAltitude,secondaryCorrectionsApplied,topocentricAltitude,horizontalParallax,parallax,refraction,dip,semiDiameter,elongation,topocentricElongation,illumination:100*Illumination('Moon',sunset).phase_fraction,illuminationSource:'Astronomy Engine phase fraction (hybrid; original kitab anomaly tables not yet transcribed)',muktsulMinutes,estimatedMoonset:new Date(+sunset+muktsulMinutes*60000).toISOString(),azimuthDifference,altitudeDifference,angularDistance,position:azimuthDifference<0?'south':'north',meets:meetsMabims(topocentricAltitude,elongation)};
+ // Muktsul adalah perkiraan durasi setelah ghurub (hc × 4 menit). Bila hc
+ // tidak positif, kitab tidak memberikan waktu terbenam hilal taqribi.
+ const muktsulApplicable=moon.alt>0;
+ const muktsulMinutes=muktsulApplicable?moon.alt*4:null;
+ return{moon,sun,geocentricAltitude:moon.alt,parallaxCorrectedAltitude,secondaryCorrectionsApplied,topocentricAltitude,horizontalParallax,parallax,refraction,dip,semiDiameter,elongation,topocentricElongation,illumination:100*Illumination('Moon',sunset).phase_fraction,illuminationSource:'Astronomy Engine phase fraction (hybrid; original kitab anomaly tables not yet transcribed)',muktsulApplicable,muktsulMinutes,estimatedMoonset:muktsulApplicable?new Date(+sunset+muktsulMinutes*60000).toISOString():null,azimuthDifference,altitudeDifference,angularDistance,position:azimuthDifference<0?'south':'north',meets:meetsMabims(topocentricAltitude,elongation)};
 }
 export function calculateHisab(period,l,method='comparison'){
  if(!['comparison','mabims'].includes(method))throw new Error('Metode hisab belum didukung.');

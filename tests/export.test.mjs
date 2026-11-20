@@ -9,6 +9,14 @@ test('hisab report export requires an accountable signed-in publisher', async ()
   await assert.rejects(exportReport(result, 'id', 'pdf'), /Masuk ke akun PFI/);
 });
 
+test('hisab report marks muktsul unavailable instead of inventing a moonset below the horizon', () => {
+  const site = SITES.find((item) => item.id === 'tasik');
+  const result = calculateHisab({ start: '2026-07-15', day: 1, month: 2, year: 1448 }, site);
+  const kitabRows = Object.fromEntries(reportSections(result, 'id')[2].rows);
+  assert.equal(kitabRows['Muktsul hilal'], 'Tidak dihitung (hc tidak positif)');
+  assert.equal(kitabRows['Perkiraan Bulan terbenam'], '—');
+});
+
 test('hisab report preserves seconds and formats angular results as DMS', () => {
   const site = SITES.find((item) => item.id === 'tasik');
   const result = calculateHisab({ start: '2013-08-08', day: 1, month: 10, year: 1434 }, site);

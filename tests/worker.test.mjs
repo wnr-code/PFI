@@ -291,6 +291,8 @@ test('Ad-Durrul Aniq correction chain preserves signs, units, and algebraic orde
     assert.ok(Math.abs(k.topocentricElongation - expectedTopocentricElongation) < 1e-12);
     assert.ok(Math.abs(k.angularDistance - expectedAngularDistance) < 1e-12);
     assert.ok(Math.abs(k.altitudeDifference - (k.geocentricAltitude - k.sun.alt)) < 1e-12);
+    assert.equal(k.muktsulApplicable, true);
+    assert.ok(Math.abs(k.muktsulMinutes - k.geocentricAltitude * 4) < 1e-12);
     assert.equal(k.meets, meetsMabims(k.topocentricAltitude, k.elongation));
     assert.match(k.illuminationSource, /hybrid.*not yet transcribed/i);
   }
@@ -335,9 +337,21 @@ test('Ad-Durrul Aniq negative-altitude rule follows the published Syakban 1434 S
   // Ad-Durrul Aniq hlm. 28–30: hc−P negatif tidak ditambah Ref, Dip, dan sdc.
   assert.ok(kitab.parallaxCorrectedAltitude < 0);
   assert.equal(kitab.secondaryCorrectionsApplied, false);
+  assert.equal(kitab.muktsulApplicable, true);
+  assert.ok(kitab.muktsulMinutes > 0); // hc positif meskipun hc−P dan hc′ negatif.
   assert.equal(kitab.topocentricAltitude, kitab.parallaxCorrectedAltitude);
   assert.ok(Math.abs(kitab.topocentricAltitude - (-(21 / 60 + 7 / 3600))) < 0.12);
   assert.ok(Math.abs(kitab.elongation - (4 + 40 / 60 + 40 / 3600)) < 0.08);
+});
+
+test('Ad-Durrul Aniq does not invent muktsul or moonset when geocentric altitude is non-positive', () => {
+  const tasik = SITES.find((site) => site.id === 'tasik');
+  const result = calculateHisab({ start: '2026-07-15', day: 1, month: 2, year: 1448 }, tasik);
+  const kitab = result.models.adDurrul;
+  assert.ok(kitab.geocentricAltitude <= 0);
+  assert.equal(kitab.muktsulApplicable, false);
+  assert.equal(kitab.muktsulMinutes, null);
+  assert.equal(kitab.estimatedMoonset, null);
 });
 
 test('Ad-Durrul Aniq model supports western time zones using the Vancouver 1434 example', () => {
