@@ -214,6 +214,10 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     expect(screen.getByText(/Email akun · privat/i)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Buka pengaturan profil/i }));
     expect(screen.getByRole('dialog', { name: /Pengaturan profil/i })).toBeTruthy();
+    expect(screen.getByText(/Tampilan profil/i)).toBeTruthy();
+    expect(screen.getByText(/^Animasi sampul$/i)).toBeTruthy();
+    expect(screen.getByText(/^Ganti avatar$/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Orbit satelit/i }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('switch', { name: /Aktifkan peringatan agenda/i })).toBeTruthy();
     expect(screen.getByText(/Identitas Google terhubung/i)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Tutup pengaturan/i }));
