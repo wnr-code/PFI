@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker, { canReviewEntity, canViewGroup, canViewPost, ensureUserSchema, groupSlug, HISAB_METHODS, normalizeHisabSite, normalizeRukyatDetails, uploadContentLengthStatus } from '../worker/index.js';
+import worker, { canReviewEntity, canViewGroup, canViewPost, ensureUserSchema, groupSlug, usernameBase, HISAB_METHODS, normalizeHisabSite, normalizeRukyatDetails, uploadContentLengthStatus } from '../worker/index.js';
 import { SITES, calculateHisab, clock, eclipseTimeline, lunar, meetsMabims, sunsetTime } from '../src/lib/astro.js';
 
 test('Worker health endpoint verifies D1 schema and authentication configuration', async () => {
@@ -81,12 +81,20 @@ test('legacy Production user tables are upgraded without replacing existing data
     },
   };
   await ensureUserSchema(database);
-  assert.equal(added.length, 12);
+  assert.equal(added.length, 15);
   assert.ok(added.some((sql) => sql.startsWith('ALTER TABLE users ADD COLUMN name ')));
   assert.ok(added.some((sql) => sql.startsWith('ALTER TABLE users ADD COLUMN avatar_url ')));
   assert.ok(added.some((sql) => sql.startsWith('ALTER TABLE users ADD COLUMN cover_theme ')));
   assert.ok(added.some((sql) => sql.startsWith('ALTER TABLE users ADD COLUMN prefs ')));
-  assert.ok(added.every((sql) => sql.startsWith('ALTER TABLE users ADD COLUMN ')));
+  assert.ok(added.some((sql) => sql.startsWith('ALTER TABLE users ADD COLUMN username ')));
+  assert.ok(added.some((sql) => sql.startsWith('CREATE UNIQUE INDEX IF NOT EXISTS users_username_unique')));
+  assert.ok(added.slice(0, -1).every((sql) => sql.startsWith('ALTER TABLE users ADD COLUMN ')));
+});
+
+test('profile usernames are normalized into stable readable slugs', () => {
+  assert.equal(usernameBase('Aép Saepulloh'), 'aep-saepulloh');
+  assert.equal(usernameBase('  Pengamat   Hilal  '), 'pengamat-hilal');
+  assert.equal(usernameBase('!?'), 'pengamat');
 });
 
 test('Worker failures include a safe diagnostic code and traceable request reference', async () => {

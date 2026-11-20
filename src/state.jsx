@@ -54,7 +54,7 @@ export function Provider({ children }) {
   const [toast, setToast] = useState('');
   const [online, setOnline] = useState(true);
   const refreshSequence = useRef(0);
-  const signedOutRequested = useRef(false);
+  const signedOutRequested = useRef(authApi.isExplicitlySignedOut?.() || false);
 
   const tell = useCallback((msg) => {
     setToast(msg);

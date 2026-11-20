@@ -155,7 +155,7 @@ export function Topbar() {
     window.dispatchEvent(new Event('pfi:open-profile-editor'));
   };
   const entry = [...navMain, ...navMore].find((n) => n[0] === page) || navMain[0];
-  const label = t(entry[1], entry[2]);
+  const label = page === 'u' ? t('Profil anggota', 'Member profile') : t(entry[1], entry[2]);
   const selectedSite = SITES.find((item) => item.id === site) || SITES[0];
 
   return (

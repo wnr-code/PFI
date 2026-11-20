@@ -22,7 +22,11 @@ import { api, authApi } from '../src/lib/api.js';
 import { clearPersistedIdentity, supabase } from '../src/lib/supabase.js';
 
 describe('Cloudflare API identity boundary', () => {
-  beforeEach(() => { globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } })); });
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } }));
+  });
 
   it('sends the Google identity token to Cloudflare without Supabase data calls', async () => {
     await api('/api/session');
@@ -69,9 +73,13 @@ describe('Cloudflare API identity boundary', () => {
     });
   });
 
-  it('signs out locally without depending on a provider-wide revoke', async () => {
+  it('signs out locally and blocks stale session restoration after reload', async () => {
     await authApi.signOut();
     expect(supabase.auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(authApi.isExplicitlySignedOut()).toBe(true);
+    const result = await authApi.getIdentitySession();
+    expect(result.data.session).toBeNull();
+    expect(supabase.auth.getSession).not.toHaveBeenCalled();
   });
 
   it('clears local identity and broadcasts expiry on a 401 response', async () => {

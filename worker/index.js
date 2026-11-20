@@ -257,7 +257,35 @@ const requiredUserColumns = {
   prefs: "TEXT NOT NULL DEFAULT '{}'",
   created: "TEXT NOT NULL DEFAULT ''",
   updated: "TEXT NOT NULL DEFAULT ''",
+  username: "TEXT NOT NULL DEFAULT ''",
+  username_updated_at: "TEXT NOT NULL DEFAULT ''",
 };
+
+export function usernameBase(name) {
+  const slug = String(name || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30);
+  return slug.length >= 3 ? slug : 'pengamat';
+}
+
+async function ensureUsername(database, userId, name) {
+  const current = await database.prepare('SELECT username FROM users WHERE id = ?').bind(userId).first();
+  if (current?.username) return current.username;
+  const base = usernameBase(name);
+  for (let suffix = 1; suffix <= 9999; suffix += 1) {
+    const candidate = suffix === 1 ? base : `${base}-${suffix}`;
+    try {
+      const result = await database.prepare("UPDATE users SET username = ?, updated = datetime('now') WHERE id = ? AND username = ''")
+        .bind(candidate, userId).run();
+      if (result?.meta?.changes || result?.success) {
+        const saved = await database.prepare('SELECT username FROM users WHERE id = ?').bind(userId).first();
+        if (saved?.username) return saved.username;
+      }
+    } catch (error) {
+      if (!/UNIQUE constraint failed/i.test(String(error?.message || error))) throw error;
+    }
+  }
+  throw new Error('Username unik tidak dapat dibuat.');
+}
 
 // Early Production used an older users table. CREATE TABLE IF NOT EXISTS does
 // not add newer columns, so upgrade only the missing, statically defined fields
@@ -274,6 +302,7 @@ export async function ensureUserSchema(database) {
       await database.prepare(`ALTER TABLE users ADD COLUMN ${column} ${definition}`).run();
     }
   }
+  await database.prepare("CREATE UNIQUE INDEX IF NOT EXISTS users_username_unique ON users(username) WHERE username <> ''").run();
 }
 
 async function profileFor(request, env) {
@@ -292,14 +321,21 @@ async function profileFor(request, env) {
     WHERE users.email != excluded.email OR users.name = '' OR users.avatar_url = ''
   `).bind(who.id, who.email, who.name, who.avatarUrl);
   const select = env.falaq.prepare(
-    'SELECT id,email,name,org,bio,avatar_url,cover_theme,role,verification,review_note,created,prefs FROM users WHERE id = ?'
+    'SELECT id,email,name,username,org,bio,avatar_url,cover_theme,role,verification,review_note,created,prefs FROM users WHERE id = ?'
   ).bind(who.id);
 
   // D1 batch guarantees the profile read runs after its upsert on the same
   // database transaction. Separate write/read calls can observe different
   // points when D1 routing or replication is active.
   const [, profileResult] = await env.falaq.batch([upsert, select]);
-  return profileResult?.results?.[0] || null;
+  let profile = profileResult?.results?.[0] || null;
+  if (profile && !profile.username) {
+    await ensureUsername(env.falaq, who.id, profile.name || who.name);
+    profile = await env.falaq.prepare(
+      'SELECT id,email,name,username,org,bio,avatar_url,cover_theme,role,verification,review_note,created,prefs FROM users WHERE id = ?'
+    ).bind(who.id).first();
+  }
+  return profile;
 }
 
 async function postView(env, post, profile) {
@@ -560,7 +596,7 @@ export default {
         ]);
         return json({
           account: {
-            id: profile.id, name: profile.name, email: profile.email,
+            id: profile.id, name: profile.name, username: profile.username, email: profile.email,
             org: profile.org, bio: profile.bio, avatarUrl: profile.avatar_url, coverTheme: profile.cover_theme, role: profile.role,
             verification: profile.verification, reviewNote: profile.review_note,
             created: profile.created,
@@ -753,6 +789,27 @@ export default {
         return json(rows.results || []);
       }
 
+      const publicProfileMatch = url.pathname.match(/^\/api\/users\/([a-z0-9-]+)$/);
+      if (publicProfileMatch && request.method === 'GET') {
+        await ensureUserSchema(env.falaq);
+        const username = publicProfileMatch[1];
+        const profile = await env.falaq.prepare(`
+          SELECT id,name,username,org,bio,avatar_url,cover_theme,role,verification,created
+          FROM users WHERE username = ?
+        `).bind(username).first();
+        if (!profile) return fail(404, 'Profil anggota tidak ditemukan.');
+        const contribution = await env.falaq.prepare(`
+          SELECT COUNT(*) AS total FROM posts
+          WHERE user_id = ? AND group_id IS NULL AND (type != 'rukyat' OR status = 'verified')
+        `).bind(profile.id).first();
+        return json({
+          name: profile.name, username: profile.username, org: profile.org, bio: profile.bio,
+          avatarUrl: profile.avatar_url, coverTheme: profile.cover_theme, role: profile.role,
+          verification: profile.verification, created: profile.created,
+          contributions: Number(contribution?.total || 0),
+        });
+      }
+
       if (url.pathname === '/api/profile' && request.method === 'PUT') {
         const profile = await profileFor(request, env);
         if (!profile) return fail(401, 'Silakan masuk untuk mengubah profil.');
@@ -779,9 +836,9 @@ export default {
         await env.falaq.prepare('UPDATE users SET name=?,org=?,bio=?,avatar_url=?,cover_theme=?,updated=? WHERE id=?')
           .bind(name, org, bio, safeAvatarUrl, coverTheme, new Date().toISOString(), profile.id).run();
         const updated = await env.falaq.prepare(
-          'SELECT id,email,name,org,bio,avatar_url,cover_theme,role,verification,review_note,created FROM users WHERE id=?'
+          'SELECT id,email,name,username,org,bio,avatar_url,cover_theme,role,verification,review_note,created FROM users WHERE id=?'
         ).bind(profile.id).first();
-        return json({ id: updated.id, email: updated.email, name: updated.name, org: updated.org, bio: updated.bio, avatarUrl: updated.avatar_url, coverTheme: updated.cover_theme, role: updated.role, verification: updated.verification, reviewNote: updated.review_note, created: updated.created });
+        return json({ id: updated.id, email: updated.email, name: updated.name, username: updated.username, org: updated.org, bio: updated.bio, avatarUrl: updated.avatar_url, coverTheme: updated.cover_theme, role: updated.role, verification: updated.verification, reviewNote: updated.review_note, created: updated.created });
       }
 
       if (url.pathname === '/api/preferences' && request.method === 'PUT') {
