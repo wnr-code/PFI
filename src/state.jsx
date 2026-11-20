@@ -13,6 +13,7 @@ import {
   authApi, api, offlineStore, offlineGet,
 } from './lib/api.js';
 import { SITES, agenda } from './lib/astro.js';
+import { readBrowserRoute, routePath } from './lib/router.js';
 
 const C = createContext(null);
 
@@ -39,16 +40,16 @@ const blank = () => ({
 });
 
 export function go(path) {
-  const value = `#/${path.replace(/^[/#]+/, '')}`;
-  if (location.hash !== value) location.hash = value;
-  else window.scrollTo({ top: 0, behavior: 'smooth' });
+  const value = routePath(path);
+  if (location.pathname !== value) {
+    history.pushState({}, '', value);
+    window.dispatchEvent(new Event('pfi:navigation'));
+  } else window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 export function Provider({ children }) {
   const [data, setData] = useState(blank());
-  const [route, setRoute] = useState(
-    () => location.hash.replace(/^#\/?/, '') || 'beranda'
-  );
+  const [route, setRoute] = useState(() => readBrowserRoute());
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState('');
   const [online, setOnline] = useState(true);
@@ -193,13 +194,15 @@ export function Provider({ children }) {
     window.addEventListener('offline', onOffline);
     window.addEventListener('pfi:auth-expired', onAuthExpired);
 
-    // Hash routing
-    const onHashChange = () => {
-      setRoute(location.hash.replace(/^#\/?/, '') || 'beranda');
+    // History API routing. Cloudflare and the local server both return
+    // index.html for clean application paths, including direct refreshes.
+    const onNavigation = () => {
+      setRoute(readBrowserRoute());
       setModal(null);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
-    window.addEventListener('hashchange', onHashChange);
+    window.addEventListener('popstate', onNavigation);
+    window.addEventListener('pfi:navigation', onNavigation);
 
     return () => {
       clearTimeout(authRefreshTimer);
@@ -207,7 +210,8 @@ export function Provider({ children }) {
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);
       window.removeEventListener('pfi:auth-expired', onAuthExpired);
-      window.removeEventListener('hashchange', onHashChange);
+      window.removeEventListener('popstate', onNavigation);
+      window.removeEventListener('pfi:navigation', onNavigation);
     };
   }, [refresh, session]);
 

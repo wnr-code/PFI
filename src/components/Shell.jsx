@@ -13,6 +13,7 @@ import {
   ChevronsUpDown, LayoutDashboard, BookOpen, CreditCard, Share2, LogOut, LogIn, Edit3, X,
 } from 'lucide-react';
 import { SITES } from '../lib/astro.js';
+import { routePath } from '../lib/router.js';
 
 export const navMain = [
   ['beranda', 'Beranda', 'Home', House],
@@ -67,11 +68,11 @@ export function Sidebar() {
   const links = (items) =>
     items.filter(([id]) => data.account || id !== 'komunitas').map(([id, idname, en, I]) => (
       <a
-        href={`#/${id}`}
+        href={routePath(id)}
         className={`nav-item ${page === id ? 'active' : ''}`}
         aria-current={page === id ? 'page' : undefined}
         key={id}
-        onClick={() => setCollapsed(false)}
+        onClick={(event) => { event.preventDefault(); setCollapsed(false); go(id); }}
       >
         <I size={18} />
         <span>{t(idname, en)}</span>
@@ -83,9 +84,9 @@ export function Sidebar() {
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <a
         className="brand-link"
-        href="#/beranda"
+        href="/beranda"
         aria-label="Platform Falak Indonesia"
-        onClick={() => setCollapsed(false)}
+        onClick={(event) => { event.preventDefault(); setCollapsed(false); go('beranda'); }}
       >
         <div className="brand">
           <svg viewBox="0 0 64 64" aria-hidden="true">
@@ -228,9 +229,10 @@ export function BottomNav() {
       {visibleNavigation.map(([id, a, b, I]) => (
         <a
           key={id}
-          href={`#/${id}`}
+          href={routePath(id)}
           className={`bottom-item ${page === id ? 'active' : ''}`}
           aria-current={page === id ? 'page' : undefined}
+          onClick={(event) => { event.preventDefault(); go(id); }}
         >
           <I size={22} />
           <span>{t(a, b)}</span>
