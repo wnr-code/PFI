@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateHisab, SITES } from '../src/lib/astro.js';
-import { resultRows } from '../src/lib/export.js';
+import { reportSections, resultRows } from '../src/lib/export.js';
 
 test('hisab report preserves seconds and formats angular results as DMS', () => {
   const site = SITES.find((item) => item.id === 'tasik');
@@ -11,5 +11,11 @@ test('hisab report preserves seconds and formats angular results as DMS', () => 
   assert.match(rows['Matahari terbenam'], /\b\d{2}[:.]\d{2}[:.]\d{2}\b/);
   for (const label of ['Tinggi Bulan modern', 'Tinggi Ad-Durrul Aniq', 'Tinggi geosentris (kitab)', 'Elongasi geosentris', 'Azimut Bulan', 'Azimut Matahari']) {
     assert.match(rows[label], /^−?\d+° \d{2}′ \d{2}\.\d{2}″$/, label);
+  }
+  const sections = reportSections(result, 'id');
+  assert.deepEqual(sections.map((section) => section.title), ['Ringkasan perhitungan', 'Astronomi modern', 'Koreksi Ad-Durrul Aniq', 'Sumber dan jejak audit']);
+  const kitabRows = Object.fromEntries(sections[2].rows);
+  for (const label of ['Paralaks horizontal (HP)', 'Paralaks Bulan (P)', 'Setelah paralaks (hc−P)', 'Refraksi', 'Kerendahan ufuk', 'Semidiameter Bulan', 'Tinggi terkoreksi', 'Elongasi toposentris']) {
+    assert.match(kitabRows[label], /^−?\d+° \d{2}′ \d{2}\.\d{2}″$/, label);
   }
 });
