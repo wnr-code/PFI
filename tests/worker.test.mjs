@@ -289,6 +289,9 @@ test('Ad-Durrul Aniq correction model follows the published Ramadan 1434 Banyuwa
   };
   const result = calculateHisab({ start: '2013-08-08', day: 1, month: 10, year: 1434 }, palengkung);
   const kitab = result.models.adDurrul;
+  assert.ok(Number.isFinite(result.comparison.altitudeDifference));
+  assert.ok(Number.isFinite(result.comparison.elongationDifference));
+  assert.equal(typeof result.comparison.agreement, 'boolean');
   // Ad-Durrul Aniq terjemahan Kemenag 2025, hlm. 39–43.
   assert.ok(Math.abs(kitab.geocentricAltitude - (4 + 13 / 60 + 11 / 3600)) < 0.06);
   assert.ok(Math.abs(kitab.topocentricAltitude - (3 + 17 / 60 + 16 / 3600)) < 0.06);

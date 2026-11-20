@@ -77,7 +77,8 @@ export function calculateHisab(period,l,method='comparison'){
  const moon=position('Moon',sunset,l),sun=position('Sun',sunset,l),elongation=AngleFromSun('Moon',sunset),age=(sunset-conj)/3600000;
  const modern={moon,sun,elongation,age,illumination:100*Illumination('Moon',sunset).phase_fraction,meets:moon.alt>=3&&elongation>=6.4,engine:'Astronomy Engine 2.1.19'};
  const adDurrul=adDurrulHilal(sunset,l,elongation);
- return{id:crypto.randomUUID(),created:new Date().toISOString(),period,loc:l,method:'comparison',conj:conj.toISOString(),sunset:sunset.toISOString(),moon,sun,elongation,age,meets:modern.meets,models:{modern,adDurrul},criteria:{name:'MABIMS 2021',minAltitude:3,minElongation:6.4},audit:{schema:'pfi-hisab-v2',modernEngine:'Astronomy Engine 2.1.19',kitabReference:'Ad-Durrul Aniq terjemahan Kemenag RI 2025, hlm. 28 dan 39–43',ephemerisBase:'Astronomy Engine 2.1.19',locationSource:l.source||'catalog',locationAccuracy:Number.isFinite(l.accuracy)?l.accuracy:null,calculatedAt:new Date().toISOString()}};
+ const comparison={altitudeDifference:modern.moon.alt-adDurrul.topocentricAltitude,elongationDifference:modern.elongation-adDurrul.elongation,agreement:Math.abs(modern.moon.alt-adDurrul.topocentricAltitude)<=.5&&Math.abs(modern.elongation-adDurrul.elongation)<=.25};
+ return{id:crypto.randomUUID(),created:new Date().toISOString(),period,loc:l,method:'comparison',conj:conj.toISOString(),sunset:sunset.toISOString(),moon,sun,elongation,age,meets:modern.meets,models:{modern,adDurrul},comparison,criteria:{name:'MABIMS 2021',minAltitude:3,minElongation:6.4},audit:{schema:'pfi-hisab-v2',modernEngine:'Astronomy Engine 2.1.19',kitabReference:'Ad-Durrul Aniq terjemahan Kemenag RI 2025, hlm. 28 dan 39–43',ephemerisBase:'Astronomy Engine 2.1.19',locationSource:l.source||'catalog',locationAccuracy:Number.isFinite(l.accuracy)?l.accuracy:null,calculatedAt:new Date().toISOString()}};
 }
 export function qibla(l){const r=Math.PI/180,y1=l.lat*r,y2=21.4225*r,dl=(39.8262-l.lon)*r;return{angle:(Math.atan2(Math.sin(dl),Math.cos(y1)*Math.tan(y2)-Math.sin(y1)*Math.cos(dl))/r+360)%360,km:6371*Math.acos(Math.sin(y1)*Math.sin(y2)+Math.cos(y1)*Math.cos(y2)*Math.cos(dl))};}
 export function prayers(day,l){const start=localTime(day,'00:00',l),o=new Observer(l.lat,l.lon,l.elev),dhuhr=SearchHourAngle('Sun',o,0,start).time.date,dec=position('Sun',dhuhr,l).dec,asrAlt=Math.atan(1/(1+Math.tan(Math.abs(l.lat-dec)*Math.PI/180)))*180/Math.PI;return[
@@ -90,16 +91,17 @@ export function eclipseTimeline(date,l=SITES[0]){
  if(lunarEnd<now){lunar=SearchLunarEclipse(now);lunarHalf=Math.max(lunar.sd_penum,lunar.sd_partial,lunar.sd_total)*60000;lunarStart=new Date(+lunar.peak.date-lunarHalf);lunarEnd=new Date(+lunar.peak.date+lunarHalf);}
  let solar=SearchLocalSolarEclipse(searchStart,observer),solarStart=solar.partial_begin.time.date,solarEnd=solar.partial_end.time.date;
  if(solarEnd<now){solar=SearchLocalSolarEclipse(now,observer);solarStart=solar.partial_begin.time.date;solarEnd=solar.partial_end.time.date;}
- const make=(body,kind,obscuration,start,peak,end,visible=true,contacts={})=>{
-  const active=visible&&now>=start&&now<=end,progress=active?clamp((now-start)/(end-start),0,1):0;
-  let phase='upcoming';
+ const make=(body,kind,obscuration,start,peak,end,visible=true,currentVisible=visible,contacts={})=>{
+  const withinContacts=now>=start&&now<=end,active=withinContacts&&currentVisible,progress=withinContacts?clamp((now-start)/(end-start),0,1):0;
+  let phase=withinContacts&&!currentVisible?'below-horizon':'upcoming';
   if(active)phase=now<peak?'beginning':Math.abs(now-peak)<60000?'peak':'ending';
-  return{body,kind,obscuration,start:start.toISOString(),peak:peak.toISOString(),end:end.toISOString(),active,progress,phase,visible,contacts};
+  return{body,kind,obscuration,start:start.toISOString(),peak:peak.toISOString(),end:end.toISOString(),active,withinContacts,progress,phase,visible,currentVisible,contacts};
  };
- const lunarAltitude=position('Moon',lunar.peak.date,l).alt;
+ const lunarAltitudes={start:position('Moon',lunarStart,l).alt,peak:position('Moon',lunar.peak.date,l).alt,end:position('Moon',lunarEnd,l).alt,current:position('Moon',now,l).alt};
+ const solarVisible=[solar.partial_begin.altitude,solar.peak.altitude,solar.partial_end.altitude].some((alt)=>alt>0),solarCurrentAltitude=position('Sun',now,l).alt;
  return[
-  make('Sun',solar.kind,solar.obscuration,solarStart,solar.peak.time.date,solarEnd,[solar.partial_begin.altitude,solar.peak.altitude,solar.partial_end.altitude].some((alt)=>alt>0),{totalBegin:solar.total_begin?.time.date?.toISOString()||null,totalEnd:solar.total_end?.time.date?.toISOString()||null,peakAltitude:solar.peak.altitude}),
-  make('Moon',lunar.kind,lunar.obscuration,lunarStart,lunar.peak.date,lunarEnd,lunarAltitude>0,{penumbralBegin:lunarStart.toISOString(),partialBegin:lunar.sd_partial?new Date(+lunar.peak.date-lunar.sd_partial*60000).toISOString():null,totalBegin:lunar.sd_total?new Date(+lunar.peak.date-lunar.sd_total*60000).toISOString():null,totalEnd:lunar.sd_total?new Date(+lunar.peak.date+lunar.sd_total*60000).toISOString():null,partialEnd:lunar.sd_partial?new Date(+lunar.peak.date+lunar.sd_partial*60000).toISOString():null,penumbralEnd:lunarEnd.toISOString(),penumbralSemiDuration:lunar.sd_penum,partialSemiDuration:lunar.sd_partial,totalSemiDuration:lunar.sd_total,peakAltitude:lunarAltitude}),
+  make('Sun',solar.kind,solar.obscuration,solarStart,solar.peak.time.date,solarEnd,solarVisible,solarCurrentAltitude>-0.833,{totalBegin:solar.total_begin?.time.date?.toISOString()||null,totalEnd:solar.total_end?.time.date?.toISOString()||null,peakAltitude:solar.peak.altitude,currentAltitude:solarCurrentAltitude}),
+  make('Moon',lunar.kind,lunar.obscuration,lunarStart,lunar.peak.date,lunarEnd,[lunarAltitudes.start,lunarAltitudes.peak,lunarAltitudes.end].some((alt)=>alt>0),lunarAltitudes.current>0,{penumbralBegin:lunarStart.toISOString(),partialBegin:lunar.sd_partial?new Date(+lunar.peak.date-lunar.sd_partial*60000).toISOString():null,totalBegin:lunar.sd_total?new Date(+lunar.peak.date-lunar.sd_total*60000).toISOString():null,totalEnd:lunar.sd_total?new Date(+lunar.peak.date+lunar.sd_total*60000).toISOString():null,partialEnd:lunar.sd_partial?new Date(+lunar.peak.date+lunar.sd_partial*60000).toISOString():null,penumbralEnd:lunarEnd.toISOString(),penumbralSemiDuration:lunar.sd_penum,partialSemiDuration:lunar.sd_partial,totalSemiDuration:lunar.sd_total,...lunarAltitudes}),
  ].sort((a,b)=>new Date(a.start)-new Date(b.start));
 }
 export const eventTypes={full:['Fase Bulan','Moon phase'],new:['Ijtimak','Conjunction'],rukyat:['Rukyat','Observation'],quarter:['Fase Bulan','Moon phase']};
