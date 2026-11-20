@@ -106,7 +106,7 @@ export default function Profil() {
       </main>
 
       <aside className="profile-sidebar">
-        <button className="profile-settings-card" onClick={()=>setSettingsOpen(true)}><span className="profile-settings-icon"><Settings2 size={22}/></span><span><b>{t('Pengaturan profil','Profile settings')}</b><small>{t('Bahasa, pengingat, dan akun','Language, reminders, and account')}</small></span></button>
+        <button className="profile-settings-card" onClick={()=>setSettingsOpen(true)}><span className="profile-settings-icon"><Settings2 size={22}/></span><span><b>{t('Pengaturan profil','Profile settings')}</b><small>{t('Sampul, avatar, bahasa, dan akun','Cover, avatar, language, and account')}</small></span></button>
         {!['pending','verified'].includes(account.verification) && <button className="profile-verify-action" onClick={()=>setShowVerify(!showVerify)}><ShieldCheck size={20}/><span><b>{t('Dapatkan tanda terverifikasi','Get verified')}</b><small>{t('Ajukan pemeriksaan identitas','Request an identity review')}</small></span></button>}
       </aside>
     </div>
