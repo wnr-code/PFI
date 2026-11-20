@@ -75,6 +75,8 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     expect(screen.getByRole('heading', { level: 1, name: /Kalkulator Falaq/i })).toBeTruthy();
     expect(screen.getAllByRole('tab')).toHaveLength(4);
     expect(screen.getByText(/Arah dari utara sejati/i)).toBeTruthy();
+    expect(screen.getByRole('img', { name: /Kompas arah kiblat/i })).toBeTruthy();
+    expect(document.querySelector('.qibla-true-north')?.textContent).toMatch(/UTARA SEJATI/i);
     fireEvent.click(screen.getByRole('tab', { name: /Posisi Langit/i }));
     expect(screen.getByText(/Tinggi Matahari/i)).toBeTruthy();
     expect(screen.getByText(/Input manual/i)).toBeTruthy();
