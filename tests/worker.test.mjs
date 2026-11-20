@@ -260,6 +260,33 @@ test('real-time eclipse timeline activates only inside observed contact times', 
   assert.equal(typeof during.visible, 'boolean');
 });
 
+test('scientific core rejects coordinates, elevation, and time zones outside supported bounds', () => {
+  const period = { start: '2013-08-08', day: 1, month: 10, year: 1434 };
+  const base = { id: 'invalid', city: 'Invalid', region: 'Test', lat: 0, lon: 0, elev: 0, offset: 0 };
+  for (const patch of [{ lat: 90.001 }, { lat: -90.001 }, { lon: 180.001 }, { lon: -180.001 }, { elev: -500.001 }, { elev: 9000.001 }, { offset: -13 }, { offset: 15 }, { offset: 7.5 }]) {
+    assert.throws(() => calculateHisab(period, { ...base, ...patch }), /Lokasi pengamatan tidak valid/);
+  }
+});
+
+test('Ad-Durrul Aniq correction chain preserves signs, units, and algebraic order', () => {
+  const cases = [
+    [{ start: '2013-08-08', day: 1, month: 10, year: 1434 }, { id: 'banyuwangi-audit', city: 'Banyuwangi', region: 'Jawa Timur', lat: -8.6574, lon: 114.3614, elev: 2, offset: 7 }],
+    [{ start: '2013-01-13', day: 1, month: 3, year: 1434 }, { id: 'vancouver-audit', city: 'Vancouver', region: 'Canada', lat: 49.25, lon: -123.1667, elev: 0, offset: -8 }],
+  ];
+  for (const [period, site] of cases) {
+    const k = calculateHisab(period, site).models.adDurrul;
+    assert.ok(k.horizontalParallax > 0 && k.horizontalParallax < 2);
+    assert.ok(k.semiDiameter > 0 && k.semiDiameter < 0.5);
+    assert.ok(k.parallax >= 0 && k.parallax <= k.horizontalParallax);
+    assert.ok(k.refraction >= 0 && k.refraction < 2);
+    assert.ok(k.dip >= 0 && k.dip < 3);
+    assert.ok(Math.abs(k.parallaxCorrectedAltitude - (k.geocentricAltitude - k.parallax)) < 1e-12);
+    const expected = k.parallaxCorrectedAltitude + k.refraction + k.dip - k.semiDiameter;
+    assert.ok(Math.abs(k.topocentricAltitude - expected) < 1e-12);
+    assert.equal(k.meets, meetsMabims(k.topocentricAltitude, k.elongation));
+  }
+});
+
 test('MABIMS evaluates true elongation rather than the 0–360 lunar phase angle', () => {
   assert.equal(meetsMabims(3, 6.4), true);
   assert.equal(meetsMabims(2.999, 6.4), false);

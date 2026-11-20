@@ -72,9 +72,10 @@ function adDurrulHilal(sunset,l,elongation){
 export function calculateHisab(period,l,method='comparison'){
  if(!['comparison','mabims'].includes(method))throw new Error('Metode hisab belum didukung.');
  if(!period?.start||period.day!==1)throw new Error('Tanggal acuan harus merupakan tanggal 1 bulan Hijriah.');
- if(!l||!Number.isFinite(l.lat)||!Number.isFinite(l.lon))throw new Error('Lokasi pengamatan tidak valid.');
- const start=localTime(period.start,'00:00',l),conj=SearchMoonPhase(0,new Date(+start-5*DAY),10).date;
- const sunset=SearchRiseSet('Sun',new Observer(l.lat,l.lon,l.elev),-1,conj,2).date;
+ if(!l||!Number.isFinite(l.lat)||l.lat < -90||l.lat > 90||!Number.isFinite(l.lon)||l.lon < -180||l.lon > 180||!Number.isFinite(l.elev)||l.elev < -500||l.elev > 9000||!Number.isInteger(l.offset)||l.offset < -12||l.offset > 14)throw new Error('Lokasi pengamatan tidak valid.');
+ const start=localTime(period.start,'00:00',l);if(!Number.isFinite(start.getTime()))throw new Error('Tanggal acuan tidak valid.');
+ const conjunction=SearchMoonPhase(0,new Date(+start-5*DAY),10),conj=conjunction?.date;if(!conj)throw new Error('Ijtimak tidak ditemukan pada rentang pencarian.');
+ const sunsetEvent=SearchRiseSet('Sun',new Observer(l.lat,l.lon,l.elev),-1,conj,2),sunset=sunsetEvent?.date;if(!sunset)throw new Error('Matahari terbenam tidak ditemukan untuk lokasi dan tanggal ini.');
  const moon=position('Moon',sunset,l),sun=position('Sun',sunset,l),elongation=AngleFromSun('Moon',sunset),age=(sunset-conj)/3600000;
  const modern={moon,sun,elongation,age,illumination:100*Illumination('Moon',sunset).phase_fraction,meets:meetsMabims(moon.alt,elongation),engine:'Astronomy Engine 2.1.19'};
  const adDurrul=adDurrulHilal(sunset,l,elongation);
