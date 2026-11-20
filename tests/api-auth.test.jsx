@@ -14,6 +14,7 @@ vi.mock('../src/lib/supabase.js', () => ({
   supabase: { auth: {
     getSession: vi.fn(async () => ({ data: { session: { access_token: 'google-identity-token' } } })),
     signOut: vi.fn(async () => ({ error: null })),
+    signInWithOAuth: vi.fn(async () => ({ data: {}, error: null })),
   } },
 }));
 
@@ -28,7 +29,7 @@ describe('Cloudflare API identity boundary', () => {
     const [url, options] = globalThis.fetch.mock.calls[0];
     expect(url).toBe('/api/session');
     expect(options.headers.Authorization).toBe('Bearer google-identity-token');
-    expect(options.credentials).toBe('include');
+    expect(options.credentials).toBe('omit');
   });
 
   it('uses the freshly exchanged callback token during session initialization', async () => {
@@ -54,6 +55,18 @@ describe('Cloudflare API identity boundary', () => {
     const [, options] = globalThis.fetch.mock.calls[0];
     expect(options.headers['Content-Type']).toBeUndefined();
     expect(options.body).toBe(form);
+  });
+
+  it('forces deliberate Google account selection on every new login', async () => {
+    window.history.replaceState({}, '', '/profil');
+    await authApi.signInWithGoogle();
+    expect(supabase.auth.signInWithOAuth).toHaveBeenCalledWith({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/profil`,
+        queryParams: { prompt: 'select_account' },
+      },
+    });
   });
 
   it('signs out locally without depending on a provider-wide revoke', async () => {
