@@ -8,7 +8,7 @@
 // @vitest-environment happy-dom
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { SITES, agenda } from '../src/lib/astro.js';
 import { api } from '../src/lib/api.js';
 
@@ -90,6 +90,16 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     expect(mapButton.getAttribute('aria-pressed')).toBe('true');
     expect(document.querySelector('.pfi-globe-canvas')).toBeFalsy();
     expect(document.querySelector('.pfi-leaflet-map')).toBeTruthy();
+  });
+
+  it('shows a branded orbit animation while refreshing map reports', async () => {
+    let finish;
+    api.mockReturnValueOnce(new Promise((resolve) => { finish = resolve; }));
+    render(<PetaRukyat />);
+    expect((await screen.findByRole('status')).textContent).toMatch(/Memperbarui jaringan rukyat/i);
+    expect(document.querySelector('.pfi-refresh-logo img')?.getAttribute('src')).toBe('/images/pfi-brand.png');
+    finish([]);
+    await waitFor(() => expect(screen.queryByText(/Memperbarui jaringan rukyat/i)).toBeFalsy());
   });
 
   it('opens verified map reports in a draggable translucent bottom sheet', async () => {

@@ -718,3 +718,21 @@ input:disabled,select:disabled,textarea:disabled,button:disabled{cursor:not-allo
   .page-wrap :where(label,button,a,summary,dt,dd){font-size:14px!important;line-height:1.4!important}
   .page-wrap :where(.section-kicker,.eyebrow){font-size:11px!important}
 }
+
+/* Branded refresh feedback: decorative only, never a calculation source. */
+.pfi-refresh-orbit{position:absolute;z-index:850;inset:118px 0 62px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:7px;color:#edf5fc;background:rgba(3,12,24,.7);backdrop-filter:blur(10px);text-align:center;animation:pfiRefreshFade .2s ease}
+.pfi-refresh-orbit strong{font-size:15px}.pfi-refresh-orbit small{max-width:310px;color:#a7bbce;font-size:12px}
+.pfi-refresh-system{position:relative;width:142px;height:142px;margin-bottom:5px;display:grid;place-items:center}
+.pfi-refresh-logo{position:relative;z-index:3;width:62px;height:62px;display:grid;place-items:center;overflow:hidden;border:1px solid rgba(242,200,111,.55);border-radius:50%;background:#07172a;box-shadow:0 0 0 8px rgba(242,200,111,.06),0 0 30px rgba(104,188,235,.22)}
+.pfi-refresh-logo img{width:100%;height:100%;object-fit:cover}
+.pfi-refresh-system .orbit{position:absolute;inset:13px;border:1px solid rgba(117,196,236,.5);border-radius:50%;animation:pfiOrbitSpin 1.55s linear infinite}
+.pfi-refresh-system .orbit-b{inset:2px;border-color:rgba(242,200,111,.32);animation-duration:2.35s;animation-direction:reverse;transform:rotate(58deg) scaleY(.68)}
+.pfi-refresh-system .orbit-a{transform:rotate(-22deg) scaleY(.74)}
+.pfi-refresh-system .orbit b{position:absolute;top:50%;left:-5px;width:10px;height:10px;border-radius:50%;background:#7fd2f1;box-shadow:0 0 13px #7fd2f1}
+.pfi-refresh-system .orbit-b b{top:12%;right:8px;left:auto;background:#f2c86f;box-shadow:0 0 13px #f2c86f}
+.pfi-live-actions button.is-refreshing svg{animation:pfiSimpleSpin 1s linear infinite}
+@keyframes pfiOrbitSpin{to{rotate:360deg}}
+@keyframes pfiSimpleSpin{to{transform:rotate(360deg)}}
+@keyframes pfiRefreshFade{from{opacity:0}to{opacity:1}}
+@media(max-width:700px){.pfi-refresh-orbit{inset:128px 0 0;min-height:440px}.pfi-refresh-orbit strong{font-size:17px}.pfi-refresh-orbit small{font-size:14px!important;padding:0 24px}.pfi-refresh-system{width:164px;height:164px}.pfi-refresh-logo{width:70px;height:70px}}
+@media(prefers-reduced-motion:reduce){.pfi-refresh-system .orbit,.pfi-live-actions button.is-refreshing svg{animation:none}.pfi-refresh-orbit{animation:none}}
