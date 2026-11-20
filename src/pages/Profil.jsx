@@ -29,7 +29,7 @@ export default function Profil() {
   useEffect(() => { if (account) setForm({ name: account.name || '', org: account.org || '', bio: account.bio || '', avatarUrl: account.avatarUrl || '', coverTheme: account.coverTheme || 'orbit' }); }, [account?.id, account?.name, account?.org, account?.bio, account?.avatarUrl, account?.coverTheme]);
   useEffect(() => { if (!settingsOpen) return undefined; const escape = event => event.key === 'Escape' && setSettingsOpen(false); window.addEventListener('keydown', escape); return () => window.removeEventListener('keydown', escape); }, [settingsOpen]);
   const completeness = useMemo(() => account ? Math.round(([account.name, account.email, account.org, account.bio, account.avatarUrl].filter(Boolean).length / 5) * 100) : 0, [account]);
-  const contributions = useMemo(() => account ? (data.posts || []).filter(post => post.userId === account.id || post.user_id === account.id).length : 0, [data.posts, account?.id]);
+  const contributions = useMemo(() => account ? (data.posts || []).filter(post => post.authorId === account.id).length : 0, [data.posts, account?.id]);
 
   if (!account) return null;
   const verified = account.verification === 'verified';
@@ -77,7 +77,7 @@ export default function Profil() {
   return <div className="page-wrap profile-page">
     <section className={`profile-cover cover-${account.coverTheme || 'orbit'}`}>
       <div className="profile-cover-animation" aria-hidden="true"><i className="cover-orbit orbit-one"><b/></i><i className="cover-orbit orbit-two"><b/></i><i className="cover-meteor meteor-one"/><i className="cover-meteor meteor-two"/><i className="cover-ring ring-one"/><i className="cover-ring ring-two"/><span className="cover-stars">✦ · ✧ · ✦ · ✧</span></div>
-      <div className="profile-cover-copy"><span>PFI MEMBER SPACE</span><h1>{t('Profil Anggota', 'Member Profile')}</h1><p>{t('Identitas, reputasi, dan kontribusi Anda di jaringan pengamat falaq Indonesia.', 'Your identity, reputation, and contribution in Indonesia’s astronomy observer network.')}</p></div>
+      <div className="profile-cover-copy"><span>PFI MEMBER SPACE</span><h1>{t('Profil Anggota', 'Member Profile')}</h1><p>{t('Identitas dan kontribusi Anda di jaringan pengamat falak Indonesia.', 'Your identity and contributions in Indonesia’s astronomy observer network.')}</p></div>
       <div className="profile-cover-actions"><button className="profile-settings-trigger" onClick={() => setSettingsOpen(true)} aria-label={t('Buka pengaturan profil','Open profile settings')}><Settings2 size={19}/><span>{t('Pengaturan','Settings')}</span></button><button className="profile-edit" onClick={() => setEditing(!editing)}>{editing ? <X size={16}/> : <Edit3 size={16}/>} {editing ? t('Batal', 'Cancel') : t('Edit profil', 'Edit profile')}</button></div>
     </section>
 

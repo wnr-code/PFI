@@ -207,13 +207,18 @@ describe('PFI UI smoke tests in Happy DOM', () => {
 
   it('renders the professional profile for an authenticated member', () => {
     context.data.account = { id: 'member-1', name: 'Aep Falaq', email: 'aep@example.test', org: 'PFI', bio: '', role: 'observer', verification: 'verified', created: '2026-01-01T00:00:00Z', avatarUrl: 'https://example.test/avatar.jpg' };
+    context.data.posts = [{ id: 'own-post', authorId: 'member-1' }, { id: 'other-post', authorId: 'member-2' }];
+    context.data.groups = ['group-1', 'group-2'];
     render(<Profil />);
     expect(document.querySelector('.profile-cover h1')).toBeTruthy();
     expect(document.querySelector('.verified-mark')).toBeTruthy();
     expect(screen.getByText(/Kelengkapan profil/i)).toBeTruthy();
     expect(screen.getByText(/Email akun · privat/i)).toBeTruthy();
     expect(screen.getByRole('navigation', { name: /Tindakan profil/i })).toBeTruthy();
-    expect(screen.getByRole('region', { name: /Ringkasan profil/i })).toBeTruthy();
+    const summary = screen.getByRole('region', { name: /Ringkasan profil/i });
+    expect(summary.textContent).toMatch(/1Kontribusi/);
+    expect(summary.textContent).toMatch(/2Lembaga\/grup/);
+    expect(summary.textContent).toMatch(/80%Kelengkapan/);
     expect(screen.getByRole('button', { name: /Tampilan & pengaturan Avatar, sampul/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Edit profil Nama, lembaga/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Status verifikasi/i })).toBeTruthy();
@@ -228,6 +233,8 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     fireEvent.click(screen.getByRole('button', { name: /Tutup pengaturan/i }));
     expect(screen.queryByRole('dialog', { name: /Pengaturan profil/i })).toBeFalsy();
     context.data.account = null;
+    context.data.posts = [];
+    context.data.groups = [];
   });
 
   it('saves edited public profile fields through the authenticated API', async () => {
