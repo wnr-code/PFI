@@ -19,6 +19,9 @@ import PetaRukyat from './pages/PetaRukyat.jsx';
 import Laporan from './pages/Laporan.jsx';
 import Kamus from './pages/Kamus.jsx';
 import KalkulatorLapangan from './pages/KalkulatorLapangan.jsx';
+import Pengaturan from './pages/Pengaturan.jsx';
+import AjukanLembaga from './pages/AjukanLembaga.jsx';
+import { PedomanKeanggotaan, PedomanLembaga, PedomanVerifikasi, PedomanKeahlian, PedomanRukyat, PedomanEtika } from './pages/PedomanDetail.jsx';
 
 const routes = {
   beranda: Dashboard,
@@ -30,6 +33,14 @@ const routes = {
   laporan: Laporan,
   kamus: Kamus,
   kalkulator: KalkulatorLapangan,
+  pengaturan: Pengaturan,
+  'ajukan-lembaga': AjukanLembaga,
+  'pedoman-keanggotaan': PedomanKeanggotaan,
+  'pedoman-lembaga': PedomanLembaga,
+  'pedoman-verifikasi': PedomanVerifikasi,
+  'pedoman-keahlian': PedomanKeahlian,
+  'pedoman-rukyat': PedomanRukyat,
+  'pedoman-etika': PedomanEtika,
 };
 
 export default function App() {

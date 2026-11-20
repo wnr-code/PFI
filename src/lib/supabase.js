@@ -41,13 +41,13 @@ export function initializeIdentity() {
       callback.searchParams.delete('error');
       callback.searchParams.delete('error_code');
       callback.searchParams.delete('error_description');
-      window.history.replaceState({}, document.title, `${callback.pathname}${callback.search}${callback.hash || '#/beranda'}`);
+      window.history.replaceState({}, document.title, `${callback.pathname || '/beranda'}${callback.search}`);
       throw new Error(decodeURIComponent(oauthError.replaceAll('+', ' ')));
     }
     if (!code) return null;
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     callback.searchParams.delete('code');
-    window.history.replaceState({}, document.title, `${callback.pathname}${callback.search}${callback.hash || '#/beranda'}`);
+    window.history.replaceState({}, document.title, `${callback.pathname || '/beranda'}${callback.search}`);
     if (error) throw error;
     return data.session || null;
   })();
