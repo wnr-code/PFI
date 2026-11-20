@@ -1,7 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateHisab, SITES } from '../src/lib/astro.js';
-import { reportSections, resultRows } from '../src/lib/export.js';
+import { exportReport, reportSections, resultRows } from '../src/lib/export.js';
+
+test('hisab report export requires an accountable signed-in publisher', async () => {
+  const site = SITES.find((item) => item.id === 'tasik');
+  const result = calculateHisab({ start: '2013-08-08', day: 1, month: 10, year: 1434 }, site);
+  await assert.rejects(exportReport(result, 'id', 'pdf'), /Masuk ke akun PFI/);
+});
 
 test('hisab report preserves seconds and formats angular results as DMS', () => {
   const site = SITES.find((item) => item.id === 'tasik');
