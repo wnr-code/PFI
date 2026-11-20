@@ -13,6 +13,9 @@ export function AuthModal() {
   const { close, tell, t, auth, isAuthConfigured } = usePFI();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [dragY, setDragY] = useState(0);
+  const dragStart = useRef(null);
+  const dragDistance = useRef(0);
   const buttonRef = useRef(null);
   const configured = isAuthConfigured();
 
@@ -22,6 +25,10 @@ export function AuthModal() {
     window.addEventListener('keydown', escape);
     return () => window.removeEventListener('keydown', escape);
   }, [close]);
+
+  const startDrag = (event) => { dragStart.current = event.touches[0].clientY; dragDistance.current = 0; setDragY(0); };
+  const moveDrag = (event) => { if (dragStart.current === null) return; dragDistance.current = Math.max(0, event.touches[0].clientY - dragStart.current); setDragY(dragDistance.current); };
+  const endDrag = () => { if (dragDistance.current > 90) close(); dragStart.current = null; dragDistance.current = 0; setDragY(0); };
 
   const signIn = async () => {
     setErr('');
@@ -38,8 +45,8 @@ export function AuthModal() {
   };
 
   return <div className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && close()}>
-    <section className="modal auth-google-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <header className="modal-head"><div><span className="eyebrow">PFI · PLATFORM FALAK INDONESIA</span><h2 id="modal-title">{t('Masuk ke PFI', 'Sign in to PFI')}</h2></div><button type="button" className="close-btn" onClick={close} aria-label={t('Tutup dialog', 'Close dialog')}>✕</button></header>
+    <section className="modal auth-google-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" style={dragY ? { transform: `translateY(${dragY}px)`, transition: 'none' } : undefined}>
+      <header className="modal-head modal-drag-handle" onTouchStart={startDrag} onTouchMove={moveDrag} onTouchEnd={endDrag}><div><span className="eyebrow">PFI · PLATFORM FALAK INDONESIA</span><h2 id="modal-title">{t('Masuk ke PFI', 'Sign in to PFI')}</h2></div><button type="button" className="close-btn" onClick={close} aria-label={t('Tutup dialog', 'Close dialog')}>✕</button></header>
       <div className="modal-body">
         <div className="auth-shield"><ShieldCheck size={28}/></div>
         <p className="auth-intro">{t('Gunakan akun Google untuk masuk dengan cepat dan aman. PFI hanya menerima informasi dasar akun yang diperlukan untuk mengenali Anda.', 'Use your Google account to sign in quickly and securely. PFI only receives the basic account information needed to identify you.')}</p>
