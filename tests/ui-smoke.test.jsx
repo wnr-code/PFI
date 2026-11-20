@@ -81,6 +81,9 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     fireEvent.click(screen.getByRole('button', { name: /Informasi mode kompas/i }));
     expect(screen.getByRole('dialog', { name: /Mengapa kompas tidak bergerak/i })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Tutup informasi/i }));
+    expect(screen.getByRole('button', { name: /Kompas Langsung/i })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Kompas Langsung/i }));
+    expect(screen.getByRole('status').textContent).toMatch(/Menunggu data sensor|Sensor orientasi tidak tersedia/i);
     fireEvent.click(screen.getByRole('tab', { name: /Posisi Langit/i }));
     expect(screen.getByText(/Tinggi Matahari/i)).toBeTruthy();
     expect(screen.getByText(/Input manual/i)).toBeTruthy();
