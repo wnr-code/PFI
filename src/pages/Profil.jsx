@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { usePFI } from '../state.jsx';
 import { api } from '../lib/api.js';
-import { Bell, Building2, CalendarDays, Camera, Check, Edit3, FileText, Globe2, Languages, LogOut, Mail, Medal, Save, Settings2, ShieldCheck, Sparkles, Upload, UserRound, X } from 'lucide-react';
+import { Bell, Building2, CalendarDays, Camera, Check, ChevronRight, Edit3, FileText, Globe2, Languages, LogOut, Mail, Medal, Save, Settings2, ShieldCheck, Sparkles, Upload, UserRound, X } from 'lucide-react';
 
 const roleInfo = {
   observer: ['Pengamat', 'Observer'], reviewer: ['Reviewer', 'Reviewer'], admin: ['Administrator', 'Administrator'],
@@ -92,6 +92,8 @@ export default function Profil() {
       </div>
       <div className="profile-trust"><small>{t('STATUS AKUN', 'ACCOUNT STATUS')}</small><b>{verified ? t('Terverifikasi', 'Verified') : account.verification === 'pending' ? t('Sedang ditinjau', 'Under review') : t('Belum terverifikasi', 'Not verified')}</b><span>{verified ? t('Identitas telah diperiksa PFI', 'Identity reviewed by PFI') : t('Lengkapi profil dan ajukan verifikasi', 'Complete your profile and request verification')}</span><div className="profile-completeness"><i style={{width:`${completeness}%`}}/><small>{t('Kelengkapan profil','Profile completeness')} {completeness}%</small></div></div>
     </section>
+
+    <nav className="mobile-profile-tools" aria-label={t('Tindakan profil','Profile actions')}><button type="button" onClick={()=>setSettingsOpen(true)}><span><Settings2 size={20}/></span><div><b>{t('Pengaturan profil','Profile settings')}</b><small>{t('Avatar, sampul, bahasa, dan akun','Avatar, cover, language, and account')}</small></div><ChevronRight size={19}/></button><button type="button" onClick={()=>setEditing(value=>!value)}><span><Edit3 size={20}/></span><div><b>{editing?t('Tutup editor','Close editor'):t('Edit informasi','Edit information')}</b><small>{t('Nama, lembaga, dan bio','Name, institution, and bio')}</small></div><ChevronRight size={19}/></button></nav>
 
     <div className="profile-layout">
       <main>

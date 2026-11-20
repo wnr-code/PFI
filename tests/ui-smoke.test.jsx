@@ -212,7 +212,10 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     expect(document.querySelector('.verified-mark')).toBeTruthy();
     expect(screen.getByText(/Kelengkapan profil/i)).toBeTruthy();
     expect(screen.getByText(/Email akun · privat/i)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /Buka pengaturan profil/i }));
+    expect(screen.getByRole('navigation', { name: /Tindakan profil/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Pengaturan profil Avatar, sampul/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Edit informasi Nama, lembaga/i })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Pengaturan profil Avatar, sampul/i }));
     expect(screen.getByRole('dialog', { name: /Pengaturan profil/i })).toBeTruthy();
     expect(screen.getByText(/Tampilan profil/i)).toBeTruthy();
     expect(screen.getByText(/^Animasi sampul$/i)).toBeTruthy();
