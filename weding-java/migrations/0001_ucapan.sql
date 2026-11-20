@@ -1,5 +1,5 @@
 -- Undangan Ja'far & Iklimah — tabel ucapan & konfirmasi kehadiran.
--- Jalankan: npx wrangler d1 migrations apply undangan-jafar-iklimah --remote
+-- Jalankan: npx wrangler d1 migrations apply weding-java --remote
 
 CREATE TABLE IF NOT EXISTS ucapan (
   id          TEXT PRIMARY KEY,

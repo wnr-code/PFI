@@ -1,15 +1,15 @@
-# Undangan Ja'far & Iklimah — tes API dan validasi konfigurasi Cloudflare.
-name: Undangan checks
+# weding-java — tes API undangan & validasi konfigurasi Cloudflare.
+name: weding-java checks
 
 on:
   push:
     paths:
-      - 'undangan/**'
-      - '.github/workflows/undangan-checks.yml'
+      - 'weding-java/**'
+      - '.github/workflows/weding-java-checks.yml'
   pull_request:
     paths:
-      - 'undangan/**'
-      - '.github/workflows/undangan-checks.yml'
+      - 'weding-java/**'
+      - '.github/workflows/weding-java-checks.yml'
 
 permissions:
   contents: read
@@ -20,7 +20,7 @@ jobs:
     timeout-minutes: 10
     defaults:
       run:
-        working-directory: undangan
+        working-directory: weding-java
     steps:
       - name: Checkout
         uses: actions/checkout@v4

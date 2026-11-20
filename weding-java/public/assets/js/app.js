@@ -78,7 +78,7 @@ const W = CONFIG.waktu;
 const namaBapak = (p) => `${p.bapak}${p.bapakAlmarhum ? " (alm)" : ""}`;
 const igUrl = (p) => (p.instagram ? `https://instagram.com/${p.instagram.replace(/^@/, "")}` : "");
 
-const TAMU_KEY = "undangan-jafar-iklimah:tamu";
+const TAMU_KEY = "weding-java:tamu";
 function ambilTamu() {
   const p = new URLSearchParams(location.search);
   const mentah = (p.get("to") || p.get("kepada") || p.get("nama") || "").trim();
@@ -343,7 +343,7 @@ function pasangKalender() {
       "PRODID:-//Ja'far & Iklimah//Undangan//ID",
       "CALSCALE:GREGORIAN",
       "BEGIN:VEVENT",
-      `UID:${Date.now()}@undangan-jafar-iklimah`,
+      `UID:${Date.now()}@weding-java`,
       `DTSTAMP:${stamp}`,
       `DTSTART:${k.mulaiIso}`,
       `DTEND:${k.selesaiIso}`,

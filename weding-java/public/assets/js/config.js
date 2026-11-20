@@ -13,7 +13,7 @@ export const CONFIG = {
     deskripsi:
       "Undangan pernikahan Dikdik Ja'far Shiddik & Risva Iklimah Adawiyah — Minggu, 3 Januari 2027 (25 Rajab 1448 H) di Gedung Islamic Center, Singaparna, Tasikmalaya.",
     // Ganti dengan alamat situs Anda setelah deploy (dipakai untuk preview WhatsApp).
-    url: "https://undangan-jafar-iklimah.pages.dev",
+    url: "https://weding-java.pages.dev",
     // Gambar preview saat tautan dibagikan.
     gambar: "assets/img/foto-bersama.jpg",
   },

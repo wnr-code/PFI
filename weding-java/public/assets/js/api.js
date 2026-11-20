@@ -5,7 +5,7 @@
  */
 
 const API = "/api/ucapan";
-const KUNCI_LOKAL = "undangan-jafar-iklimah:ucapan";
+const KUNCI_LOKAL = "weding-java:ucapan";
 
 const bacaLokal = () => {
   try {

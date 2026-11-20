@@ -68,7 +68,7 @@ export default {
     try {
       if (rute === "GET /api/health") {
         return json(
-          { ok: true, layanan: "undangan-jafar-iklimah", database: Boolean(env.DB), waktu: new Date().toISOString() },
+          { ok: true, layanan: "weding-java", database: Boolean(env.DB), waktu: new Date().toISOString() },
           200,
           cors
         );

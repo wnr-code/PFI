@@ -1,4 +1,6 @@
-# Undangan Pernikahan Digital — Ja'far & Iklimah
+# weding-java — Undangan Pernikahan Ja'far & Iklimah
+
+**Nama proyek:** `weding-java` · **Worker/Worker name:** `weding-java` · **Database D1:** `weding-java`
 
 Undangan pernikahan **Dikdik Ja'far Shiddik** & **Risva Iklimah Adawiyah**
 — Minggu, **3 Januari 2027** / **25 Rajab 1448 H** — Gedung Islamic Center,
@@ -40,7 +42,7 @@ Tambahan yang sudah termasuk:
 ## Struktur
 
 ```
-undangan/
+weding-java/
 ├─ public/                        # aset statis (Cloudflare Static Assets)
 │  ├─ index.html
 │  ├─ _headers                    # header keamanan & cache
@@ -72,7 +74,7 @@ undangan/
 Tidak perlu `npm install` — server pengembangan hanya memakai modul bawaan Node.
 
 ```bash
-cd undangan
+cd weding-java
 node server/dev.mjs          # buka http://localhost:4321
 ```
 
@@ -191,9 +193,9 @@ untuk menyembunyikan seluruh bagian tanda kasih.
 ### 4.1 Siapkan database D1
 
 ```bash
-cd undangan
+cd weding-java
 npx --yes wrangler@4.165.0 login        # sekali saja
-npx --yes wrangler@4.165.0 d1 create undangan-jafar-iklimah
+npx --yes wrangler@4.165.0 d1 create weding-java
 ```
 
 Perintah terakhir mencetak `database_id`. Salin nilainya ke
@@ -203,7 +205,7 @@ Sekaligus ubah `IP_SALT` menjadi kalimat acak Anda.
 ### 4.2 Terapkan skema
 
 ```bash
-npx --yes wrangler@4.165.0 d1 migrations apply undangan-jafar-iklimah --remote
+npx --yes wrangler@4.165.0 d1 migrations apply weding-java --remote
 ```
 
 ### 4.3 Deploy
@@ -212,12 +214,12 @@ npx --yes wrangler@4.165.0 d1 migrations apply undangan-jafar-iklimah --remote
 npx --yes wrangler@4.165.0 deploy
 ```
 
-Wrangler akan mencetak URL `https://undangan-jafar-iklimah.<subdomain>.workers.dev`.
+Wrangler akan mencetak URL `https://weding-java.<subdomain>.workers.dev`.
 Periksa `/api/health` → `{"ok":true,"database":true}`.
 
 ### 4.4 Domain sendiri (opsional)
 
-Di Dashboard Cloudflare → **Workers & Pages → undangan-jafar-iklimah →
+Di Dashboard Cloudflare → **Workers & Pages → weding-java →
 Settings → Domains & Routes → Add custom domain**, misalnya
 `undangan.namadomain.com`. Setelah itu perbarui `meta.url` di `config.js`.
 
@@ -226,7 +228,7 @@ Settings → Domains & Routes → Add custom domain**, misalnya
 Dua workflow sudah disiapkan:
 
 - `.github/workflows/undangan-checks.yml` — tes + `wrangler deploy --dry-run`
-  setiap ada perubahan di folder `undangan/`.
+  setiap ada perubahan di folder `weding-java/`.
 - `.github/workflows/undangan-deploy.yml` — deploy manual dengan konfirmasi
   tertulis. Butuh secret `CLOUDFLARE_API_TOKEN` dan `CLOUDFLARE_ACCOUNT_ID`
   (sama seperti workflow PFI).
@@ -263,21 +265,21 @@ buat pemendek tautan (mis. `s.id`, `bit.ly`) agar rapi di WhatsApp.
 Melihat ucapan yang masuk:
 
 ```bash
-npx --yes wrangler@4.165.0 d1 execute undangan-jafar-iklimah --remote \
+npx --yes wrangler@4.165.0 d1 execute weding-java --remote \
   --command "SELECT nama, kehadiran, jumlah, pesan, created_at FROM ucapan ORDER BY created_at DESC LIMIT 50"
 ```
 
 Rekap kehadiran:
 
 ```bash
-npx --yes wrangler@4.165.0 d1 execute undangan-jafar-iklimah --remote \
+npx --yes wrangler@4.165.0 d1 execute weding-java --remote \
   --command "SELECT kehadiran, COUNT(*) jumlah, SUM(jumlah) tamu FROM ucapan GROUP BY kehadiran"
 ```
 
 Hapus satu ucapan yang tidak pantas:
 
 ```bash
-npx --yes wrangler@4.165.0 d1 execute undangan-jafar-iklimah --remote \
+npx --yes wrangler@4.165.0 d1 execute weding-java --remote \
   --command "DELETE FROM ucapan WHERE id = 'UUID-UCAPAN'"
 ```
 
@@ -305,7 +307,7 @@ npx --yes wrangler@4.165.0 d1 execute undangan-jafar-iklimah --remote \
 node server/dev.mjs                              # pratinjau lokal
 node --test tests/*.test.mjs                     # tes API
 npx wrangler@4.165.0 deploy --dry-run            # validasi konfigurasi
-npx wrangler@4.165.0 d1 migrations apply undangan-jafar-iklimah --remote
+npx wrangler@4.165.0 d1 migrations apply weding-java --remote
 npx wrangler@4.165.0 deploy                      # terbit
 ```
 

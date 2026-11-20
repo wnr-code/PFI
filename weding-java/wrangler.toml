@@ -1,8 +1,8 @@
 # Undangan pernikahan Ja'far & Iklimah
 # Deploy: npx wrangler deploy
-# Ganti database_id di bawah dengan hasil `npx wrangler d1 create undangan-jafar-iklimah`.
+# Ganti database_id di bawah dengan hasil `npx wrangler d1 create weding-java`.
 
-name = "undangan-jafar-iklimah"
+name = "weding-java"
 main = "worker/index.js"
 compatibility_date = "2026-11-20"
 
@@ -17,7 +17,7 @@ not_found_handling = "single-page-application"
 # GANTI dengan ID milik akun Cloudflare Anda sebelum deploy.
 [[d1_databases]]
 binding = "DB"
-database_name = "undangan-jafar-iklimah"
+database_name = "weding-java"
 database_id = "00000000-0000-0000-0000-000000000000"
 migrations_dir = "migrations"
 

@@ -101,7 +101,7 @@ async function api(req, res, url) {
   const rute = `${req.method} ${url.pathname.replace(/\/+$/, "")}`;
 
   if (rute === "GET /api/health") {
-    return kirimJson(res, 200, { ok: true, layanan: "undangan-jafar-iklimah", database: "lokal", mode: "dev" });
+    return kirimJson(res, 200, { ok: true, layanan: "weding-java", database: "lokal", mode: "dev" });
   }
 
   if (rute === "GET /api/ucapan") {

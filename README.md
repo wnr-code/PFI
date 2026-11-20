@@ -12,7 +12,7 @@ Ruang observasi digital untuk hisab awal bulan, simulasi hilal, peta rukyat, dan
 
 ## Sub-proyek
 
-- **Undangan pernikahan digital** (Cloudflare Workers + D1, terpisah dari aplikasi falak): lihat [`undangan/README.md`](undangan/README.md).
+- **`weding-java`** — undangan pernikahan digital Ja'far & Iklimah (Cloudflare Workers + D1, terpisah dari aplikasi falak): lihat [`weding-java/README.md`](weding-java/README.md).
 
 ## Arsitektur data
 
