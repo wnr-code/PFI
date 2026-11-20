@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker, { canReviewEntity, canViewGroup, canViewPost, ensureUserSchema, groupSlug, HISAB_METHODS, normalizeHisabSite, normalizeRukyatDetails, uploadContentLengthStatus } from '../worker/index.js';
-import { SITES, calculateHisab, clock, eclipseTimeline, lunar, sunsetTime } from '../src/lib/astro.js';
+import { SITES, calculateHisab, clock, eclipseTimeline, lunar, meetsMabims, sunsetTime } from '../src/lib/astro.js';
 
 test('Worker health endpoint verifies D1 schema and authentication configuration', async () => {
   const requiredTables = [
@@ -260,6 +260,13 @@ test('real-time eclipse timeline activates only inside observed contact times', 
   assert.equal(typeof during.visible, 'boolean');
 });
 
+test('MABIMS evaluates true elongation rather than the 0–360 lunar phase angle', () => {
+  assert.equal(meetsMabims(3, 6.4), true);
+  assert.equal(meetsMabims(2.999, 6.4), false);
+  assert.equal(meetsMabims(3, 6.399), false);
+  assert.equal(meetsMabims(5, Number.NaN), false);
+});
+
 test('an eclipse in progress below the local horizon is not labelled LIVE', () => {
   // The 3 March 2026 lunar eclipse starts before moonrise in Tasikmalaya.
   const tasik = SITES.find((site) => site.id === 'tasik');
@@ -270,6 +277,18 @@ test('an eclipse in progress below the local horizon is not labelled LIVE', () =
   assert.equal(event.active, false);
   assert.equal(event.phase, 'below-horizon');
   assert.ok(event.progress > 0 && event.progress < 1);
+  assert.ok(event.contacts.current < 0);
+});
+
+test('an eclipse that continues after moonset stops being labelled LIVE', () => {
+  const tasik = SITES.find((site) => site.id === 'tasik');
+  const event = eclipseTimeline(new Date('2027-02-21T01:12:00Z'), tasik).find((item) => item.body === 'Moon');
+  assert.equal(event.withinContacts, true);
+  assert.equal(event.visible, true); // Earlier contacts were observable before moonset.
+  assert.equal(event.currentVisible, false);
+  assert.equal(event.active, false);
+  assert.equal(event.phase, 'below-horizon');
+  assert.ok(event.progress > 0.9);
   assert.ok(event.contacts.current < 0);
 });
 

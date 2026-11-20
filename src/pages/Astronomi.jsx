@@ -7,7 +7,7 @@
  */
 import React, { useState, useMemo, useEffect } from 'react';
 import { usePFI } from '../state.jsx';
-import { lunar, position, localTime, zlabel, SITES, eclipseTimeline, dateFmt, clock } from '../lib/astro.js';
+import { lunar, position, localTime, zlabel, SITES, eclipseTimeline, dateFmt, clock, meetsMabims } from '../lib/astro.js';
 import { Moon, Sun, Play, Compass, Crosshair, Orbit, Telescope, Eclipse, Timer, Info } from 'lucide-react';
 
 export default function Astronomi() {
@@ -31,7 +31,7 @@ export default function Astronomi() {
       return { alt: '0', az: '0', ra: '0', dec: '0', dist: '0' };
     }
   }, [instant, site]);
-  const meets = Number(simulasi.alt) >= 3 && moon.angle >= 6.4;
+  const meets = meetsMabims(Number(simulasi.alt), moon.elongation);
   const altitude = Math.max(4, Math.min(86, Number(simulasi.alt)));
   const moonLeft = Math.max(8, Math.min(92, 50 + (Number(simulasi.az) - 270) * .35));
 
@@ -68,7 +68,7 @@ export default function Astronomi() {
       <section className="science-metrics" aria-label={t('Hasil simulasi', 'Simulation results')}>
         <article><span><Moon size={17} />{t('Tinggi hilal', 'Crescent height')}</span><b>{simulasi.alt}°</b><small>{t('terhadap horizon', 'above horizon')}</small></article>
         <article><span><Compass size={17} />{t('Azimut', 'Azimuth')}</span><b>{simulasi.az}°</b><small>{t('arah kompas', 'compass bearing')}</small></article>
-        <article><span><Orbit size={17} />{t('Elongasi', 'Elongation')}</span><b>{moon.angle?.toFixed?.(1) ?? '—'}°</b><small>{t('bulan–matahari', 'moon–sun')}</small></article>
+        <article><span><Orbit size={17} />{t('Elongasi', 'Elongation')}</span><b>{moon.elongation?.toFixed?.(1) ?? '—'}°</b><small>{t('bulan–matahari', 'moon–sun')}</small></article>
         <article><span><Crosshair size={17} />{t('Jarak bulan', 'Moon distance')}</span><b>{Number(simulasi.dist).toLocaleString('id-ID')}</b><small>km</small></article>
       </section>
 

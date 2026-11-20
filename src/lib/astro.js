@@ -41,6 +41,7 @@ const rad=(value)=>value*Math.PI/180;
 const deg=(value)=>value*180/Math.PI;
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const signedAngle=(value)=>((value+540)%360)-180;
+export const meetsMabims=(altitude,elongation)=>Number.isFinite(altitude)&&Number.isFinite(elongation)&&altitude>=3&&elongation>=6.4;
 function airlessPosition(body,d,l,geocentric=false){
  const obs=new Observer(l.lat,l.lon,l.elev);
  const e=geocentric?EquatorFromVector(RotateVector(Rotation_EQJ_EQD(d),GeoVector(body,d,true))):Equator(body,d,obs,true,true);
@@ -66,7 +67,7 @@ function adDurrulHilal(sunset,l,elongation){
  const altitudeDifference=moon.alt-sun.alt;
  const angularDistance=deg(Math.acos(clamp(Math.cos(rad(azimuthDifference))*Math.cos(rad(altitudeDifference)),-1,1)));
  const muktsulMinutes=Math.max(0,moon.alt*4);
- return{moon,sun,geocentricAltitude:moon.alt,parallaxCorrectedAltitude,topocentricAltitude,horizontalParallax,parallax,refraction,dip,semiDiameter,elongation,topocentricElongation,illumination:100*Illumination('Moon',sunset).phase_fraction,muktsulMinutes,estimatedMoonset:new Date(+sunset+muktsulMinutes*60000).toISOString(),azimuthDifference,altitudeDifference,angularDistance,position:azimuthDifference<0?'south':'north',meets:topocentricAltitude>=3&&elongation>=6.4};
+ return{moon,sun,geocentricAltitude:moon.alt,parallaxCorrectedAltitude,topocentricAltitude,horizontalParallax,parallax,refraction,dip,semiDiameter,elongation,topocentricElongation,illumination:100*Illumination('Moon',sunset).phase_fraction,muktsulMinutes,estimatedMoonset:new Date(+sunset+muktsulMinutes*60000).toISOString(),azimuthDifference,altitudeDifference,angularDistance,position:azimuthDifference<0?'south':'north',meets:meetsMabims(topocentricAltitude,elongation)};
 }
 export function calculateHisab(period,l,method='comparison'){
  if(!['comparison','mabims'].includes(method))throw new Error('Metode hisab belum didukung.');
@@ -75,7 +76,7 @@ export function calculateHisab(period,l,method='comparison'){
  const start=localTime(period.start,'00:00',l),conj=SearchMoonPhase(0,new Date(+start-5*DAY),10).date;
  const sunset=SearchRiseSet('Sun',new Observer(l.lat,l.lon,l.elev),-1,conj,2).date;
  const moon=position('Moon',sunset,l),sun=position('Sun',sunset,l),elongation=AngleFromSun('Moon',sunset),age=(sunset-conj)/3600000;
- const modern={moon,sun,elongation,age,illumination:100*Illumination('Moon',sunset).phase_fraction,meets:moon.alt>=3&&elongation>=6.4,engine:'Astronomy Engine 2.1.19'};
+ const modern={moon,sun,elongation,age,illumination:100*Illumination('Moon',sunset).phase_fraction,meets:meetsMabims(moon.alt,elongation),engine:'Astronomy Engine 2.1.19'};
  const adDurrul=adDurrulHilal(sunset,l,elongation);
  const comparison={altitudeDifference:modern.moon.alt-adDurrul.topocentricAltitude,elongationDifference:modern.elongation-adDurrul.elongation,note:'Diagnostic only: the models use different altitude corrections; this is not an accuracy verdict.'};
  return{id:crypto.randomUUID(),created:new Date().toISOString(),period,loc:l,method:'comparison',conj:conj.toISOString(),sunset:sunset.toISOString(),moon,sun,elongation,age,meets:modern.meets,models:{modern,adDurrul},comparison,criteria:{name:'MABIMS 2021',minAltitude:3,minElongation:6.4},audit:{schema:'pfi-hisab-v2',modernEngine:'Astronomy Engine 2.1.19',kitabReference:'Ad-Durrul Aniq terjemahan Kemenag RI 2025, hlm. 28 dan 39–43',ephemerisBase:'Astronomy Engine 2.1.19',locationSource:l.source||'catalog',locationAccuracy:Number.isFinite(l.accuracy)?l.accuracy:null,calculatedAt:new Date().toISOString()}};
