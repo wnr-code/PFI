@@ -51,7 +51,7 @@ export default function Profil() {
       </div>
       <div className="profile-person">
         <div className="profile-name"><h2>{account.name}</h2>{verified && <span className="verified-mark" title={t('Akun terverifikasi', 'Verified account')}><Check size={13}/></span>}</div>
-        <p>{account.org || t('Anggota Pusat Falaq Indonesia', 'Pusat Falaq Indonesia member')}</p>
+        <p>{account.org || t('Anggota Platform Falak Indonesia', 'Platform Falak Indonesia member')}</p>
         <div className="profile-badges"><span className={`role-badge ${account.role}`}><UserRound size={12}/>{t(...role)}</span><span className="frame-badge"><Medal size={12}/>{t('Bingkai Kontributor', 'Contributor frame')}</span></div>
       </div>
       <div className="profile-trust"><small>{t('STATUS AKUN', 'ACCOUNT STATUS')}</small><b>{verified ? t('Terverifikasi', 'Verified') : account.verification === 'pending' ? t('Sedang ditinjau', 'Under review') : t('Belum terverifikasi', 'Not verified')}</b><span>{verified ? t('Identitas telah diperiksa PFI', 'Identity reviewed by PFI') : t('Lengkapi profil dan ajukan verifikasi', 'Complete your profile and request verification')}</span></div>

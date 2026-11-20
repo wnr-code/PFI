@@ -1,6 +1,6 @@
-# Panduan Umum Anggota Pusat Falak Indonesia (PFI)
+# Panduan Umum Anggota Platform Falak Indonesia (PFI)
 
-Dokumen ini merupakan panduan awal bagi calon anggota, pengamat, dan lembaga yang ingin berpartisipasi dalam kegiatan Pusat Falak Indonesia (PFI).
+Dokumen ini merupakan panduan awal bagi calon anggota, pengamat, dan lembaga yang ingin berpartisipasi dalam kegiatan Platform Falak Indonesia (PFI).
 
 ## 1. Mengenal PFI
 

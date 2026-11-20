@@ -5,7 +5,7 @@ import { ArrowLeft, BookOpen, CheckCircle2, Info, ShieldCheck, ClipboardCopy, Cl
 
 const GUIDES = {
  membership: {
-  title:'Pedoman Keanggotaan',en:'Membership Guidelines',intro:'Ketentuan dasar bagi individu yang bergabung dalam ruang kolaborasi Pusat Falak Indonesia.',introEn:'Basic guidance for individuals joining the Pusat Falak Indonesia collaboration space.',
+  title:'Pedoman Keanggotaan',en:'Membership Guidelines',intro:'Ketentuan dasar bagi individu yang bergabung dalam ruang kolaborasi Platform Falak Indonesia.',introEn:'Basic guidance for individuals joining the Platform Falak Indonesia collaboration space.',
   blocks:[
    ['Siapa yang dapat bergabung','Keanggotaan terbuka bagi pengamat mandiri, pelajar, pendidik, praktisi ilmu falak, komunitas, dan masyarakat yang berminat mempelajari astronomi Islam serta pengamatan hilal. Pendaftaran tidak mensyaratkan seseorang berasal dari organisasi tertentu.','Who may join','Membership is open to independent observers, students, educators, falak practitioners, communities, and anyone interested in Islamic astronomy and crescent observation. Membership is not limited to a particular organization.'],
    ['Data akun','Gunakan nama dan alamat kontak yang benar. Lengkapi profil seperlunya. Jangan memasukkan data pribadi orang lain tanpa persetujuan dan jangan membagikan kata sandi atau kode OTP kepada siapa pun.','Account information','Use an accurate name and contact details. Complete only the information needed. Do not submit another person’s personal data without consent or share passwords or one-time codes.'],

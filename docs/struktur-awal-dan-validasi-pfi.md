@@ -1,6 +1,6 @@
 # Struktur Awal dan Pedoman Validasi PFI
 
-Dokumen ini adalah rancangan operasional awal untuk membantu Pusat Falak Indonesia (PFI) memulai kegiatan secara tertib. Dokumen ini **bukan** penetapan badan hukum, pengesahan organisasi mitra, atau keputusan resmi tentang awal bulan/isbat.
+Dokumen ini adalah rancangan operasional awal untuk membantu Platform Falak Indonesia (PFI) memulai kegiatan secara tertib. Dokumen ini **bukan** penetapan badan hukum, pengesahan organisasi mitra, atau keputusan resmi tentang awal bulan/isbat.
 
 ## 1. Prinsip dasar
 
