@@ -21,7 +21,10 @@ test('hisab report preserves seconds and formats angular results as DMS', () => 
   const sections = reportSections(result, 'id');
   assert.deepEqual(sections.map((section) => section.title), ['Ringkasan perhitungan', 'Astronomi modern', 'Koreksi Ad-Durrul Aniq', 'Sumber dan jejak audit']);
   const kitabRows = Object.fromEntries(sections[2].rows);
-  for (const label of ['Paralaks horizontal (HP)', 'Paralaks Bulan (P)', 'Setelah paralaks (hc−P)', 'Refraksi', 'Kerendahan ufuk', 'Semidiameter Bulan', 'Tinggi terkoreksi', 'Elongasi toposentris']) {
+  for (const label of ['Paralaks horizontal (HP)', 'Paralaks Bulan (P)', 'Setelah paralaks (hc−P)', 'Refraksi', 'Kerendahan ufuk', 'Semidiameter Bulan', 'Tinggi terkoreksi', 'Elongasi geosentris', 'Elongasi toposentris', 'Beda azimut (z)', 'Beda tinggi (Y)', 'Jarak sudut (C)']) {
     assert.match(kitabRows[label], /^−?\d+° \d{2}′ \d{2}\.\d{2}″$/, label);
   }
+  assert.match(kitabRows['Perkiraan Bulan terbenam'], /\b\d{2}[:.]\d{2}[:.]\d{2}\b/);
+  assert.match(kitabRows['Nurul Hilal (ephemeris hibrida)'], /^\d+\.\d{3}%$/);
+  assert.ok(['Selatan Matahari', 'Utara Matahari'].includes(kitabRows['Posisi hilal']));
 });

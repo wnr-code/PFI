@@ -284,6 +284,13 @@ test('Ad-Durrul Aniq correction chain preserves signs, units, and algebraic orde
     assert.equal(k.secondaryCorrectionsApplied, true);
     const expected = k.parallaxCorrectedAltitude + k.refraction + k.dip - k.semiDiameter;
     assert.ok(Math.abs(k.topocentricAltitude - expected) < 1e-12);
+    const toRad = value => value * Math.PI / 180;
+    const toDeg = value => value * 180 / Math.PI;
+    const expectedTopocentricElongation = toDeg(Math.acos(Math.sin(toRad(k.topocentricAltitude)) * Math.sin(toRad(k.sun.alt)) + Math.cos(toRad(k.topocentricAltitude)) * Math.cos(toRad(k.sun.alt)) * Math.cos(toRad(k.azimuthDifference))));
+    const expectedAngularDistance = toDeg(Math.acos(Math.cos(toRad(k.azimuthDifference)) * Math.cos(toRad(k.altitudeDifference))));
+    assert.ok(Math.abs(k.topocentricElongation - expectedTopocentricElongation) < 1e-12);
+    assert.ok(Math.abs(k.angularDistance - expectedAngularDistance) < 1e-12);
+    assert.ok(Math.abs(k.altitudeDifference - (k.geocentricAltitude - k.sun.alt)) < 1e-12);
     assert.equal(k.meets, meetsMabims(k.topocentricAltitude, k.elongation));
     assert.match(k.illuminationSource, /hybrid.*not yet transcribed/i);
   }
