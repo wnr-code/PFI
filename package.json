@@ -1,7 +1,7 @@
 {
-  "name": "pusat-falaq-indonesia",
+  "name": "platform-falak-indonesia",
   "version": "0.1.0",
-  "description": "Ruang observasi digital Pusat Falaq Indonesia",
+  "description": "Ruang observasi digital Platform Falak Indonesia",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "dev": "node server/start.mjs",

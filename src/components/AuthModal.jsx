@@ -39,7 +39,7 @@ export function AuthModal() {
 
   return <div className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && close()}>
     <section className="modal auth-google-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <header className="modal-head"><div><span className="eyebrow">PFI · FALAQ INDONESIA</span><h2 id="modal-title">{t('Masuk ke PFI', 'Sign in to PFI')}</h2></div><button type="button" className="close-btn" onClick={close} aria-label={t('Tutup dialog', 'Close dialog')}>✕</button></header>
+      <header className="modal-head"><div><span className="eyebrow">PFI · PLATFORM FALAK INDONESIA</span><h2 id="modal-title">{t('Masuk ke PFI', 'Sign in to PFI')}</h2></div><button type="button" className="close-btn" onClick={close} aria-label={t('Tutup dialog', 'Close dialog')}>✕</button></header>
       <div className="modal-body">
         <div className="auth-shield"><ShieldCheck size={28}/></div>
         <p className="auth-intro">{t('Gunakan akun Google untuk masuk dengan cepat dan aman. PFI hanya menerima informasi dasar akun yang diperlukan untuk mengenali Anda.', 'Use your Google account to sign in quickly and securely. PFI only receives the basic account information needed to identify you.')}</p>

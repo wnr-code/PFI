@@ -5,7 +5,7 @@
  * Maintainer: @wnr-code — https://github.com/wnr-code
  * Dukung pengembang: https://trakteer.id/lanteraku/tip
  */
-// PFI — Pusat Falaq Indonesia | @wnr-code
+// PFI — Platform Falak Indonesia | @wnr-code
 // Repository: https://github.com/wnr-code/PFI
 // Dukungan proyek: https://trakteer.id/lanteraku/tip
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';

@@ -84,7 +84,7 @@ export function Sidebar() {
       <a
         className="brand-link"
         href="#/beranda"
-        aria-label="Pusat Falaq Indonesia"
+        aria-label="Platform Falak Indonesia"
         onClick={() => setCollapsed(false)}
       >
         <div className="brand">
@@ -94,7 +94,7 @@ export function Sidebar() {
             <path d="M32 33M53 33" fill="none" stroke="#d6ae62" strokeWidth="2" />
           </svg>
           <div>
-            <span>Pusat Falaq Indonesia</span>
+            <span>Platform Falak Indonesia</span>
             <small>PFI</small>
           </div>
         </div>

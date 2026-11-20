@@ -1,4 +1,4 @@
-// PFI — Pusat Falak Indonesia | Maintainer: @wnr-code
+// PFI — Platform Falak Indonesia | Maintainer: @wnr-code
 // Repository: https://github.com/wnr-code/PFI
 // Project support: https://trakteer.id/lanteraku/tip
 // AI-assisted implementation; reviewed and maintained by the project maintainer.
@@ -56,6 +56,20 @@ function supabaseRuntimeConfig(env) {
 }
 
 // Pending rukyat reports are private to their owner and authorized reviewers.
+export const HISAB_METHODS = Object.freeze(['comparison', 'mabims']);
+export function normalizeHisabSite(siteId, location) {
+  const known = SITES.find((item) => item.id === siteId);
+  if (known) return known;
+  if (siteId !== 'custom' || !location || typeof location !== 'object') return null;
+  const city = typeof location.city === 'string' ? location.city.trim() : '';
+  const region = typeof location.region === 'string' ? location.region.trim() : '';
+  const lat = Number(location.lat), lon = Number(location.lon), elev = Number(location.elev), offset = Number(location.offset);
+  if (!city || city.length > 80 || region.length > 80 || !Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lon) || lon < -180 || lon > 180 || !Number.isFinite(elev) || elev < -500 || elev > 9000 || !Number.isInteger(offset) || offset < -12 || offset > 14) return null;
+  const source = location.source === 'gps' ? 'gps' : 'manual';
+  const accuracy = source === 'gps' && Number.isFinite(Number(location.accuracy)) && Number(location.accuracy) >= 0 ? Math.min(100000, Number(location.accuracy)) : null;
+  return { id: 'custom', site: city, city, region, lat, lon, elev, offset, source, accuracy };
+}
+
 export function canViewPost(post, profile) {
   if (post?.type !== 'rukyat' || post.status === 'verified') return true;
   return Boolean(profile && (profile.id === post.user_id || ['reviewer', 'admin'].includes(profile.role)));
@@ -525,8 +539,8 @@ export default {
       if (url.pathname === '/api/hisab' && request.method === 'POST') {
         const body = await request.json().catch(() => null);
         if (!body || typeof body !== 'object') return fail(400, 'Data permintaan tidak valid.');
-        const site = SITES.find((item) => item.id === body.site);
-        if (!site) return fail(400, 'Lokasi pengamatan tidak dikenal.');
+        const site = normalizeHisabSite(body.site, body.location);
+        if (!site) return fail(400, 'Lokasi pengamatan tidak dikenal atau koordinat lokasi khusus tidak valid.');
         const start = body.start;
         if (typeof start !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(start) || start < '1900-01-01' || start > '2099-12-31') {
           return fail(400, 'Tanggal di luar rentang.');
@@ -536,7 +550,7 @@ export default {
         const period = hijri(date, site);
         if (period.day !== 1) return fail(400, 'Pilih hari pertama bulan Hijriah.');
         const method = body.method;
-        if (method !== 'mabims') return fail(400, 'Metode hisab belum didukung. Saat ini hanya MABIMS yang tersedia.');
+        if (!HISAB_METHODS.includes(method)) return fail(400, 'Metode hisab belum didukung. Gunakan perbandingan dua model dengan kriteria MABIMS.');
         const result = calculateHisab({ start, ...period }, site, method);
         result.engine = 'Astronomy Engine 2.1.19';
 

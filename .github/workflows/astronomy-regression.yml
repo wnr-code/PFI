@@ -1,0 +1,27 @@
+name: Scheduled astronomy regression
+
+on:
+  schedule:
+    - cron: '17 2 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  astronomy-reference-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Verify published astronomy references and kitab examples
+        run: npm test
+      - name: Verify frontend integration
+        run: npm run test:ui
+      - name: Verify production build
+        run: npm run build

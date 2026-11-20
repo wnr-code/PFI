@@ -1,4 +1,4 @@
-# PFI — Pusat Falaq Indonesia
+# PFI — Platform Falak Indonesia
 
 Ruang observasi digital untuk hisab awal bulan, simulasi hilal, peta rukyat, dan kolaborasi komunitas pengamat di Indonesia.
 

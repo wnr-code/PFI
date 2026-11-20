@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker, { canReviewEntity, canViewGroup, canViewPost, ensureUserSchema, groupSlug, normalizeRukyatDetails, uploadContentLengthStatus } from '../worker/index.js';
-import { SITES, calculateHisab, clock, lunar, sunsetTime } from '../src/lib/astro.js';
+import worker, { canReviewEntity, canViewGroup, canViewPost, ensureUserSchema, groupSlug, HISAB_METHODS, normalizeHisabSite, normalizeRukyatDetails, uploadContentLengthStatus } from '../worker/index.js';
+import { SITES, calculateHisab, clock, eclipseTimeline, lunar, meetsMabims, sunsetTime } from '../src/lib/astro.js';
 
 test('Worker health endpoint verifies D1 schema and authentication configuration', async () => {
   const requiredTables = [
@@ -109,6 +109,22 @@ test('protected post creation rejects anonymous requests', async () => {
   });
   const response = await worker.fetch(request, {}, {});
   assert.equal(response.status, 401);
+});
+
+test('Worker accepts the dual-model hisab method used by the frontend', () => {
+  assert.ok(HISAB_METHODS.includes('comparison'));
+  assert.ok(HISAB_METHODS.includes('mabims'));
+  assert.equal(HISAB_METHODS.includes('unknown'), false);
+});
+
+test('custom hisab locations are normalized with strict coordinate limits', () => {
+  const site = normalizeHisabSite('custom', { city: 'Observatorium Uji', region: 'Indonesia', lat: -7.4, lon: 108.1, elev: 700, offset: 7 });
+  assert.deepEqual(site, { id: 'custom', site: 'Observatorium Uji', city: 'Observatorium Uji', region: 'Indonesia', lat: -7.4, lon: 108.1, elev: 700, offset: 7, source: 'manual', accuracy: null });
+  const gps = normalizeHisabSite('custom', { city: 'GPS', lat: -7.4, lon: 108.1, elev: 700, offset: 7, source: 'gps', accuracy: 12 });
+  assert.equal(gps.source, 'gps');
+  assert.equal(gps.accuracy, 12);
+  assert.equal(normalizeHisabSite('custom', { city: 'Tidak valid', lat: 91, lon: 108, elev: 0, offset: 7 }), null);
+  assert.equal(normalizeHisabSite('custom', { city: 'Tidak valid', lat: -7, lon: 108, elev: 0, offset: 7.5 }), null);
 });
 
 test('hisab rejects an unknown observation site before accessing D1', async () => {
@@ -229,6 +245,147 @@ test('Shawwal 1443 hisab remains within the published 1 May 2022 Indonesian refe
   assert.equal(result.meets, result.moon.alt >= 3 && result.elongation >= 6.4);
 });
 
+
+test('real-time eclipse timeline activates only inside observed contact times', () => {
+  const dallas = { id: 'dallas', city: 'Dallas', region: 'Texas', site: 'Dallas', lat: 32.7767, lon: -96.797, elev: 131, offset: -5 };
+  const during = eclipseTimeline(new Date('2024-04-08T18:42:00Z'), dallas).find((event) => event.body === 'Sun');
+  assert.equal(during.active, true);
+  assert.ok(during.progress > 0 && during.progress < 1);
+  assert.ok(['beginning', 'peak', 'ending'].includes(during.phase));
+  const ordinaryInstant = new Date('2024-04-10T18:42:00Z');
+  const ordinaryDay = eclipseTimeline(ordinaryInstant, dallas);
+  assert.equal(ordinaryDay.some((event) => event.active), false);
+  assert.ok(ordinaryDay.every((event) => new Date(event.start) > ordinaryInstant));
+  assert.ok(ordinaryDay.every((event) => new Date(event.start) < new Date(event.peak) && new Date(event.peak) < new Date(event.end)));
+  assert.equal(typeof during.visible, 'boolean');
+});
+
+test('scientific core rejects coordinates, elevation, and time zones outside supported bounds', () => {
+  const period = { start: '2013-08-08', day: 1, month: 10, year: 1434 };
+  const base = { id: 'invalid', city: 'Invalid', region: 'Test', lat: 0, lon: 0, elev: 0, offset: 0 };
+  for (const patch of [{ lat: 90.001 }, { lat: -90.001 }, { lon: 180.001 }, { lon: -180.001 }, { elev: -500.001 }, { elev: 9000.001 }, { offset: -13 }, { offset: 15 }, { offset: 7.5 }]) {
+    assert.throws(() => calculateHisab(period, { ...base, ...patch }), /Lokasi pengamatan tidak valid/);
+  }
+});
+
+test('Ad-Durrul Aniq correction chain preserves signs, units, and algebraic order', () => {
+  const cases = [
+    [{ start: '2013-08-08', day: 1, month: 10, year: 1434 }, { id: 'banyuwangi-audit', city: 'Banyuwangi', region: 'Jawa Timur', lat: -8.6574, lon: 114.3614, elev: 2, offset: 7 }],
+    [{ start: '2013-01-13', day: 1, month: 3, year: 1434 }, { id: 'vancouver-audit', city: 'Vancouver', region: 'Canada', lat: 49.25, lon: -123.1667, elev: 0, offset: -8 }],
+  ];
+  for (const [period, site] of cases) {
+    const k = calculateHisab(period, site).models.adDurrul;
+    assert.ok(k.horizontalParallax > 0 && k.horizontalParallax < 2);
+    assert.ok(k.semiDiameter > 0 && k.semiDiameter < 0.5);
+    assert.ok(k.parallax >= 0 && k.parallax <= k.horizontalParallax);
+    assert.ok(k.refraction >= 0 && k.refraction < 2);
+    assert.ok(k.dip >= 0 && k.dip < 3);
+    assert.ok(Math.abs(k.parallaxCorrectedAltitude - (k.geocentricAltitude - k.parallax)) < 1e-12);
+    assert.equal(k.secondaryCorrectionsApplied, true);
+    const expected = k.parallaxCorrectedAltitude + k.refraction + k.dip - k.semiDiameter;
+    assert.ok(Math.abs(k.topocentricAltitude - expected) < 1e-12);
+    const toRad = value => value * Math.PI / 180;
+    const toDeg = value => value * 180 / Math.PI;
+    const expectedTopocentricElongation = toDeg(Math.acos(Math.sin(toRad(k.topocentricAltitude)) * Math.sin(toRad(k.sun.alt)) + Math.cos(toRad(k.topocentricAltitude)) * Math.cos(toRad(k.sun.alt)) * Math.cos(toRad(k.azimuthDifference))));
+    const expectedAngularDistance = toDeg(Math.acos(Math.cos(toRad(k.azimuthDifference)) * Math.cos(toRad(k.altitudeDifference))));
+    assert.ok(Math.abs(k.topocentricElongation - expectedTopocentricElongation) < 1e-12);
+    assert.ok(Math.abs(k.angularDistance - expectedAngularDistance) < 1e-12);
+    assert.ok(Math.abs(k.altitudeDifference - (k.geocentricAltitude - k.sun.alt)) < 1e-12);
+    assert.equal(k.muktsulApplicable, true);
+    assert.ok(Math.abs(k.muktsulMinutes - k.geocentricAltitude * 4) < 1e-12);
+    assert.equal(k.meets, meetsMabims(k.topocentricAltitude, k.elongation));
+    assert.match(k.illuminationSource, /hybrid.*not yet transcribed/i);
+  }
+});
+
+test('MABIMS evaluates true elongation rather than the 0–360 lunar phase angle', () => {
+  assert.equal(meetsMabims(3, 6.4), true);
+  assert.equal(meetsMabims(2.999, 6.4), false);
+  assert.equal(meetsMabims(3, 6.399), false);
+  assert.equal(meetsMabims(5, Number.NaN), false);
+});
+
+test('an eclipse in progress below the local horizon is not labelled LIVE', () => {
+  // The 3 March 2026 lunar eclipse starts before moonrise in Tasikmalaya.
+  const tasik = SITES.find((site) => site.id === 'tasik');
+  const event = eclipseTimeline(new Date('2026-03-03T08:46:00Z'), tasik).find((item) => item.body === 'Moon');
+  assert.equal(event.withinContacts, true);
+  assert.equal(event.visible, true); // A later part of the contact sequence is observable.
+  assert.equal(event.currentVisible, false);
+  assert.equal(event.active, false);
+  assert.equal(event.phase, 'below-horizon');
+  assert.ok(event.progress > 0 && event.progress < 1);
+  assert.ok(event.contacts.current < 0);
+});
+
+test('an eclipse that continues after moonset stops being labelled LIVE', () => {
+  const tasik = SITES.find((site) => site.id === 'tasik');
+  const event = eclipseTimeline(new Date('2027-02-21T01:12:00Z'), tasik).find((item) => item.body === 'Moon');
+  assert.equal(event.withinContacts, true);
+  assert.equal(event.visible, true); // Earlier contacts were observable before moonset.
+  assert.equal(event.currentVisible, false);
+  assert.equal(event.active, false);
+  assert.equal(event.phase, 'below-horizon');
+  assert.ok(event.progress > 0.9);
+  assert.ok(event.contacts.current < 0);
+});
+
+test('Ad-Durrul Aniq negative-altitude rule follows the published Syakban 1434 Sampang example', () => {
+  const sampang = { id: 'sampang', city: 'Sampang', region: 'Jawa Timur', site: 'Sampang', lat: -7.2, lon: 113.25, elev: 5, offset: 7 };
+  const result = calculateHisab({ start: '2013-07-09', day: 1, month: 9, year: 1434 }, sampang);
+  const kitab = result.models.adDurrul;
+  // Ad-Durrul Aniq hlm. 28–30: hc−P negatif tidak ditambah Ref, Dip, dan sdc.
+  assert.ok(kitab.parallaxCorrectedAltitude < 0);
+  assert.equal(kitab.secondaryCorrectionsApplied, false);
+  assert.equal(kitab.muktsulApplicable, true);
+  assert.ok(kitab.muktsulMinutes > 0); // hc positif meskipun hc−P dan hc′ negatif.
+  assert.equal(kitab.topocentricAltitude, kitab.parallaxCorrectedAltitude);
+  assert.ok(Math.abs(kitab.topocentricAltitude - (-(21 / 60 + 7 / 3600))) < 0.12);
+  assert.ok(Math.abs(kitab.elongation - (4 + 40 / 60 + 40 / 3600)) < 0.08);
+});
+
+test('Ad-Durrul Aniq does not invent muktsul or moonset when geocentric altitude is non-positive', () => {
+  const tasik = SITES.find((site) => site.id === 'tasik');
+  const result = calculateHisab({ start: '2026-07-15', day: 1, month: 2, year: 1448 }, tasik);
+  const kitab = result.models.adDurrul;
+  assert.ok(kitab.geocentricAltitude <= 0);
+  assert.equal(kitab.muktsulApplicable, false);
+  assert.equal(kitab.muktsulMinutes, null);
+  assert.equal(kitab.estimatedMoonset, null);
+});
+
+test('Ad-Durrul Aniq model supports western time zones using the Vancouver 1434 example', () => {
+  const vancouver = { id: 'vancouver', city: 'Vancouver', region: 'Canada', site: 'Vancouver', lat: 49.25, lon: -(123 + 10 / 60), elev: 0, offset: -8 };
+  const result = calculateHisab({ start: '2013-01-13', day: 1, month: 3, year: 1434 }, vancouver);
+  const kitab = result.models.adDurrul;
+  assert.equal(clock(result.conj, vancouver), '11:44');
+  assert.equal(clock(result.sunset, vancouver), '16:37');
+  assert.ok(Math.abs(kitab.geocentricAltitude - (4 + 31 / 60 + 24 / 3600)) < 0.3);
+  assert.ok(Math.abs(kitab.topocentricAltitude - (3 + 25 / 60 + 20 / 3600)) < 0.3);
+  assert.ok(Math.abs(kitab.elongation - (5 + 25 / 60 + 36 / 3600)) < 0.3);
+});
+
+test('Ad-Durrul Aniq correction model follows the published Ramadan 1434 Banyuwangi example', () => {
+  const palengkung = {
+    id: 'palengkung', city: 'Banyuwangi', region: 'Jawa Timur', site: 'Trianggulasi Palengkung',
+    lat: -(8 + 39 / 60 + 26.52 / 3600), lon: 114 + 21 / 60 + 41.1 / 3600, elev: 2, offset: 7,
+  };
+  const result = calculateHisab({ start: '2013-08-08', day: 1, month: 10, year: 1434 }, palengkung);
+  const kitab = result.models.adDurrul;
+  assert.ok(Number.isFinite(result.comparison.altitudeDifference));
+  assert.ok(Number.isFinite(result.comparison.elongationDifference));
+  assert.match(result.comparison.note, /Diagnostic only/);
+  assert.equal('agreement' in result.comparison, false);
+  assert.equal(result.audit.kitabModelStatus, 'hybrid-corrections');
+  assert.match(result.audit.verifiedKitabScope, /hc′/);
+  assert.match(result.audit.pendingKitabScope, /Nurul Hilal/);
+  // Ad-Durrul Aniq terjemahan Kemenag 2025, hlm. 39–43.
+  assert.ok(Math.abs(kitab.geocentricAltitude - (4 + 13 / 60 + 11 / 3600)) < 0.06);
+  assert.ok(Math.abs(kitab.topocentricAltitude - (3 + 17 / 60 + 16 / 3600)) < 0.06);
+  assert.ok(Math.abs(kitab.elongation - (7 + 40 / 60 + 2 / 3600)) < 0.03);
+  assert.ok(Math.abs(kitab.illumination - 0.45) < 0.03);
+  assert.ok(Math.abs(kitab.azimuthDifference - (-(5 + 43 / 60 + 49 / 3600))) < 0.03);
+});
 
 test('group IDs are generated as stable URL-safe slugs', () => {
   assert.equal(groupSlug('Falak Tasikmalaya'), 'falak-tasikmalaya');

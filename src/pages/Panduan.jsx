@@ -85,7 +85,7 @@ export default function Panduan() {
         <div className="guide-hero-icon"><BookOpen size={25} /></div>
         <div className="eyebrow"><i /> {t('PUSAT BANTUAN PFI', 'PFI HELP CENTRE')}</div>
         <h1>{t('Panduan Anggota PFI', 'PFI Member Guide')}</h1>
-        <p>{t('Panduan singkat untuk anggota, pengamat, dan lembaga mitra dalam menggunakan ruang kolaborasi Pusat Falak Indonesia.', 'A practical guide for members, observers, and partner institutions using the Pusat Falak Indonesia collaboration platform.')}</p>
+        <p>{t('Panduan singkat untuk anggota, pengamat, dan lembaga mitra dalam menggunakan ruang kolaborasi Platform Falak Indonesia.', 'A practical guide for members, observers, and partner institutions using the Platform Falak Indonesia collaboration platform.')}</p>
         <div className="guide-tags"><span>Anggota</span><span>Pengamat</span><span>Lembaga Mitra</span></div>
       </section>
 
