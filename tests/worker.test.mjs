@@ -284,6 +284,7 @@ test('Ad-Durrul Aniq correction chain preserves signs, units, and algebraic orde
     const expected = k.parallaxCorrectedAltitude + k.refraction + k.dip - k.semiDiameter;
     assert.ok(Math.abs(k.topocentricAltitude - expected) < 1e-12);
     assert.equal(k.meets, meetsMabims(k.topocentricAltitude, k.elongation));
+    assert.match(k.illuminationSource, /hybrid.*not yet transcribed/i);
   }
 });
 

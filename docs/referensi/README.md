@@ -20,7 +20,8 @@ Dokumen PDF disimpan sebagai sumber primer yang diberikan untuk pengembangan pro
 
 ## Status implementasi
 
-- **Sudah tersedia:** koreksi data hilal halaman 41–43, meliputi tinggi geosentris, paralaks, refraksi, dip, semidiameter, tinggi toposentris, elongasi, Nurul Hilal, muktsul, beda azimut, beda tinggi, dan jarak sudut.
+- **Sudah tersedia:** koreksi data hilal halaman 41–43, meliputi tinggi geosentris, paralaks, refraksi, dip, semidiameter, tinggi toposentris, elongasi, muktsul, beda azimut, beda tinggi, dan jarak sudut.
+- **Masih hibrida:** nilai Nurul Hilal saat ini memakai fraksi fase Astronomy Engine. Rumus dan tabel anomali kitab (`A` dan `m`) belum ditranskripsi penuh, sehingga keluaran ini wajib diberi label ephemeris hibrida dan tidak boleh diklaim sebagai Nurul Hilal tabel asli kitab.
 - **Sudah diuji:** contoh akhir Ramadan 1434 H di Trianggulasi Palengkung, Banyuwangi, halaman 39–43.
 - **Ephemeris dasar:** masih memakai Astronomy Engine agar model dapat digunakan untuk tanggal dan lokasi umum secara stabil.
 - **Belum selesai:** transkripsi seluruh tabel tahun/bulan dan delapan ta’dil ijtimak halaman 223 dan seterusnya.
