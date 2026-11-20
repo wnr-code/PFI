@@ -36,4 +36,15 @@ describe('InfoTip', () => {
     fireEvent.pointerDown(screen.getByRole('button', { name: 'Di luar' }));
     expect(screen.queryByRole('dialog')).toBeFalsy();
   });
+
+  it('can be dismissed by swiping its mobile sheet handle downward', () => {
+    const trigger = renderTip();
+    fireEvent.click(trigger);
+    const handle = document.querySelector('.info-tip-drag-handle');
+    fireEvent.touchStart(handle, { touches: [{ clientY: 100 }] });
+    fireEvent.touchMove(handle, { touches: [{ clientY: 190 }] });
+    fireEvent.touchEnd(handle);
+    expect(screen.queryByRole('dialog')).toBeFalsy();
+    expect(document.activeElement).toBe(trigger);
+  });
 });

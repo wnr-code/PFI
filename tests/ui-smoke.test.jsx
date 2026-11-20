@@ -128,12 +128,18 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     expect(context.open).toHaveBeenCalledWith('auth');
   });
 
-  it('offers Google identity only and no password database form', () => {
+  it('offers Google identity in a mobile sheet that can be swiped down', () => {
+    context.close.mockClear();
     render(<AuthModal />);
     expect(screen.getByRole('button', { name: /Lanjutkan dengan Google/i })).toBeTruthy();
     expect(document.querySelector('input[type="password"]')).toBeFalsy();
     expect(screen.getByText(/tidak pernah meminta kata sandi Google/i)).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/Cloudflare D1|R2|Supabase/i);
+    const handle = document.querySelector('.modal-drag-handle');
+    fireEvent.touchStart(handle, { touches: [{ clientY: 80 }] });
+    fireEvent.touchMove(handle, { touches: [{ clientY: 190 }] });
+    fireEvent.touchEnd(handle);
+    expect(context.close).toHaveBeenCalled();
   });
 
   it('renders the professional profile for an authenticated member', () => {
