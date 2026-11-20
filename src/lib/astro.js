@@ -61,13 +61,14 @@ function adDurrulHilal(sunset,l,elongation){
  const parallaxCorrectedAltitude=moon.alt-parallax;
  // Ad-Durrul Aniq hlm. 28: bila hc − P negatif, jangan tambahkan
  // refraksi, dip, atau semidiameter; koreksi lanjutan hanya untuk hasil positif.
- const topocentricAltitude=parallaxCorrectedAltitude<0?parallaxCorrectedAltitude:parallaxCorrectedAltitude+refraction+dip-semiDiameter;
+ const secondaryCorrectionsApplied=parallaxCorrectedAltitude>=0;
+ const topocentricAltitude=secondaryCorrectionsApplied?parallaxCorrectedAltitude+refraction+dip-semiDiameter:parallaxCorrectedAltitude;
  const azimuthDifference=signedAngle(moon.az-sun.az);
  const topocentricElongation=deg(Math.acos(clamp(Math.sin(rad(topocentricAltitude))*Math.sin(rad(sun.alt))+Math.cos(rad(topocentricAltitude))*Math.cos(rad(sun.alt))*Math.cos(rad(azimuthDifference)),-1,1)));
  const altitudeDifference=moon.alt-sun.alt;
  const angularDistance=deg(Math.acos(clamp(Math.cos(rad(azimuthDifference))*Math.cos(rad(altitudeDifference)),-1,1)));
  const muktsulMinutes=Math.max(0,moon.alt*4);
- return{moon,sun,geocentricAltitude:moon.alt,parallaxCorrectedAltitude,topocentricAltitude,horizontalParallax,parallax,refraction,dip,semiDiameter,elongation,topocentricElongation,illumination:100*Illumination('Moon',sunset).phase_fraction,illuminationSource:'Astronomy Engine phase fraction (hybrid; original kitab anomaly tables not yet transcribed)',muktsulMinutes,estimatedMoonset:new Date(+sunset+muktsulMinutes*60000).toISOString(),azimuthDifference,altitudeDifference,angularDistance,position:azimuthDifference<0?'south':'north',meets:meetsMabims(topocentricAltitude,elongation)};
+ return{moon,sun,geocentricAltitude:moon.alt,parallaxCorrectedAltitude,secondaryCorrectionsApplied,topocentricAltitude,horizontalParallax,parallax,refraction,dip,semiDiameter,elongation,topocentricElongation,illumination:100*Illumination('Moon',sunset).phase_fraction,illuminationSource:'Astronomy Engine phase fraction (hybrid; original kitab anomaly tables not yet transcribed)',muktsulMinutes,estimatedMoonset:new Date(+sunset+muktsulMinutes*60000).toISOString(),azimuthDifference,altitudeDifference,angularDistance,position:azimuthDifference<0?'south':'north',meets:meetsMabims(topocentricAltitude,elongation)};
 }
 export function calculateHisab(period,l,method='comparison'){
  if(!['comparison','mabims'].includes(method))throw new Error('Metode hisab belum didukung.');

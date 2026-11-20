@@ -281,6 +281,7 @@ test('Ad-Durrul Aniq correction chain preserves signs, units, and algebraic orde
     assert.ok(k.refraction >= 0 && k.refraction < 2);
     assert.ok(k.dip >= 0 && k.dip < 3);
     assert.ok(Math.abs(k.parallaxCorrectedAltitude - (k.geocentricAltitude - k.parallax)) < 1e-12);
+    assert.equal(k.secondaryCorrectionsApplied, true);
     const expected = k.parallaxCorrectedAltitude + k.refraction + k.dip - k.semiDiameter;
     assert.ok(Math.abs(k.topocentricAltitude - expected) < 1e-12);
     assert.equal(k.meets, meetsMabims(k.topocentricAltitude, k.elongation));
@@ -326,6 +327,7 @@ test('Ad-Durrul Aniq negative-altitude rule follows the published Syakban 1434 S
   const kitab = result.models.adDurrul;
   // Ad-Durrul Aniq hlm. 28–30: hc−P negatif tidak ditambah Ref, Dip, dan sdc.
   assert.ok(kitab.parallaxCorrectedAltitude < 0);
+  assert.equal(kitab.secondaryCorrectionsApplied, false);
   assert.equal(kitab.topocentricAltitude, kitab.parallaxCorrectedAltitude);
   assert.ok(Math.abs(kitab.topocentricAltitude - (-(21 / 60 + 7 / 3600))) < 0.12);
   assert.ok(Math.abs(kitab.elongation - (4 + 40 / 60 + 40 / 3600)) < 0.08);
