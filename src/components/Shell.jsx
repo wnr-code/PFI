@@ -10,7 +10,7 @@ import { usePFI, go } from '../state.jsx';
 import {
   House, Calculator, Orbit, UsersRound, UserRound, MapPinned, Files,
   Bell, ChevronRight, MapPin, ChevronDown, GraduationCap, FlaskConical,
-  ChevronsUpDown, LayoutDashboard, BookOpen, CreditCard, Share2, LogOut, LogIn, X,
+  ChevronsUpDown, LayoutDashboard, BookOpen, CreditCard, Share2, LogOut, LogIn, Edit3, X,
 } from 'lucide-react';
 import { SITES } from '../lib/astro.js';
 
@@ -144,8 +144,15 @@ export function Sidebar() {
 }
 
 export function Topbar() {
-  const { page, t, data, site, setSite, setNotify, open } = usePFI();
+  const { page, t, data, site, setSite, setNotify, open, logout } = usePFI();
   const [locationOpen, setLocationOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const openProfileEditor = () => {
+    sessionStorage.setItem('pfi:open-profile-editor', '1');
+    setAccountOpen(false);
+    go('profil');
+    window.dispatchEvent(new Event('pfi:open-profile-editor'));
+  };
   const entry = [...navMain, ...navMore].find((n) => n[0] === page) || navMain[0];
   const label = t(entry[1], entry[2]);
   const selectedSite = SITES.find((item) => item.id === site) || SITES[0];
@@ -185,22 +192,29 @@ export function Topbar() {
           <Bell size={17} />
           {data.notify && <i className="bell-dot" />}
         </button>}
-        <button
-          className={`account-control ${data.account ? '' : 'signed-out'}`}
-          onClick={() => data.account ? go('profil') : open('auth')}
-          aria-label={data.account ? t('Buka profil', 'Open profile') : t('Masuk dengan Google', 'Sign in with Google')}
-        >
-          {data.account
-            ? <img src={data.account.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.account.name)}`} alt="" referrerPolicy="no-referrer" />
-            : <span className="login-icon"><LogIn size={20} aria-hidden="true" /></span>}
-          <b>
+        <div className="account-menu-wrap">
+          <button
+            className={`account-control ${data.account ? '' : 'signed-out'}`}
+            onClick={() => data.account ? setAccountOpen(value => !value) : open('auth')}
+            aria-label={data.account ? t('Buka menu akun', 'Open account menu') : t('Masuk dengan Google', 'Sign in with Google')}
+            aria-expanded={data.account ? accountOpen : undefined}
+          >
             {data.account
-              ? data.account.name.split(' ')[0] +
-                (data.account.name.split(' ')[1] ? ' ' + data.account.name.split(' ')[1][0] + '.' : '')
-              : t('Masuk', 'Sign in')}
-          </b>
-          <ChevronDown className="account-chevron" size={12} />
-        </button>
+              ? <img src={data.account.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.account.name)}`} alt="" referrerPolicy="no-referrer" />
+              : <span className="login-icon"><LogIn size={20} aria-hidden="true" /></span>}
+            <b>
+              {data.account
+                ? data.account.name.split(' ')[0] +
+                  (data.account.name.split(' ')[1] ? ' ' + data.account.name.split(' ')[1][0] + '.' : '')
+                : t('Masuk', 'Sign in')}
+            </b>
+            <ChevronDown className="account-chevron" size={12} />
+          </button>
+          {data.account && accountOpen && <div className="account-popup" role="menu" aria-label={t('Menu akun','Account menu')}>
+            <button type="button" role="menuitem" onClick={openProfileEditor}><Edit3 size={18}/><span><b>{t('Edit profil','Edit profile')}</b><small>{t('Ubah nama dan informasi profil','Change name and profile information')}</small></span></button>
+            <button type="button" role="menuitem" className="danger" onClick={() => { setAccountOpen(false); logout(); }}><LogOut size={18}/><span><b>{t('Keluar','Sign out')}</b><small>{t('Akhiri sesi akun ini','End this account session')}</small></span></button>
+          </div>}
+        </div>
       </div>
     </header>
   );

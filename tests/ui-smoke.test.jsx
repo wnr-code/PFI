@@ -191,6 +191,18 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     expect(context.open).toHaveBeenCalledWith('auth');
   });
 
+  it('shows edit profile and sign-out actions from the header avatar', () => {
+    context.data.account = { id: 'member-1', name: 'Aep Falaq', email: 'aep@example.test', avatarUrl: '' };
+    context.logout.mockClear();
+    render(<Topbar />);
+    fireEvent.click(screen.getByRole('button', { name: /Buka menu akun/i }));
+    expect(screen.getByRole('menu', { name: /Menu akun/i })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: /Edit profil/i })).toBeTruthy();
+    fireEvent.click(screen.getByRole('menuitem', { name: /Keluar/i }));
+    expect(context.logout).toHaveBeenCalled();
+    context.data.account = null;
+  });
+
   it('offers Google identity in a mobile sheet that can be swiped down', () => {
     context.close.mockClear();
     render(<AuthModal />);
@@ -224,7 +236,7 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     expect(summary.textContent).toMatch(/2Lembaga\/grup/);
     expect(summary.textContent).toMatch(/80%Kelengkapan/);
     expect(screen.getByRole('button', { name: /Tampilan & pengaturan Avatar, sampul/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Edit profil Nama, lembaga/i })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Edit profil Nama, lembaga/i })).toBeFalsy();
     expect(screen.getByRole('button', { name: /Status verifikasi/i })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Tampilan & pengaturan Avatar, sampul/i }));
     expect(screen.getByRole('dialog', { name: /Pengaturan profil/i })).toBeTruthy();
@@ -243,18 +255,24 @@ describe('PFI UI smoke tests in Happy DOM', () => {
 
   it('saves edited public profile fields through the authenticated API', async () => {
     context.data.account = { id: 'member-1', name: 'Aep Falaq', email: 'aep@example.test', org: 'PFI', bio: '', role: 'observer', verification: 'none', created: '2026-01-01T00:00:00Z', avatarUrl: '' };
-    api.mockResolvedValueOnce({ avatarUrl: '/api/avatars/member-1?v=1' }).mockResolvedValueOnce({ ...context.data.account, name: 'Aep Falak', bio: 'Pengamat hilal Tasikmalaya', avatarUrl: '/api/avatars/member-1', coverTheme: 'meteors' });
+    api.mockResolvedValueOnce({ avatarUrl: '/api/avatars/member-1?v=1' }).mockResolvedValueOnce({ ...context.data.account, avatarUrl: '/api/avatars/member-1', coverTheme: 'meteors' }).mockResolvedValueOnce({ ...context.data.account, name: 'Aep Falak', bio: 'Pengamat hilal Tasikmalaya', avatarUrl: '/api/avatars/member-1', coverTheme: 'meteors' });
     render(<Profil />);
-    fireEvent.click(screen.getByRole('button', { name: /^Edit profil$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Tampilan & pengaturan Avatar, sampul/i }));
     const avatar = new File(['avatar'], 'avatar.png', { type: 'image/png' });
-    fireEvent.change(screen.getByLabelText(/Unggah avatar/i), { target: { files: [avatar] } });
+    fireEvent.change(screen.getByLabelText(/Ganti avatar/i), { target: { files: [avatar] } });
     await waitFor(() => expect(api).toHaveBeenCalledWith('/api/profile/avatar', 'POST', expect.any(FormData)));
+    fireEvent.click(screen.getByRole('button', { name: /Bintang jatuh/i }));
+    await waitFor(() => expect(api).toHaveBeenCalledWith('/api/profile', 'PUT', expect.objectContaining({ coverTheme: 'meteors' })));
+    fireEvent.click(screen.getByRole('button', { name: /Tutup pengaturan/i }));
+    cleanup();
+    sessionStorage.setItem('pfi:open-profile-editor', '1');
+    render(<Profil />);
+    expect(screen.getByRole('dialog', { name: /Ubah informasi publik/i })).toBeTruthy();
+    expect(screen.queryByLabelText(/Unggah avatar/i)).toBeFalsy();
     fireEvent.change(screen.getByLabelText(/Nama lengkap/i), { target: { value: 'Aep Falak' } });
     fireEvent.change(screen.getByLabelText(/Tentang Anda/i), { target: { value: 'Pengamat hilal Tasikmalaya' } });
-    fireEvent.click(screen.getByRole('button', { name: /Bintang jatuh/i }));
-    expect(screen.getByRole('button', { name: /Bintang jatuh/i }).getAttribute('aria-pressed')).toBe('true');
     fireEvent.click(screen.getByRole('button', { name: /Simpan perubahan/i }));
-    await waitFor(() => expect(api).toHaveBeenCalledWith('/api/profile', 'PUT', expect.objectContaining({ name: 'Aep Falak', coverTheme: 'meteors' })));
+    await waitFor(() => expect(api).toHaveBeenCalledWith('/api/profile', 'PUT', expect.objectContaining({ name: 'Aep Falak' })));
     context.data.account = null;
   });
 
