@@ -210,7 +210,9 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     context.data.posts = [{ id: 'own-post', authorId: 'member-1' }, { id: 'other-post', authorId: 'member-2' }];
     context.data.groups = ['group-1', 'group-2'];
     render(<Profil />);
-    expect(document.querySelector('.profile-cover h1')).toBeTruthy();
+    const profileCover = document.querySelector('.profile-cover');
+    expect(profileCover).toBeTruthy();
+    expect(profileCover.classList.contains('cover-orbit')).toBe(true);
     expect(document.querySelector('.profile-cover-animation')).toBeTruthy();
     expect(document.querySelector('.profile-cover-wave path')).toBeTruthy();
     expect(document.querySelector('.verified-mark')).toBeTruthy();
