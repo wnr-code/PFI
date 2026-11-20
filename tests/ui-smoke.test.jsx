@@ -146,6 +146,17 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     expect(screen.getByText(/GPS mengisi koordinat perangkat/i)).toBeTruthy();
   });
 
+  it('uses an icon-only mobile location control with coordinates on demand', () => {
+    render(<Topbar />);
+    const location = screen.getByRole('button', { name: /Informasi lokasi pengamatan/i });
+    fireEvent.click(location);
+    expect(screen.getByRole('dialog', { name: /Lokasi pengamatan/i })).toBeTruthy();
+    expect(screen.getByText(/-7\.40700°/i)).toBeTruthy();
+    expect(screen.getByText(/698 m/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Tutup informasi lokasi/i }));
+    expect(screen.queryByRole('dialog', { name: /Lokasi pengamatan/i })).toBeFalsy();
+  });
+
   it('opens Google login from the account control while signed out', () => {
     context.open.mockClear();
     render(<Topbar />);
@@ -172,6 +183,21 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     render(<Profil />);
     expect(document.querySelector('.profile-cover h1')).toBeTruthy();
     expect(document.querySelector('.verified-mark')).toBeTruthy();
+    expect(screen.getByText(/Kelengkapan profil/i)).toBeTruthy();
+    expect(screen.getByRole('switch', { name: /Aktifkan peringatan agenda/i })).toBeTruthy();
+    expect(screen.getByText(/Email akun · privat/i)).toBeTruthy();
+    context.data.account = null;
+  });
+
+  it('saves edited public profile fields through the authenticated API', async () => {
+    context.data.account = { id: 'member-1', name: 'Aep Falaq', email: 'aep@example.test', org: 'PFI', bio: '', role: 'observer', verification: 'none', created: '2026-01-01T00:00:00Z', avatarUrl: '' };
+    api.mockResolvedValueOnce({ ...context.data.account, name: 'Aep Falak', bio: 'Pengamat hilal Tasikmalaya' });
+    render(<Profil />);
+    fireEvent.click(screen.getByRole('button', { name: /Edit profil/i }));
+    fireEvent.change(screen.getByLabelText(/Nama lengkap/i), { target: { value: 'Aep Falak' } });
+    fireEvent.change(screen.getByLabelText(/Tentang Anda/i), { target: { value: 'Pengamat hilal Tasikmalaya' } });
+    fireEvent.click(screen.getByRole('button', { name: /Simpan perubahan/i }));
+    await waitFor(() => expect(api).toHaveBeenCalledWith('/api/profile', 'PUT', expect.objectContaining({ name: 'Aep Falak' })));
     context.data.account = null;
   });
 
