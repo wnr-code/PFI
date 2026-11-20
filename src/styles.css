@@ -736,3 +736,14 @@ input:disabled,select:disabled,textarea:disabled,button:disabled{cursor:not-allo
 @keyframes pfiRefreshFade{from{opacity:0}to{opacity:1}}
 @media(max-width:700px){.pfi-refresh-orbit{inset:128px 0 0;min-height:440px}.pfi-refresh-orbit strong{font-size:17px}.pfi-refresh-orbit small{font-size:14px!important;padding:0 24px}.pfi-refresh-system{width:164px;height:164px}.pfi-refresh-logo{width:70px;height:70px}}
 @media(prefers-reduced-motion:reduce){.pfi-refresh-system .orbit,.pfi-live-actions button.is-refreshing svg{animation:none}.pfi-refresh-orbit{animation:none}}
+
+/* Popup hierarchy correction: compact actions, immersive sheets only for important data. */
+@media(max-width:600px){
+  .auth-google-modal{width:100%;height:auto;min-height:52dvh;max-height:72dvh;border-radius:24px 24px 0 0}
+  .info-tip:has(.info-tip-card):before{display:none}
+  .info-tip-card{position:fixed;z-index:220;right:14px;bottom:84px;left:14px;top:auto;width:auto;max-width:420px;max-height:46dvh;margin:0 auto;overflow:auto;padding:18px 46px 18px 18px;border:1px solid rgba(111,183,233,.32);border-radius:16px;background:#102b45;box-shadow:0 18px 48px rgba(0,0,0,.5);animation:infoPopupRise .2s ease}
+  .info-tip-card>button{top:9px;right:9px;width:34px;height:34px}
+  .info-tip-card>b{font-size:16px}.info-tip-card>span{font-size:14px;line-height:1.6}
+  .pfi-map-bottom-sheet.expanded{height:calc(100dvh - 84px);max-height:calc(100dvh - 84px)}
+}
+@keyframes infoPopupRise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
