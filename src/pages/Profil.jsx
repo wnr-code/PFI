@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { usePFI } from '../state.jsx';
 import { api } from '../lib/api.js';
-import { Bell, Building2, CalendarDays, Camera, Check, Edit3, FileText, Globe2, Image, Languages, LogOut, Mail, Medal, Save, Settings2, ShieldCheck, Sparkles, UserRound, X } from 'lucide-react';
+import { Bell, Building2, CalendarDays, Camera, Check, Edit3, FileText, Globe2, Languages, LogOut, Mail, Medal, Save, Settings2, ShieldCheck, Sparkles, Upload, UserRound, X } from 'lucide-react';
 
 const roleInfo = {
   observer: ['Pengamat', 'Observer'], reviewer: ['Reviewer', 'Reviewer'], admin: ['Administrator', 'Administrator'],
@@ -19,6 +19,7 @@ export default function Profil() {
   const account = data.account;
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [showVerify, setShowVerify] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [evidence, setEvidence] = useState('');
@@ -40,6 +41,20 @@ export default function Profil() {
       update({ account: next }); setForm({ name: next.name, org: next.org || '', bio: next.bio || '', avatarUrl: next.avatarUrl || '', coverTheme: next.coverTheme || 'orbit' });
       setEditing(false); tell(t('Profil berhasil diperbarui.', 'Profile updated.'));
     } catch (error) { tell(error.message); } finally { setSaving(false); }
+  };
+  const uploadAvatar = async (event) => {
+    const file = event.target.files?.[0]; event.target.value = '';
+    if (!file) return;
+    if (!['image/jpeg','image/png','image/webp'].includes(file.type)) return tell(t('Gunakan gambar JPEG, PNG, atau WebP.', 'Use a JPEG, PNG, or WebP image.'));
+    if (file.size > 2 * 1024 * 1024) return tell(t('Ukuran avatar maksimal 2 MB.', 'Avatar size is limited to 2 MB.'));
+    setUploadingAvatar(true);
+    try {
+      const body = new FormData(); body.append('avatar', file);
+      const result = await api('/api/profile/avatar', 'POST', body);
+      const next = { ...account, avatarUrl: result.avatarUrl };
+      update({ account: next }); setForm(current => ({ ...current, avatarUrl: result.avatarUrl }));
+      tell(t('Avatar berhasil diperbarui.', 'Avatar updated.'));
+    } catch (error) { tell(error.message); } finally { setUploadingAvatar(false); }
   };
   const submitVerification = async () => {
     if (evidence.trim().length < 20) return tell(t('Keterangan bukti minimal 20 karakter.', 'Evidence must be at least 20 characters.'));
@@ -72,7 +87,7 @@ export default function Profil() {
       <main>
         {editing ? <form className="profile-panel profile-form" onSubmit={saveProfile}>
           <header><div><span>{t('PENGATURAN PROFIL', 'PROFILE SETTINGS')}</span><h2>{t('Ubah informasi publik', 'Edit public information')}</h2></div><Camera size={20}/></header>
-          <div className="profile-fields"><label><span><UserRound size={15}/>{t('Nama lengkap', 'Full name')}</span><input value={form.name} onChange={e => setForm({...form, name:e.target.value})} minLength={2} maxLength={80} required/></label><label><span><Building2 size={15}/>{t('Organisasi / lembaga', 'Organization')}</span><input value={form.org} onChange={e => setForm({...form, org:e.target.value})} maxLength={120}/></label><label className="wide"><span><FileText size={15}/>{t('Tentang Anda', 'About you')}</span><textarea value={form.bio} onChange={e => setForm({...form, bio:e.target.value})} maxLength={360} rows={4} placeholder={t('Ceritakan bidang dan pengalaman pengamatan Anda…', 'Share your field and observation experience…')}/><small>{form.bio.length}/360</small></label><label className="wide"><span><Image size={15}/>{t('URL foto profil', 'Profile photo URL')}</span><input type="url" value={form.avatarUrl} onChange={e => setForm({...form, avatarUrl:e.target.value})} placeholder="https://…"/><small>{t('Foto Google digunakan otomatis. Tempel URL HTTPS lain untuk menggantinya.', 'Your Google photo is used automatically. Paste another HTTPS URL to replace it.')}</small></label></div>
+          <div className="profile-fields"><label><span><UserRound size={15}/>{t('Nama lengkap', 'Full name')}</span><input value={form.name} onChange={e => setForm({...form, name:e.target.value})} minLength={2} maxLength={80} required/></label><label><span><Building2 size={15}/>{t('Organisasi / lembaga', 'Organization')}</span><input value={form.org} onChange={e => setForm({...form, org:e.target.value})} maxLength={120}/></label><label className="wide"><span><FileText size={15}/>{t('Tentang Anda', 'About you')}</span><textarea value={form.bio} onChange={e => setForm({...form, bio:e.target.value})} maxLength={360} rows={4} placeholder={t('Ceritakan bidang dan pengalaman pengamatan Anda…', 'Share your field and observation experience…')}/><small>{form.bio.length}/360</small></label><div className="wide profile-avatar-upload"><span><Camera size={16}/>{t('Avatar profil','Profile avatar')}</span><div><div className="profile-avatar-preview">{form.avatarUrl?<img src={form.avatarUrl} alt=""/>:<b>{initials}</b>}</div><label className={`profile-upload-button ${uploadingAvatar?'disabled':''}`}><Upload size={17}/>{uploadingAvatar?t('Mengunggah…','Uploading…'):t('Unggah avatar','Upload avatar')}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadAvatar} disabled={uploadingAvatar}/></label></div><small>{t('JPEG, PNG, atau WebP. Ukuran maksimal 2 MB.','JPEG, PNG, or WebP. Maximum size 2 MB.')}</small></div></div>
           <fieldset className="profile-cover-picker"><legend><Sparkles size={16}/>{t('Pilih animasi sampul','Choose cover animation')}</legend><div>{coverThemes.map(([id,idLabel,enLabel])=><button type="button" key={id} className={form.coverTheme===id?'selected':''} aria-pressed={form.coverTheme===id} onClick={()=>setForm({...form,coverTheme:id})}><span className={`cover-preview cover-${id}`}><i/><b/></span><strong>{t(idLabel,enLabel)}</strong>{form.coverTheme===id&&<Check size={15}/>}</button>)}</div><small>{t('Animasi hanya bersifat visual dan mengikuti pengaturan pengurangan gerakan perangkat.','Animations are visual only and respect the device reduced-motion setting.')}</small></fieldset>
           <button className="btn primary" disabled={saving}><Save size={16}/>{saving ? t('Menyimpan…', 'Saving…') : t('Simpan perubahan', 'Save changes')}</button>
         </form> : <section className="profile-panel profile-about"><header><div><span>{t('TENTANG', 'ABOUT')}</span><h2>{t('Profil profesional', 'Professional profile')}</h2></div><UserRound size={20}/></header><p>{account.bio || t('Belum ada bio. Tambahkan bidang keahlian, pengalaman rukyat, atau kegiatan falaq Anda agar anggota lain lebih mengenal Anda.', 'No bio yet. Add your expertise, observation experience, or astronomy activities so other members can know you better.')}</p><dl><div><dt><Mail size={14}/>{t('Email akun · privat', 'Account email · private')}</dt><dd>{account.email}</dd></div><div><dt><CalendarDays size={14}/>{t('Bergabung', 'Joined')}</dt><dd>{account.created ? new Date(account.created).toLocaleDateString(data.lang === 'id' ? 'id-ID' : 'en-US', {month:'long', year:'numeric'}) : '—'}</dd></div><div><dt><Medal size={14}/>{t('Peran anggota', 'Member role')}</dt><dd>{t(...role)}</dd></div><div><dt><ShieldCheck size={14}/>{t('Status verifikasi', 'Verification status')}</dt><dd>{verified?t('Terverifikasi','Verified'):account.verification==='pending'?t('Sedang ditinjau','Under review'):t('Belum terverifikasi','Not verified')}</dd></div></dl>{account.reviewNote&&<div className="profile-review-note"><ShieldCheck size={16}/><span><b>{t('Catatan peninjau','Reviewer note')}</b>{account.reviewNote}</span></div>}</section>}

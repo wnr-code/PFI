@@ -435,6 +435,42 @@ async function uploadPostPhoto(request, env, postId) {
   return json({ id, photo: `/api/photos/${id}`, mime, size: bytes.byteLength, sha256 }, 201);
 }
 
+async function uploadAvatar(request, env) {
+  const profile = await profileFor(request, env);
+  if (!profile) return fail(401, 'Silakan masuk untuk mengganti avatar.');
+  if (!env.r2falaq || typeof env.r2falaq.put !== 'function') return fail(503, 'Penyimpanan avatar belum dikonfigurasi.');
+  const length = request.headers.get('content-length');
+  if (length !== null && (!Number.isSafeInteger(Number(length)) || Number(length) < 1)) return fail(400, 'Header ukuran unggahan tidak valid.');
+  if (length !== null && Number(length) > 2 * 1024 * 1024 + 65536) return fail(413, 'Ukuran avatar maksimal 2 MB.');
+  const form = await request.formData().catch(() => null);
+  const file = form?.get('avatar');
+  if (!file || typeof file.arrayBuffer !== 'function') return fail(400, 'Pilih satu berkas avatar terlebih dahulu.');
+  if (file.size < 1 || file.size > 2 * 1024 * 1024) return fail(413, 'Ukuran avatar maksimal 2 MB.');
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const starts = (...values) => values.every((value, index) => bytes[index] === value);
+  let mime = '';
+  if (starts(0xff, 0xd8, 0xff)) mime = 'image/jpeg';
+  else if (starts(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)) mime = 'image/png';
+  else if (bytes.length >= 12 && String.fromCharCode(...bytes.slice(0, 4)) === 'RIFF' && String.fromCharCode(...bytes.slice(8, 12)) === 'WEBP') mime = 'image/webp';
+  if (!mime) return fail(415, 'Format avatar harus JPEG, PNG, atau WebP.');
+  const objectKey = `avatars/${profile.id}`;
+  await env.r2falaq.put(objectKey, bytes, { httpMetadata: { contentType: mime, cacheControl: 'public, no-cache' }, customMetadata: { uploadedBy: profile.id } });
+  const avatarUrl = `/api/avatars/${encodeURIComponent(profile.id)}`;
+  await env.falaq.prepare('UPDATE users SET avatar_url=?,updated=? WHERE id=?').bind(avatarUrl, new Date().toISOString(), profile.id).run();
+  return json({ avatarUrl: `${avatarUrl}?v=${Date.now()}` }, 201);
+}
+
+async function getAvatar(env, id) {
+  if (!env.r2falaq || typeof env.r2falaq.get !== 'function') return fail(503, 'Penyimpanan avatar belum dikonfigurasi.');
+  const object = await env.r2falaq.get(`avatars/${id}`);
+  if (!object) return fail(404, 'Avatar tidak ditemukan.');
+  const headers = new Headers();
+  object.writeHttpMetadata?.(headers);
+  headers.set('Cache-Control', 'public, no-cache');
+  headers.set('X-Content-Type-Options', 'nosniff');
+  return new Response(object.body, { headers });
+}
+
 async function getPhoto(request, env, id) {
   const meta = await env.falaq.prepare(
     `SELECT ph.mime,ph.object_key,ph.size_bytes,p.user_id,p.status,p.type,p.group_id
@@ -618,6 +654,10 @@ export default {
         return await uploadPostPhoto(request, env, postPhotoMatch[1]);
       }
 
+      if (url.pathname === '/api/profile/avatar' && request.method === 'POST') return await uploadAvatar(request, env);
+      const avatarMatch = url.pathname.match(/^\/api\/avatars\/([a-zA-Z0-9_-]+)$/);
+      if (avatarMatch && request.method === 'GET') return await getAvatar(env, avatarMatch[1]);
+
       const photoMatch = url.pathname.match(/^\/api\/photos\/([a-zA-Z0-9_-]+)$/);
       if (photoMatch && request.method === 'GET') return await getPhoto(request, env, photoMatch[1]);
 
@@ -727,8 +767,11 @@ export default {
         if (!allowedCoverThemes.includes(coverTheme)) return fail(400, 'Pilihan sampul profil tidak valid.');
         let safeAvatarUrl = '';
         if (avatarUrl) {
-          try { const parsed = new URL(avatarUrl); if (parsed.protocol !== 'https:') throw new Error(); safeAvatarUrl = parsed.href; }
-          catch { return fail(400, 'Alamat foto profil harus berupa URL HTTPS yang valid.'); }
+          if (avatarUrl.startsWith(`/api/avatars/${encodeURIComponent(profile.id)}`)) safeAvatarUrl = avatarUrl.split('?')[0];
+          else {
+            try { const parsed = new URL(avatarUrl); if (parsed.protocol !== 'https:') throw new Error(); safeAvatarUrl = parsed.href; }
+            catch { return fail(400, 'Avatar profil tidak valid.'); }
+          }
         }
         if (name.length < 2 || name.length > 80 || org.length > 120 || bio.length > 360 || safeAvatarUrl.length > 1000) {
           return fail(400, 'Nama, organisasi, atau bio tidak sesuai batas karakter.');
