@@ -5,7 +5,7 @@
  * Maintainer: @wnr-code — https://github.com/wnr-code
  * Dukung pengembang: https://trakteer.id/lanteraku/tip
  */
-import { Observer, Equator, Horizon, MoonPhase, SearchMoonPhase, Illumination, AngleFromSun, SearchRiseSet, SearchAltitude, SearchHourAngle, SearchLunarEclipse, SearchGlobalSolarEclipse, KM_PER_AU } from 'astronomy-engine';
+import { Observer, Equator, EquatorFromVector, GeoVector, Horizon, MoonPhase, RotateVector, Rotation_EQJ_EQD, SearchMoonPhase, Illumination, AngleFromSun, SearchRiseSet, SearchAltitude, SearchHourAngle, SearchLunarEclipse, SearchGlobalSolarEclipse, KM_PER_AU } from 'astronomy-engine';
 export const DAY=86400000;
 export const SITES=[
  {id:'tasik',city:'Tasikmalaya',region:'Jawa Barat',site:'Bukit Panyangrayan',lat:-7.407,lon:108.142,elev:698,offset:7},
@@ -37,14 +37,43 @@ export function lunar(d){const angle=MoonPhase(d),i=Illumination('Moon',d);retur
 export function position(body,d,l){const obs=new Observer(l.lat,l.lon,l.elev),e=Equator(body,d,obs,true,true),h=Horizon(d,obs,e.ra,e.dec,'normal');return {alt:h.altitude,az:h.azimuth,dec:e.dec,ra:e.ra,dist:e.dist*KM_PER_AU};}
 export function sunsetTime(day,l=SITES[0]){if(typeof day!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(day))return null;try{const check=new Date(`${day}T12:00:00.000Z`);if(!Number.isFinite(check.getTime())||check.toISOString().slice(0,10)!==day)return null;const start=localTime(day,'00:00',l);if(!Number.isFinite(start.getTime()))return null;const result=SearchRiseSet('Sun',new Observer(l.lat,l.lon,l.elev),-1,start,1);return result?.date||null;}catch{return null;}}
 export function starPosition(ra,dec,d,l){const h=Horizon(d,new Observer(l.lat,l.lon,l.elev),ra,dec);return{alt:h.altitude,az:h.azimuth};}
-export function calculateHisab(period,l,method='mabims'){
- if(method!=='mabims')throw new Error('Metode hisab belum didukung.');
+const rad=(value)=>value*Math.PI/180;
+const deg=(value)=>value*180/Math.PI;
+const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
+const signedAngle=(value)=>((value+540)%360)-180;
+function airlessPosition(body,d,l,geocentric=false){
+ const obs=new Observer(l.lat,l.lon,l.elev);
+ const e=geocentric?EquatorFromVector(RotateVector(Rotation_EQJ_EQD(d),GeoVector(body,d,true))):Equator(body,d,obs,true,true);
+ const h=Horizon(d,obs,e.ra,e.dec);
+ return{alt:h.altitude,az:h.azimuth,dec:e.dec,ra:e.ra,dist:e.dist*KM_PER_AU};
+}
+function adDurrulHilal(sunset,l,elongation){
+ // Ad-Durrul Aniq, pembahasan data hilal hlm. 41–43: tinggi markazi,
+ // paralaks, refraksi, dip, semidiameter, tinggi sathi, elongasi dan muktsul.
+ // Ephemeris dasar tetap Astronomy Engine; koreksi hilal mengikuti rumus kitab.
+ const moon=airlessPosition('Moon',sunset,l,true),sun=airlessPosition('Sun',sunset,l,true);
+ const horizontalParallax=deg(Math.asin(clamp(6378.14/moon.dist,-1,1)));
+ const semiDiameter=.272476*horizontalParallax;
+ const dip=(1.76/60)*Math.sqrt(Math.max(0,l.elev||0));
+ const refraction=moon.alt>-4.3?.0167/Math.tan(rad(moon.alt+7.31/(moon.alt+4.4))):0;
+ const parallax=horizontalParallax*Math.cos(rad(moon.alt));
+ const topocentricAltitude=moon.alt-parallax+refraction+dip-semiDiameter;
+ const azimuthDifference=signedAngle(moon.az-sun.az);
+ const topocentricElongation=deg(Math.acos(clamp(Math.sin(rad(topocentricAltitude))*Math.sin(rad(sun.alt))+Math.cos(rad(topocentricAltitude))*Math.cos(rad(sun.alt))*Math.cos(rad(azimuthDifference)),-1,1)));
+ const altitudeDifference=moon.alt-sun.alt;
+ const angularDistance=deg(Math.acos(clamp(Math.cos(rad(azimuthDifference))*Math.cos(rad(altitudeDifference)),-1,1)));
+ return{moon,sun,geocentricAltitude:moon.alt,topocentricAltitude,horizontalParallax,parallax,refraction,dip,semiDiameter,elongation,topocentricElongation,illumination:100*Illumination('Moon',sunset).phase_fraction,muktsulMinutes:Math.max(0,moon.alt*4),azimuthDifference,altitudeDifference,angularDistance,position:azimuthDifference<0?'south':'north',meets:topocentricAltitude>=3&&elongation>=6.4};
+}
+export function calculateHisab(period,l,method='comparison'){
+ if(!['comparison','mabims'].includes(method))throw new Error('Metode hisab belum didukung.');
  if(!period?.start||period.day!==1)throw new Error('Tanggal acuan harus merupakan tanggal 1 bulan Hijriah.');
  if(!l||!Number.isFinite(l.lat)||!Number.isFinite(l.lon))throw new Error('Lokasi pengamatan tidak valid.');
  const start=localTime(period.start,'00:00',l),conj=SearchMoonPhase(0,new Date(+start-5*DAY),10).date;
  const sunset=SearchRiseSet('Sun',new Observer(l.lat,l.lon,l.elev),-1,conj,2).date;
- const moon=position('Moon',sunset,l),sun=position('Sun',sunset,l),elongation=AngleFromSun('Moon',sunset);
- return{id:crypto.randomUUID(),created:new Date().toISOString(),period,loc:l,method,conj:conj.toISOString(),sunset:sunset.toISOString(),moon,sun,elongation,age:(sunset-conj)/3600000,meets:moon.alt>=3&&elongation>=6.4};
+ const moon=position('Moon',sunset,l),sun=position('Sun',sunset,l),elongation=AngleFromSun('Moon',sunset),age=(sunset-conj)/3600000;
+ const modern={moon,sun,elongation,age,illumination:100*Illumination('Moon',sunset).phase_fraction,meets:moon.alt>=3&&elongation>=6.4,engine:'Astronomy Engine 2.1.19'};
+ const adDurrul=adDurrulHilal(sunset,l,elongation);
+ return{id:crypto.randomUUID(),created:new Date().toISOString(),period,loc:l,method:'comparison',conj:conj.toISOString(),sunset:sunset.toISOString(),moon,sun,elongation,age,meets:modern.meets,models:{modern,adDurrul},criteria:{name:'MABIMS 2021',minAltitude:3,minElongation:6.4}};
 }
 export function qibla(l){const r=Math.PI/180,y1=l.lat*r,y2=21.4225*r,dl=(39.8262-l.lon)*r;return{angle:(Math.atan2(Math.sin(dl),Math.cos(y1)*Math.tan(y2)-Math.sin(y1)*Math.cos(dl))/r+360)%360,km:6371*Math.acos(Math.sin(y1)*Math.sin(y2)+Math.cos(y1)*Math.cos(y2)*Math.cos(dl))};}
 export function prayers(day,l){const start=localTime(day,'00:00',l),o=new Observer(l.lat,l.lon,l.elev),dhuhr=SearchHourAngle('Sun',o,0,start).time.date,dec=position('Sun',dhuhr,l).dec,asrAlt=Math.atan(1/(1+Math.tan(Math.abs(l.lat-dec)*Math.PI/180)))*180/Math.PI;return[

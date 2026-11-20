@@ -8,7 +8,7 @@
 import React, { useState, useMemo } from 'react';
 import { usePFI, go } from '../state.jsx';
 import {
-  calculateHisab, periods, SITES, num,
+  calculateHisab, periods, SITES, zone, zlabel,
 } from '../lib/astro.js';
 import { api } from '../lib/api.js';
 import { exportReport } from '../lib/export.js';
@@ -33,7 +33,8 @@ export default function Hisab() {
   const { data, t, lang, loc, tell, update } = usePFI();
   const [bulan, setBulan] = useState(8); // Ramadan
   const [siteId, setSiteId] = useState(data.site || 'tasik');
-  const [metode, setMetode] = useState('mabims');
+  const [metode, setMetode] = useState('comparison');
+  const [resultModel, setResultModel] = useState('comparison');
   const [result, setResult] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -67,12 +68,22 @@ export default function Hisab() {
     }
   };
 
-  const formatAngle = (v) => v?.toFixed?.(2) ?? '—';
+  const formatAngle = (v) => v?.toFixed?.(3) ?? '—';
+  const dms = (value) => {
+    if (!Number.isFinite(value)) return '—';
+    const sign = value < 0 ? '−' : ''; const absolute = Math.abs(value);
+    const degrees = Math.floor(absolute); const minutesFloat = (absolute - degrees) * 60;
+    const minutes = Math.floor(minutesFloat); const seconds = (minutesFloat - minutes) * 60;
+    return `${sign}${degrees}° ${String(minutes).padStart(2, '0')}′ ${seconds.toFixed(2).padStart(5, '0')}″`;
+  };
   const formatTime = (v) => {
     if (!v) return '—';
-    return new Date(v).toLocaleTimeString(lang === 'id' ? 'id-ID' : 'en-GB', {
-      hour: '2-digit', minute: '2-digit', hour12: false,
-    });
+    return new Intl.DateTimeFormat(lang === 'id' ? 'id-ID' : 'en-GB', { timeZone: zone(site), hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).format(new Date(v));
+  };
+  const duration = (minutes) => {
+    if (!Number.isFinite(minutes)) return '—';
+    const total = Math.max(0, Math.round(minutes * 60));
+    return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
   };
 
   const bulanLabel = lang === 'id' ? BULAN_HIJRIAH[bulan] : BULAN_HIJRIAH_EN[bulan];
@@ -111,7 +122,7 @@ export default function Hisab() {
             <div className="field">
               <label>{t('Metode Hisab', 'Calculation Method')}</label>
               <select value={metode} onChange={(e) => setMetode(e.target.value)}>
-                <option value="mabims">MABIMS (tinggi ≥ 3°, elongasi ≥ 6,4°)</option>
+                <option value="comparison">{t('Perbandingan 2 model + MABIMS', 'Two-model comparison + MABIMS')}</option>
               </select>
             </div>
           </div>
@@ -127,69 +138,27 @@ export default function Hisab() {
         </div>
       </section>
 
-      {result && (
-        <section className="card hisab-results">
-          <div className="card-header">
-            <h2>{t('Hasil Perhitungan', 'Calculation Result')}</h2>
-            <span className="pill verified">{t('Data astronomis', 'Astronomical Data')}</span>
-          </div>
-          <div className="card-body">
-            <div className="result-grid">
-              <div className="result-box">
-                <span className="label">{t('Waktu Ijtimak', 'Conjunction Time')}</span>
-                <b>{formatTime(result.conj)}</b>
-                <small>{t('UTC', 'UTC')}</small>
-              </div>
-              <div className="result-box">
-                <span className="label">{t('Tinggi Hilal', 'Crescent Height')}</span>
-                <b>{formatAngle(result.moon?.alt)}°</b>
-                <small>{t('pada terbenam matahari', 'at sunset')}</small>
-              </div>
-              <div className="result-box">
-                <span className="label">{t('Elongasi', 'Elongation')}</span>
-                <b>{formatAngle(result.elongation)}°</b>
-                <small>{t('jarak bulan-matahari', 'moon-sun distance')}</small>
-              </div>
-              <div className="result-box">
-                <span className="label">{t('Umur Bulan', 'Moon Age')}</span>
-                <b>{formatAngle(result.age)}</b>
-                <small>{t('jam', 'hours')}</small>
-              </div>
-              <div className="result-box">
-                <span className="label">{t('Azimut Hilal', 'Crescent Azimuth')}</span>
-                <b>{formatAngle(result.moon?.az)}°</b>
-                <small>{t('arah mata kompas', 'compass direction')}</small>
-              </div>
-              <div className="result-box">
-                <span className="label">{t('Visibilitas', 'Visibility')}</span>
-                <b>{result.meets ? t('Terlihat', 'Visible') : t('Tidak terlihat', 'Not Visible')}</b>
-                <small>{result.meets ? '✓' : '✗'}</small>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 16, padding: 14, background: 'var(--surface2)', border: '1px solid var(--line)', borderRadius: 8 }}>
-              <h3 style={{ fontSize: 13, marginBottom: 8, color: '#d6ae62' }}>{t('Kesimpulan', 'Conclusion')}</h3>
-              <p style={{ fontSize: 13, lineHeight: 1.6, color: '#c7d1df' }}>{result.meets ? t('Kondisi matahari terbenam mencukupi untuk pengamatan hilal. Namun, penetapan resmi awal bulan adalah wewenang sidang isbat.', 'Sunset conditions sufficient for crescent observation. Official determination is authority of isbat session.') : t('Kondisi matahari terbenam kurang mencukupi untuk pengamatan hilal berdasarkan metode yang dipilih.', 'Sunset conditions insufficient for crescent observation based on selected method.')}</p>
-              <p style={{ fontSize: 11, color: '#747f8e', marginTop: 8 }}>
-                {t('Hasil perhitungan adalah data astronomis, bukan keputusan resmi awal bulan. Setiap lembaga (MUI, NU, Muhammadiyah, dll.) memiliki metode perhitungan sendiri.', 'Calculation results are astronomical data, not official new month determination. Each institution (MUI, NU, Muhammadiyah, etc.) has its own calculation method.')}
-              </p>
-            </div>
-          </div>
-          <div className="card-footer">
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button className="btn secondary full" onClick={() => exportReport(result, lang, 'pdf').catch((error) => tell(error.message))}>
-                <FileDown size={16} /> {t('Unduh PDF', 'Download PDF')}
-              </button>
-              <button className="btn secondary full" onClick={() => {
-                const txt = `Hisab ${bulanLabel}: Tinggi ${formatAngle(result.moon?.alt)}°, Elongasi ${formatAngle(result.elongation)}°, ${result.meets ? 'Terlihat' : 'Tidak terlihat'}`;
-                navigator.clipboard?.writeText(txt).then(() => tell(t('Disalin ke clipboard.', 'Copied to clipboard.')));
-              }}>
-                <Share2 size={16} /> {t('Bagikan', 'Share')}
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
+      {result && (() => {
+        const modern = result.models.modern; const kitab = result.models.adDurrul;
+        const rows = [
+          [t('Tinggi hilal', 'Crescent altitude'), dms(modern.moon.alt), dms(kitab.topocentricAltitude)],
+          [t('Elongasi geosentris', 'Geocentric elongation'), dms(modern.elongation), dms(kitab.elongation)],
+          [t('Azimut hilal', 'Crescent azimuth'), dms(modern.moon.az), dms(kitab.moon.az)],
+          [t('Azimut Matahari', 'Solar azimuth'), dms(modern.sun.az), dms(kitab.sun.az)],
+          [t('Iluminasi', 'Illumination'), `${modern.illumination.toFixed(3)}%`, `${kitab.illumination.toFixed(3)}%`],
+          [t('Kriteria MABIMS', 'MABIMS criteria'), modern.meets ? t('Memenuhi', 'Meets') : t('Belum', 'Not met'), kitab.meets ? t('Memenuhi', 'Meets') : t('Belum', 'Not met')],
+        ];
+        return <section className="hisab-dual-results">
+          <div className="hisab-result-intro"><div><span className="section-kicker">{t('HASIL TERORGANISIR', 'ORGANIZED RESULTS')}</span><h2>{t('Perbandingan dua model', 'Two-model comparison')}</h2><p>{t('Waktu ditampilkan hingga detik. Pilih model untuk melihat rincian koreksinya.', 'Times are displayed to the second. Select a model to inspect its corrections.')}</p></div><span className="method-badge"><Calculator size={16}/>{result.criteria.name}</span></div>
+          <div className="hisab-time-strip"><article><span>{t('Ijtimak', 'Conjunction')}</span><b>{formatTime(result.conj)}</b><small>{zlabel(site)}</small></article><article><span>{t('Matahari terbenam', 'Sunset')}</span><b>{formatTime(result.sunset)}</b><small>{zlabel(site)}</small></article><article><span>{t('Umur Bulan', 'Lunar age')}</span><b>{Math.floor(result.age)}j {Math.round((result.age%1)*60)}m</b><small>{result.age.toFixed(4)} {t('jam', 'hours')}</small></article></div>
+          <div className="model-tabs" role="tablist"><button className={resultModel==='comparison'?'active':''} onClick={()=>setResultModel('comparison')}>{t('Bandingkan', 'Compare')}</button><button className={resultModel==='modern'?'active':''} onClick={()=>setResultModel('modern')}>{t('Astronomi modern', 'Modern astronomy')}</button><button className={resultModel==='kitab'?'active':''} onClick={()=>setResultModel('kitab')}>Ad-Durrul Aniq</button></div>
+          {resultModel==='comparison' && <div className="model-comparison"><header><b>{t('Parameter', 'Parameter')}</b><b>{t('Astronomi modern', 'Modern astronomy')}</b><b>Ad-Durrul Aniq</b></header>{rows.map(([label,a,b])=><div key={label}><span>{label}</span><strong>{a}</strong><strong>{b}</strong></div>)}</div>}
+          {resultModel==='modern' && <div className="model-detail"><div className="model-detail-head modern"><div><small>MODEL 01</small><h3>{t('Astronomi modern', 'Modern astronomy')}</h3><p>Astronomy Engine 2.1.19 · {t('posisi toposentris dengan refraksi standar', 'topocentric position with standard refraction')}</p></div><span className={modern.meets?'pass':'fail'}>{modern.meets?t('Memenuhi MABIMS','Meets MABIMS'):t('Belum memenuhi','Not met')}</span></div><div className="detail-metrics"><article><span>{t('Tinggi toposentris', 'Topocentric altitude')}</span><b>{dms(modern.moon.alt)}</b><small>{formatAngle(modern.moon.alt)}°</small></article><article><span>{t('Elongasi geosentris', 'Geocentric elongation')}</span><b>{dms(modern.elongation)}</b><small>{formatAngle(modern.elongation)}°</small></article><article><span>{t('Azimut Bulan', 'Lunar azimuth')}</span><b>{dms(modern.moon.az)}</b></article><article><span>{t('Azimut Matahari', 'Solar azimuth')}</span><b>{dms(modern.sun.az)}</b></article><article><span>{t('Iluminasi', 'Illumination')}</span><b>{modern.illumination.toFixed(3)}%</b></article><article><span>{t('Jarak Bulan', 'Lunar distance')}</span><b>{Math.round(modern.moon.dist).toLocaleString('id-ID')} km</b></article></div></div>}
+          {resultModel==='kitab' && <div className="model-detail"><div className="model-detail-head kitab"><div><small>MODEL 02</small><h3>Ad-Durrul Aniq</h3><p>{t('Koreksi hilal hlm. 41–43; ephemeris dasar Astronomy Engine', 'Crescent corrections pp. 41–43; base ephemeris from Astronomy Engine')}</p></div><span className={kitab.meets?'pass':'fail'}>{kitab.meets?t('Memenuhi MABIMS','Meets MABIMS'):t('Belum memenuhi','Not met')}</span></div><div className="detail-metrics"><article><span>{t('Tinggi geosentris (hc)', 'Geocentric altitude (hc)')}</span><b>{dms(kitab.geocentricAltitude)}</b></article><article><span>{t('Paralaks horizontal (HP)', 'Horizontal parallax (HP)')}</span><b>{dms(kitab.horizontalParallax)}</b></article><article><span>{t('Paralaks Bulan (P)', 'Lunar parallax (P)')}</span><b>{dms(kitab.parallax)}</b></article><article><span>{t('Refraksi (Ref)', 'Refraction (Ref)')}</span><b>{dms(kitab.refraction)}</b></article><article><span>{t('Kerendahan ufuk (Dip)', 'Horizon dip')}</span><b>{dms(kitab.dip)}</b></article><article><span>{t('Semidiameter Bulan', 'Lunar semidiameter')}</span><b>{dms(kitab.semiDiameter)}</b></article><article className="highlight"><span>{t('Tinggi toposentris (hc′)', 'Topocentric altitude (hc′)')}</span><b>{dms(kitab.topocentricAltitude)}</b></article><article><span>{t('Elongasi geosentris', 'Geocentric elongation')}</span><b>{dms(kitab.elongation)}</b></article><article><span>{t('Elongasi toposentris', 'Topocentric elongation')}</span><b>{dms(kitab.topocentricElongation)}</b></article><article><span>{t('Beda azimut', 'Azimuth difference')}</span><b>{dms(kitab.azimuthDifference)}</b><small>{kitab.position==='south'?t('selatan Matahari','south of Sun'):t('utara Matahari','north of Sun')}</small></article><article><span>{t('Muktsul hilal', 'Crescent duration')}</span><b>{duration(kitab.muktsulMinutes)}</b><small>{t('menit:detik', 'minutes:seconds')}</small></article><article><span>{t('Nurul Hilal', 'Crescent illumination')}</span><b>{kitab.illumination.toFixed(3)}%</b></article></div><div className="formula-note"><Info size={17}/><p>{t('Model kitab menerapkan urutan hc′ = hc − paralaks + refraksi + dip − semidiameter. Untuk transparansi ilmiah, ephemeris dasarnya masih berasal dari Astronomy Engine; tabel ijtimak asli kitab akan diverifikasi sebagai tahap lanjutan.', 'The book model applies hc′ = hc − parallax + refraction + dip − semidiameter. For scientific transparency, its base ephemeris still comes from Astronomy Engine; the book’s original conjunction tables require further verification.')}</p></div></div>}
+          <div className="hisab-conclusion"><CheckCircle2 size={20}/><div><b>{t('Kesimpulan bukan keputusan resmi', 'Conclusion is not an official decision')}</b><p>{t('Kriteria MABIMS memerlukan tinggi minimal 3° dan elongasi minimal 6,4°. Penetapan awal bulan tetap menjadi kewenangan sidang isbat.', 'MABIMS requires at least 3° altitude and 6.4° elongation. Official month determination remains under the isbat authority.')}</p></div></div>
+          <div className="hisab-result-actions"><button className="btn secondary" onClick={()=>exportReport(result,lang,'pdf').catch(error=>tell(error.message))}><FileDown size={16}/>{t('Unduh PDF','Download PDF')}</button><button className="btn secondary" onClick={()=>navigator.clipboard?.writeText(`Hisab ${bulanLabel}: Modern ${dms(modern.moon.alt)}, Ad-Durrul Aniq ${dms(kitab.topocentricAltitude)}, elongasi ${dms(kitab.elongation)}`).then(()=>tell(t('Disalin ke clipboard.','Copied.')))}><Share2 size={16}/>{t('Bagikan','Share')}</button></div>
+        </section>;
+      })()}
     </div>
   );
 }

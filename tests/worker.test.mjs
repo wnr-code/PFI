@@ -230,6 +230,21 @@ test('Shawwal 1443 hisab remains within the published 1 May 2022 Indonesian refe
 });
 
 
+test('Ad-Durrul Aniq correction model follows the published Ramadan 1434 Banyuwangi example', () => {
+  const palengkung = {
+    id: 'palengkung', city: 'Banyuwangi', region: 'Jawa Timur', site: 'Trianggulasi Palengkung',
+    lat: -(8 + 39 / 60 + 26.52 / 3600), lon: 114 + 21 / 60 + 41.1 / 3600, elev: 2, offset: 7,
+  };
+  const result = calculateHisab({ start: '2013-08-08', day: 1, month: 10, year: 1434 }, palengkung);
+  const kitab = result.models.adDurrul;
+  // Ad-Durrul Aniq terjemahan Kemenag 2025, hlm. 39–43.
+  assert.ok(Math.abs(kitab.geocentricAltitude - (4 + 13 / 60 + 11 / 3600)) < 0.06);
+  assert.ok(Math.abs(kitab.topocentricAltitude - (3 + 17 / 60 + 16 / 3600)) < 0.06);
+  assert.ok(Math.abs(kitab.elongation - (7 + 40 / 60 + 2 / 3600)) < 0.03);
+  assert.ok(Math.abs(kitab.illumination - 0.45) < 0.03);
+  assert.ok(Math.abs(kitab.azimuthDifference - (-(5 + 43 / 60 + 49 / 3600))) < 0.03);
+});
+
 test('group IDs are generated as stable URL-safe slugs', () => {
   assert.equal(groupSlug('Falak Tasikmalaya'), 'falak-tasikmalaya');
   assert.equal(groupSlug('Kelompok Falak: Jawa Barat'), 'kelompok-falak-jawa-barat');
