@@ -184,8 +184,13 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     expect(document.querySelector('.profile-cover h1')).toBeTruthy();
     expect(document.querySelector('.verified-mark')).toBeTruthy();
     expect(screen.getByText(/Kelengkapan profil/i)).toBeTruthy();
-    expect(screen.getByRole('switch', { name: /Aktifkan peringatan agenda/i })).toBeTruthy();
     expect(screen.getByText(/Email akun · privat/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Buka pengaturan profil/i }));
+    expect(screen.getByRole('dialog', { name: /Pengaturan profil/i })).toBeTruthy();
+    expect(screen.getByRole('switch', { name: /Aktifkan peringatan agenda/i })).toBeTruthy();
+    expect(screen.getByText(/Identitas Google terhubung/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Tutup pengaturan/i }));
+    expect(screen.queryByRole('dialog', { name: /Pengaturan profil/i })).toBeFalsy();
     context.data.account = null;
   });
 
