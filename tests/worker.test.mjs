@@ -81,9 +81,10 @@ test('legacy Production user tables are upgraded without replacing existing data
     },
   };
   await ensureUserSchema(database);
-  assert.equal(added.length, 11);
+  assert.equal(added.length, 12);
   assert.ok(added.some((sql) => sql.startsWith('ALTER TABLE users ADD COLUMN name ')));
   assert.ok(added.some((sql) => sql.startsWith('ALTER TABLE users ADD COLUMN avatar_url ')));
+  assert.ok(added.some((sql) => sql.startsWith('ALTER TABLE users ADD COLUMN cover_theme ')));
   assert.ok(added.some((sql) => sql.startsWith('ALTER TABLE users ADD COLUMN prefs ')));
   assert.ok(added.every((sql) => sql.startsWith('ALTER TABLE users ADD COLUMN ')));
 });

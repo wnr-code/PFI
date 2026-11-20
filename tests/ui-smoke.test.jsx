@@ -184,20 +184,30 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     expect(document.querySelector('.profile-cover h1')).toBeTruthy();
     expect(document.querySelector('.verified-mark')).toBeTruthy();
     expect(screen.getByText(/Kelengkapan profil/i)).toBeTruthy();
-    expect(screen.getByRole('switch', { name: /Aktifkan peringatan agenda/i })).toBeTruthy();
     expect(screen.getByText(/Email akun · privat/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Buka pengaturan profil/i }));
+    expect(screen.getByRole('dialog', { name: /Pengaturan profil/i })).toBeTruthy();
+    expect(screen.getByRole('switch', { name: /Aktifkan peringatan agenda/i })).toBeTruthy();
+    expect(screen.getByText(/Identitas Google terhubung/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Tutup pengaturan/i }));
+    expect(screen.queryByRole('dialog', { name: /Pengaturan profil/i })).toBeFalsy();
     context.data.account = null;
   });
 
   it('saves edited public profile fields through the authenticated API', async () => {
     context.data.account = { id: 'member-1', name: 'Aep Falaq', email: 'aep@example.test', org: 'PFI', bio: '', role: 'observer', verification: 'none', created: '2026-01-01T00:00:00Z', avatarUrl: '' };
-    api.mockResolvedValueOnce({ ...context.data.account, name: 'Aep Falak', bio: 'Pengamat hilal Tasikmalaya' });
+    api.mockResolvedValueOnce({ avatarUrl: '/api/avatars/member-1?v=1' }).mockResolvedValueOnce({ ...context.data.account, name: 'Aep Falak', bio: 'Pengamat hilal Tasikmalaya', avatarUrl: '/api/avatars/member-1', coverTheme: 'meteors' });
     render(<Profil />);
     fireEvent.click(screen.getByRole('button', { name: /Edit profil/i }));
+    const avatar = new File(['avatar'], 'avatar.png', { type: 'image/png' });
+    fireEvent.change(screen.getByLabelText(/Unggah avatar/i), { target: { files: [avatar] } });
+    await waitFor(() => expect(api).toHaveBeenCalledWith('/api/profile/avatar', 'POST', expect.any(FormData)));
     fireEvent.change(screen.getByLabelText(/Nama lengkap/i), { target: { value: 'Aep Falak' } });
     fireEvent.change(screen.getByLabelText(/Tentang Anda/i), { target: { value: 'Pengamat hilal Tasikmalaya' } });
+    fireEvent.click(screen.getByRole('button', { name: /Bintang jatuh/i }));
+    expect(screen.getByRole('button', { name: /Bintang jatuh/i }).getAttribute('aria-pressed')).toBe('true');
     fireEvent.click(screen.getByRole('button', { name: /Simpan perubahan/i }));
-    await waitFor(() => expect(api).toHaveBeenCalledWith('/api/profile', 'PUT', expect.objectContaining({ name: 'Aep Falak' })));
+    await waitFor(() => expect(api).toHaveBeenCalledWith('/api/profile', 'PUT', expect.objectContaining({ name: 'Aep Falak', coverTheme: 'meteors' })));
     context.data.account = null;
   });
 
