@@ -25,5 +25,7 @@ Dokumen PDF disimpan sebagai sumber primer yang diberikan untuk pengembangan pro
 - **Ephemeris dasar:** masih memakai Astronomy Engine agar model dapat digunakan untuk tanggal dan lokasi umum secara stabil.
 - **Belum selesai:** transkripsi seluruh tabel tahun/bulan dan delapan ta’dil ijtimak halaman 223 dan seterusnya.
 - **Belum selesai:** metode gerhana Matahari global/lokal dan gerhana Bulan dari tabel kitab.
+- **Batas perbandingan:** selisih antarmodel pada UI hanya diagnostik. Selisih tersebut bukan skor akurasi atau keputusan bahwa suatu model benar/salah karena definisi koreksi tingginya tidak identik.
+- **Gerhana modern:** status LIVE memakai waktu kontak Astronomy Engine dan ketinggian benda langit untuk lokasi pengguna; ilustrasi tidak menjadi sumber data ilmiah.
 
 Bagian yang belum selesai tidak boleh diberi label sebagai implementasi penuh Ad-Durrul Aniq. Setiap tahap berikutnya harus memiliki data tabel terstruktur, rujukan halaman, dan pengujian terhadap contoh kitab sebelum ditampilkan sebagai hasil resmi model kitab.
