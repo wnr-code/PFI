@@ -17,3 +17,13 @@ Dokumen di direktori ini menjadi bahan rujukan untuk menelusuri, menerapkan, dan
 5. Perubahan metode hisab wajib melalui pengujian regresi sebelum diterapkan ke Production.
 
 Dokumen PDF disimpan sebagai sumber primer yang diberikan untuk pengembangan proyek. Keberadaannya di repositori tidak berarti seluruh perhitungan aplikasi saat ini telah diverifikasi terhadap setiap halaman kitab; verifikasi dilakukan bertahap dan harus dicatat dalam kode serta pengujian.
+
+## Status implementasi
+
+- **Sudah tersedia:** koreksi data hilal halaman 41–43, meliputi tinggi geosentris, paralaks, refraksi, dip, semidiameter, tinggi toposentris, elongasi, Nurul Hilal, muktsul, beda azimut, beda tinggi, dan jarak sudut.
+- **Sudah diuji:** contoh akhir Ramadan 1434 H di Trianggulasi Palengkung, Banyuwangi, halaman 39–43.
+- **Ephemeris dasar:** masih memakai Astronomy Engine agar model dapat digunakan untuk tanggal dan lokasi umum secara stabil.
+- **Belum selesai:** transkripsi seluruh tabel tahun/bulan dan delapan ta’dil ijtimak halaman 223 dan seterusnya.
+- **Belum selesai:** metode gerhana Matahari global/lokal dan gerhana Bulan dari tabel kitab.
+
+Bagian yang belum selesai tidak boleh diberi label sebagai implementasi penuh Ad-Durrul Aniq. Setiap tahap berikutnya harus memiliki data tabel terstruktur, rujukan halaman, dan pengujian terhadap contoh kitab sebelum ditampilkan sebagai hasil resmi model kitab.

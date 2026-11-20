@@ -62,7 +62,8 @@ function adDurrulHilal(sunset,l,elongation){
  const topocentricElongation=deg(Math.acos(clamp(Math.sin(rad(topocentricAltitude))*Math.sin(rad(sun.alt))+Math.cos(rad(topocentricAltitude))*Math.cos(rad(sun.alt))*Math.cos(rad(azimuthDifference)),-1,1)));
  const altitudeDifference=moon.alt-sun.alt;
  const angularDistance=deg(Math.acos(clamp(Math.cos(rad(azimuthDifference))*Math.cos(rad(altitudeDifference)),-1,1)));
- return{moon,sun,geocentricAltitude:moon.alt,topocentricAltitude,horizontalParallax,parallax,refraction,dip,semiDiameter,elongation,topocentricElongation,illumination:100*Illumination('Moon',sunset).phase_fraction,muktsulMinutes:Math.max(0,moon.alt*4),azimuthDifference,altitudeDifference,angularDistance,position:azimuthDifference<0?'south':'north',meets:topocentricAltitude>=3&&elongation>=6.4};
+ const muktsulMinutes=Math.max(0,moon.alt*4);
+ return{moon,sun,geocentricAltitude:moon.alt,topocentricAltitude,horizontalParallax,parallax,refraction,dip,semiDiameter,elongation,topocentricElongation,illumination:100*Illumination('Moon',sunset).phase_fraction,muktsulMinutes,estimatedMoonset:new Date(+sunset+muktsulMinutes*60000).toISOString(),azimuthDifference,altitudeDifference,angularDistance,position:azimuthDifference<0?'south':'north',meets:topocentricAltitude>=3&&elongation>=6.4};
 }
 export function calculateHisab(period,l,method='comparison'){
  if(!['comparison','mabims'].includes(method))throw new Error('Metode hisab belum didukung.');
