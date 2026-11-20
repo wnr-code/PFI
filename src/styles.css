@@ -747,3 +747,32 @@ input:disabled,select:disabled,textarea:disabled,button:disabled{cursor:not-allo
   .pfi-map-bottom-sheet.expanded{height:calc(100dvh - 84px);max-height:calc(100dvh - 84px)}
 }
 @keyframes infoPopupRise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* Profile audit and compact mobile location control. */
+.mobile-location-control{display:none;position:relative}
+.profile-completeness{position:relative;margin-top:12px;padding-top:9px}
+.profile-completeness:before,.profile-completeness>i{content:"";position:absolute;top:0;left:0;height:4px;border-radius:99px}
+.profile-completeness:before{right:0;background:#263b50}.profile-completeness>i{background:linear-gradient(90deg,#55aeea,#f2c86f)}
+.profile-completeness small{font-size:8px!important;letter-spacing:0!important}
+.profile-review-note{display:flex;align-items:flex-start;gap:9px;margin-top:13px;padding:12px;border:1px solid rgba(91,170,225,.2);border-radius:12px;color:#72bcea;background:rgba(55,145,207,.06)}
+.profile-review-note span{display:flex;flex-direction:column;gap:3px;color:#aebfd0;font-size:11px}.profile-review-note b{color:#dce9f3}
+.verification-evidence{display:flex;flex-direction:column;gap:8px;color:#d7e2ec;font-size:12px;font-weight:750}.verification-evidence small{color:var(--muted);font-weight:400}.verify-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:13px}
+@media(max-width:900px){
+  .topbar .loc-control{display:none}
+  .mobile-location-control{display:block}
+  .mobile-location-popup{position:absolute;z-index:300;top:46px;right:-92px;width:min(330px,calc(100vw - 28px));padding:18px;border:1px solid rgba(111,183,233,.3);border-radius:17px;color:#e9f2fa;background:rgba(10,30,49,.98);box-shadow:0 22px 65px rgba(0,0,0,.52);backdrop-filter:blur(18px)}
+  .mobile-location-close{position:absolute;top:9px;right:9px;width:34px;height:34px;display:grid;place-items:center;border-radius:10px;color:#a9bbcc;background:rgba(255,255,255,.05)}
+  .mobile-location-popup>span{display:block;padding-right:38px;color:var(--gold);font-size:10px;font-weight:900;letter-spacing:1px}.mobile-location-popup>b{display:block;margin-top:8px;font-size:19px}.mobile-location-popup>small{display:block;margin-top:3px;color:#9eb1c4;font-size:13px}
+  .mobile-location-popup dl{display:grid;gap:7px;margin:14px 0}.mobile-location-popup dl>div{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}.mobile-location-popup dt{color:#8fa4b8;font-size:13px}.mobile-location-popup dd{margin:0;color:#e1ebf3;font-size:13px;font-weight:700;text-align:right}
+  .mobile-location-popup label{display:flex;flex-direction:column;gap:7px;color:#aebfd0;font-size:13px}.mobile-location-popup select{width:100%;min-height:46px;font-size:16px}
+}
+@media(max-width:600px){
+  .topbar{padding:0 12px}.top-actions{gap:6px}.topbar .bell-button,.topbar .account-control{min-width:40px;min-height:40px;padding:7px}
+  .profile-cover{min-height:210px;padding:28px 20px 58px}.profile-cover-copy>span,.profile-panel header span{font-size:11px;letter-spacing:1px}.profile-cover p{font-size:15px!important;line-height:1.6}.profile-edit{font-size:14px}
+  .profile-identity{gap:14px;padding:18px}.profile-avatar-frame{width:72px;height:72px}.profile-name h2{font-size:21px}.profile-person>p{font-size:14px}.role-badge,.frame-badge{font-size:12px;padding:7px 10px}
+  .profile-panel{padding:20px}.profile-panel header h2{font-size:19px}.profile-about>p,.verify-panel>p{font-size:15px;line-height:1.7}.profile-about dt{font-size:13px}.profile-about dd{font-size:14px;white-space:normal;overflow-wrap:anywhere}
+  .profile-fields label,.verification-evidence{font-size:14px}.profile-fields small,.verification-evidence small{font-size:12px}.profile-fields input,.profile-fields textarea,.verify-panel textarea{font-size:16px}
+  .setting-row b{font-size:14px}.setting-row small{font-size:12px}.setting-row{min-height:66px}.profile-switch{width:48px;height:28px}.profile-switch i{width:22px;height:22px}.profile-switch.on i{left:23px}.mini-action{font-size:13px;padding:9px 12px}
+  .profile-verify-action b{font-size:14px}.profile-verify-action small{font-size:12px}.profile-logout{min-height:48px;font-size:14px}.verify-actions .btn{flex:1}
+  .profile-review-note span{font-size:14px}.profile-completeness small{font-size:12px!important}
+}

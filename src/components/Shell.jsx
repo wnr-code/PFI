@@ -10,7 +10,7 @@ import { usePFI, go } from '../state.jsx';
 import {
   House, Calculator, Orbit, UsersRound, UserRound, MapPinned, Files,
   Bell, ChevronRight, MapPin, ChevronDown, GraduationCap, FlaskConical,
-  ChevronsUpDown, LayoutDashboard, BookOpen, CreditCard, Share2, LogOut, LogIn,
+  ChevronsUpDown, LayoutDashboard, BookOpen, CreditCard, Share2, LogOut, LogIn, X,
 } from 'lucide-react';
 import { SITES } from '../lib/astro.js';
 
@@ -145,8 +145,10 @@ export function Sidebar() {
 
 export function Topbar() {
   const { page, t, data, site, setSite, setNotify, open } = usePFI();
+  const [locationOpen, setLocationOpen] = useState(false);
   const entry = [...navMain, ...navMore].find((n) => n[0] === page) || navMain[0];
   const label = t(entry[1], entry[2]);
+  const selectedSite = SITES.find((item) => item.id === site) || SITES[0];
 
   return (
     <header className="topbar">
@@ -163,6 +165,10 @@ export function Topbar() {
             {SITES.map((item) => <option key={item.id} value={item.id}>{item.city}</option>)}
           </select>
         </label>
+        <div className="mobile-location-control">
+          <button type="button" className="bell-button mobile-location-button" aria-label={t('Informasi lokasi pengamatan', 'Observation location information')} aria-expanded={locationOpen} onClick={() => setLocationOpen(value => !value)}><MapPin size={18}/></button>
+          {locationOpen && <div className="mobile-location-popup" role="dialog" aria-label={t('Lokasi pengamatan', 'Observation location')}><button type="button" className="mobile-location-close" aria-label={t('Tutup informasi lokasi', 'Close location information')} onClick={() => setLocationOpen(false)}><X size={17}/></button><span>{t('LOKASI PENGAMATAN','OBSERVATION LOCATION')}</span><b>{selectedSite.city}</b><small>{selectedSite.region} · {selectedSite.site}</small><dl><div><dt>{t('Koordinat','Coordinates')}</dt><dd>{selectedSite.lat.toFixed(5)}°, {selectedSite.lon.toFixed(5)}°</dd></div><div><dt>{t('Elevasi','Elevation')}</dt><dd>{selectedSite.elev} m</dd></div></dl><label>{t('Ganti lokasi','Change location')}<select value={site} onChange={(event) => { setSite(event.target.value); setLocationOpen(false); }}>{SITES.map((item) => <option key={item.id} value={item.id}>{item.city}</option>)}</select></label></div>}
+        </div>
         <button
           className="bell-button help-button"
           aria-label={t('Buka Kamus Falaq', 'Open Falaq glossary')}
