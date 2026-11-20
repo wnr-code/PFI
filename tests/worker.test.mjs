@@ -236,8 +236,12 @@ test('real-time eclipse timeline activates only inside observed contact times', 
   assert.equal(during.active, true);
   assert.ok(during.progress > 0 && during.progress < 1);
   assert.ok(['beginning', 'peak', 'ending'].includes(during.phase));
-  const ordinaryDay = eclipseTimeline(new Date('2024-04-10T18:42:00Z'), dallas);
+  const ordinaryInstant = new Date('2024-04-10T18:42:00Z');
+  const ordinaryDay = eclipseTimeline(ordinaryInstant, dallas);
   assert.equal(ordinaryDay.some((event) => event.active), false);
+  assert.ok(ordinaryDay.every((event) => new Date(event.start) > ordinaryInstant));
+  assert.ok(ordinaryDay.every((event) => new Date(event.start) < new Date(event.peak) && new Date(event.peak) < new Date(event.end)));
+  assert.equal(typeof during.visible, 'boolean');
 });
 
 test('Ad-Durrul Aniq correction model follows the published Ramadan 1434 Banyuwangi example', () => {

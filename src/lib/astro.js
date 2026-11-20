@@ -82,20 +82,22 @@ export function prayers(day,l){const start=localTime(day,'00:00',l),o=new Observ
 export function eclipses(date){const lunar=SearchLunarEclipse(date),solar=SearchGlobalSolarEclipse(date);return[{body:'Moon',kind:lunar.kind,date:lunar.peak.date,obscuration:lunar.obscuration},{body:'Sun',kind:solar.kind,date:solar.peak.date,obscuration:solar.obscuration}].sort((a,b)=>a.date-b.date);}
 export function eclipseTimeline(date,l=SITES[0]){
  const now=new Date(date),searchStart=new Date(+now-2*DAY),observer=new Observer(l.lat,l.lon,l.elev);
- const lunar=SearchLunarEclipse(searchStart),lunarHalf=Math.max(lunar.sd_penum,lunar.sd_partial,lunar.sd_total)*60000;
- const lunarStart=new Date(+lunar.peak.date-lunarHalf),lunarEnd=new Date(+lunar.peak.date+lunarHalf);
- const solar=SearchLocalSolarEclipse(searchStart,observer),solarStart=solar.partial_begin.time.date,solarEnd=solar.partial_end.time.date;
- const make=(body,kind,obscuration,start,peak,end,visible=true)=>{
+ let lunar=SearchLunarEclipse(searchStart),lunarHalf=Math.max(lunar.sd_penum,lunar.sd_partial,lunar.sd_total)*60000;
+ let lunarStart=new Date(+lunar.peak.date-lunarHalf),lunarEnd=new Date(+lunar.peak.date+lunarHalf);
+ if(lunarEnd<now){lunar=SearchLunarEclipse(now);lunarHalf=Math.max(lunar.sd_penum,lunar.sd_partial,lunar.sd_total)*60000;lunarStart=new Date(+lunar.peak.date-lunarHalf);lunarEnd=new Date(+lunar.peak.date+lunarHalf);}
+ let solar=SearchLocalSolarEclipse(searchStart,observer),solarStart=solar.partial_begin.time.date,solarEnd=solar.partial_end.time.date;
+ if(solarEnd<now){solar=SearchLocalSolarEclipse(now,observer);solarStart=solar.partial_begin.time.date;solarEnd=solar.partial_end.time.date;}
+ const make=(body,kind,obscuration,start,peak,end,visible=true,contacts={})=>{
   const active=visible&&now>=start&&now<=end,progress=active?clamp((now-start)/(end-start),0,1):0;
   let phase='upcoming';
   if(active)phase=now<peak?'beginning':Math.abs(now-peak)<60000?'peak':'ending';
-  else if(now>end)phase='finished';
-  return{body,kind,obscuration,start:start.toISOString(),peak:peak.toISOString(),end:end.toISOString(),active,progress,phase,visible};
+  return{body,kind,obscuration,start:start.toISOString(),peak:peak.toISOString(),end:end.toISOString(),active,progress,phase,visible,contacts};
  };
+ const lunarAltitude=position('Moon',lunar.peak.date,l).alt;
  return[
-  make('Sun',solar.kind,solar.obscuration,solarStart,solar.peak.time.date,solarEnd,solar.peak.altitude>0),
-  make('Moon',lunar.kind,lunar.obscuration,lunarStart,lunar.peak.date,lunarEnd,true),
- ];
+  make('Sun',solar.kind,solar.obscuration,solarStart,solar.peak.time.date,solarEnd,[solar.partial_begin.altitude,solar.peak.altitude,solar.partial_end.altitude].some((alt)=>alt>0),{totalBegin:solar.total_begin?.time.date?.toISOString()||null,totalEnd:solar.total_end?.time.date?.toISOString()||null,peakAltitude:solar.peak.altitude}),
+  make('Moon',lunar.kind,lunar.obscuration,lunarStart,lunar.peak.date,lunarEnd,lunarAltitude>0,{penumbralSemiDuration:lunar.sd_penum,partialSemiDuration:lunar.sd_partial,totalSemiDuration:lunar.sd_total,peakAltitude:lunarAltitude}),
+ ].sort((a,b)=>new Date(a.start)-new Date(b.start));
 }
 export const eventTypes={full:['Fase Bulan','Moon phase'],new:['Ijtimak','Conjunction'],rukyat:['Rukyat','Observation'],quarter:['Fase Bulan','Moon phase']};
 function event(type,d,l,title,en,desc,descEn){return{id:`${type}-${d.toISOString().slice(0,16)}-${l.id}`,type,date:d.toISOString(),title,en,desc,descEn,loc:l};}
