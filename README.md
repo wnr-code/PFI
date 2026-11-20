@@ -10,6 +10,10 @@ Ruang observasi digital untuk hisab awal bulan, simulasi hilal, peta rukyat, dan
 - Maintainer / pengelola repository: [@wnr-code](https://github.com/wnr-code)
 - Dukung pengembang: [https://trakteer.id/lanteraku/tip](https://trakteer.id/lanteraku/tip)
 
+## Sub-proyek
+
+- **Undangan pernikahan digital** (Cloudflare Workers + D1, terpisah dari aplikasi falak): lihat [`undangan/README.md`](undangan/README.md).
+
 ## Arsitektur data
 
 - Supabase hanya digunakan untuk autentikasi Google dan pengelolaan sesi identitas.

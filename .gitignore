@@ -11,3 +11,7 @@ test-results/
 *.sqlite-shm
 *.sqlite-wal
 .env
+
+# Undangan lokal (server dev)
+undangan/.dev-data/
+undangan/node_modules/

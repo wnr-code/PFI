@@ -1,0 +1,37 @@
+# Undangan Ja'far & Iklimah — tes API dan validasi konfigurasi Cloudflare.
+name: Undangan checks
+
+on:
+  push:
+    paths:
+      - 'undangan/**'
+      - '.github/workflows/undangan-checks.yml'
+  pull_request:
+    paths:
+      - 'undangan/**'
+      - '.github/workflows/undangan-checks.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: undangan
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Test validasi & API ucapan
+        run: node --test tests/*.test.mjs
+
+      - name: Validasi konfigurasi Worker (dry run)
+        run: npx --yes wrangler@4.165.0 deploy --dry-run
