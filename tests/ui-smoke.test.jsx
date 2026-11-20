@@ -130,6 +130,12 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     context.data.account = null;
   });
 
+  it('evaluates MABIMS at sunset rather than the freely selected simulation time', () => {
+    render(<Astronomi />);
+    expect(screen.getByText(/MABIMS saat sunset/i)).toBeTruthy();
+    expect(screen.getByText(/Kriteria saat sunset/i)).toBeTruthy();
+  });
+
   it.each([
     ['Astronomi', Astronomi, '.page-head h1'],
     ['Komunitas', Komunitas, '.community-hero h1'],

@@ -7,7 +7,7 @@
  */
 import React, { useState, useMemo, useEffect } from 'react';
 import { usePFI } from '../state.jsx';
-import { lunar, position, localTime, zlabel, SITES, eclipseTimeline, dateFmt, clock, meetsMabims } from '../lib/astro.js';
+import { lunar, position, localTime, sunsetTime, zlabel, SITES, eclipseTimeline, dateFmt, clock, meetsMabims } from '../lib/astro.js';
 import { Moon, Sun, Play, Compass, Crosshair, Orbit, Telescope, Eclipse, Timer, Info } from 'lucide-react';
 
 export default function Astronomi() {
@@ -31,7 +31,16 @@ export default function Astronomi() {
       return { alt: '0', az: '0', ra: '0', dec: '0', dist: '0' };
     }
   }, [instant, site]);
-  const meets = meetsMabims(Number(simulasi.alt), moon.elongation);
+  const sunsetCriteria = useMemo(() => {
+    const sunset = sunsetTime(tanggal, site);
+    if (!sunset) return null;
+    try {
+      const sunsetMoon = position('Moon', sunset, site);
+      const sunsetPhase = lunar(sunset);
+      return { sunset, altitude: sunsetMoon.alt, elongation: sunsetPhase.elongation, meets: meetsMabims(sunsetMoon.alt, sunsetPhase.elongation) };
+    } catch { return null; }
+  }, [tanggal, site]);
+  const meets = sunsetCriteria?.meets === true;
   const altitude = Math.max(4, Math.min(86, Number(simulasi.alt)));
   const moonLeft = Math.max(8, Math.min(92, 50 + (Number(simulasi.az) - 270) * .35));
 
@@ -39,7 +48,7 @@ export default function Astronomi() {
     <div className="page-wrap astronomy-page page-enter">
       <header className="science-page-head page-head">
         <div><div className="eyebrow"><i /> {t('LABORATORIUM ASTRONOMI', 'ASTRONOMY LABORATORY')}</div><h1>{t('Simulasi hilal', 'Crescent simulation')}</h1><p>{t('Telaah posisi bulan terhadap horizon secara kontekstual dari lokasi pengamatan.', 'Study the moon position against the horizon in context from your observation site.')}</p></div>
-        <span className={`criteria-status ${meets ? 'pass' : ''}`}><i />{meets ? t('Memenuhi MABIMS', 'Meets MABIMS') : t('Belum memenuhi MABIMS', 'Below MABIMS criteria')}</span>
+        <span className={`criteria-status ${meets ? 'pass' : ''}`} title={t('Kriteria dinilai pada saat Matahari terbenam, bukan waktu simulasi yang dipilih.','Criteria are evaluated at sunset, not at the selected simulation time.')}><i />{!sunsetCriteria?t('Data sunset tidak tersedia','Sunset data unavailable'):meets ? t('Memenuhi MABIMS saat sunset', 'Meets MABIMS at sunset') : t('Belum memenuhi MABIMS saat sunset', 'Below MABIMS at sunset')}</span>
       </header>
 
       <div className="astronomy-workspace">
@@ -72,7 +81,7 @@ export default function Astronomi() {
         <article><span><Crosshair size={17} />{t('Jarak bulan', 'Moon distance')}</span><b>{Number(simulasi.dist).toLocaleString('id-ID')}</b><small>km</small></article>
       </section>
 
-      <section className="card technical-readout"><div className="card-header"><div><span className="section-kicker">{t('DATA TEKNIS', 'TECHNICAL DATA')}</span><h2>{t('Koordinat ekuatorial', 'Equatorial coordinates')}</h2></div></div><div className="technical-grid"><div><small>Right ascension</small><b>{simulasi.ra}°</b></div><div><small>Declination</small><b>{simulasi.dec}°</b></div><div><small>{t('Iluminasi', 'Illumination')}</small><b>{moon.illumination?.toFixed?.(1) ?? '—'}%</b></div><div><small>{t('Kriteria', 'Criteria')}</small><b>≥3° / ≥6,4°</b></div></div></section>
+      <section className="card technical-readout"><div className="card-header"><div><span className="section-kicker">{t('DATA TEKNIS', 'TECHNICAL DATA')}</span><h2>{t('Koordinat ekuatorial', 'Equatorial coordinates')}</h2></div></div><div className="technical-grid"><div><small>Right ascension</small><b>{simulasi.ra}°</b></div><div><small>Declination</small><b>{simulasi.dec}°</b></div><div><small>{t('Iluminasi', 'Illumination')}</small><b>{moon.illumination?.toFixed?.(1) ?? '—'}%</b></div><div><small>{t('Kriteria saat sunset', 'Criteria at sunset')}</small><b>{sunsetCriteria?`${sunsetCriteria.altitude.toFixed(1)}° / ${sunsetCriteria.elongation.toFixed(1)}°`:'—'}</b></div></div></section>
 
       <section className="eclipse-lab" aria-label={t('Simulasi gerhana mendatang', 'Upcoming eclipse simulation')}>
         <header><div><span className="section-kicker">{liveEvent ? t('GERHANA SEDANG TERJADI', 'ECLIPSE IN PROGRESS') : t('MODEL GERHANA', 'ECLIPSE MODEL')}</span><h2>{liveEvent ? t('Pantauan waktu nyata', 'Real-time monitoring') : t('Gerhana berikutnya', 'Upcoming eclipses')}</h2><p>{liveEvent ? t('Posisi bayangan mengikuti waktu mulai, puncak, dan selesai dari data astronomi lokasi ini.', 'Shadow position follows the astronomical start, peak, and end times for this location.') : t('Belum ada gerhana yang berlangsung di lokasi ini; gerakan berikut adalah ilustrasi edukatif.', 'No eclipse is in progress at this location; the following motion is an educational illustration.')}</p></div><Eclipse size={25}/></header>
