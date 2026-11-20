@@ -878,3 +878,12 @@ input:disabled,select:disabled,textarea:disabled,button:disabled{cursor:not-allo
 .sky-agenda-card .card-header{align-items:flex-start;padding:17px 16px 3px}.sky-agenda-card .text-action{flex:0 0 auto;padding-top:3px;font-size:10px}.agenda-track{display:flex;gap:8px;padding:12px 14px 16px;scroll-snap-type:x proximity}.agenda-item{min-width:min(245px,78vw);padding:13px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.018);scroll-snap-align:start}.agenda-item:first-child{border-left:1px solid var(--line)}.agenda-item>div>b{font-size:12px}.agenda-item>div>span{font-size:10px}
 }
 @media(max-width:370px){.observatory-hero h1{font-size:27px}.hero-actions{grid-template-columns:1fr}.quick-action-list{grid-template-columns:1fr 1fr}.quick-action{min-height:106px;padding:10px}.schedule-row{grid-template-columns:auto minmax(0,1fr)}.schedule-row time{grid-column:2;text-align:left}}
+
+/* Decorative Home motion only; astronomical values remain independent from animation. */
+.observatory-hero:before{animation:homeStarsDrift 28s linear infinite}.lunar-instrument .orbit-one{animation:homeOrbitOne 18s linear infinite}.lunar-instrument .orbit-two{animation:homeOrbitTwo 26s linear infinite reverse}.lunar-body{animation:homeMoonFloat 5s ease-in-out infinite}.lunar-marker{animation:homeMarkerPulse 2.4s ease-in-out infinite}.lunar-marker.marker-b{animation-delay:-1.2s}
+@keyframes homeStarsDrift{to{background-position:210px 90px,-260px 115px,190px -100px,-280px 120px}}
+@keyframes homeOrbitOne{to{transform:rotate(342deg) scaleY(.58)}}
+@keyframes homeOrbitTwo{to{transform:rotate(412deg) scaleY(.77)}}
+@keyframes homeMoonFloat{50%{transform:translateY(-5px);box-shadow:inset -22px -18px 30px rgba(3,8,15,.72),0 0 62px rgba(224,193,125,.22)}}
+@keyframes homeMarkerPulse{50%{opacity:.55;box-shadow:0 0 0 8px rgba(125,201,232,.04),0 0 18px currentColor}}
+@media(prefers-reduced-motion:reduce){.observatory-hero:before,.lunar-instrument .lunar-orbit,.lunar-body,.lunar-marker{animation:none!important}}
