@@ -27,4 +27,5 @@ test('public brand naming consistently uses Platform Falak Indonesia', async () 
   assert.deepEqual(offenders, []);
   assert.match(await readFile('index.html', 'utf8'), /Platform Falak Indonesia/);
   assert.match(await readFile('public/manifest.webmanifest', 'utf8'), /Platform Falak Indonesia/);
+  assert.match(await readFile('src/lib/export.js', 'utf8'), /PRESISI DALAM HISAB, HARMONI DALAM UKHUWAH/);
 });
