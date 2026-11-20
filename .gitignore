@@ -15,3 +15,7 @@ test-results/
 # Undangan lokal (server dev)
 weding-java/.dev-data/
 weding-java/node_modules/
+
+# Paket pindahan repo undangan (tidak di-commit)
+weding-java-repo.zip
+weding-java-repo.bundle
