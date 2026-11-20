@@ -77,6 +77,10 @@ export default function PetaRukyat() {
   const [loading, setLoading] = useState(true);
   const [libraryError, setLibraryError] = useState('');
   const [selected, setSelected] = useState(null);
+  const [detailSheet, setDetailSheet] = useState('peek');
+  const [detailDragY, setDetailDragY] = useState(0);
+  const detailDragStart = useRef(null);
+  const detailDragDistance = useRef(0);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [currentLocation, setCurrentLocation] = useState(null);
@@ -98,6 +102,8 @@ export default function PetaRukyat() {
   const userAccuracyRef = useRef(null);
   const baseLayerRef = useRef(null);
   const hybridLabelsRef = useRef(null);
+
+  useEffect(() => { if (selected) setDetailSheet('peek'); }, [selected?.id]);
 
   const loadReports = useCallback(async (quiet = false) => {
     if (!quiet) setLoading(true);
@@ -454,6 +460,16 @@ export default function PetaRukyat() {
     userMarkerRef.current.bindTooltip(t('Posisi saya · GPS', 'My location · GPS'), { direction: 'top' });
   }, [mode, currentLocation, mapReady, t]);
 
+  const startDetailDrag = (event) => { detailDragStart.current = event.touches[0].clientY; detailDragDistance.current = 0; setDetailDragY(0); };
+  const moveDetailDrag = (event) => { if (detailDragStart.current === null) return; const distance = event.touches[0].clientY - detailDragStart.current; detailDragDistance.current = distance; setDetailDragY(Math.max(-120, distance)); };
+  const endDetailDrag = () => {
+    const distance = detailDragDistance.current;
+    if (distance > 130 && detailSheet === 'peek') setSelected(null);
+    else if (distance > 70) setDetailSheet('peek');
+    else if (distance < -55) setDetailSheet('expanded');
+    detailDragStart.current = null; detailDragDistance.current = 0; setDetailDragY(0);
+  };
+
   const openCoordinates = selected
     ? 'https://www.openstreetmap.org/?mlat=' + encodeURIComponent(selected.latitude) + '&mlon=' + encodeURIComponent(selected.longitude) + '#map=10/' + encodeURIComponent(selected.latitude) + '/' + encodeURIComponent(selected.longitude)
     : '';
@@ -498,8 +514,10 @@ export default function PetaRukyat() {
           </div>
         </div>
 
-        {selected && <div className="pfi-live-detail">
+        {selected && <div className={`pfi-live-detail pfi-map-bottom-sheet ${detailSheet}`} style={detailDragY ? { transform: `translateY(${Math.max(0, detailDragY)}px)`, transition: 'none' } : undefined}>
+          <button type="button" className="pfi-sheet-handle" aria-label={detailSheet === 'expanded' ? t('Ciutkan detail', 'Collapse details') : t('Perluas detail', 'Expand details')} onClick={() => setDetailSheet(value => value === 'expanded' ? 'peek' : 'expanded')} onTouchStart={startDetailDrag} onTouchMove={moveDetailDrag} onTouchEnd={endDetailDrag}><i/></button>
           <button type="button" className="pfi-detail-close" onClick={() => setSelected(null)} aria-label={t('Tutup detail', 'Close details')}><X size={18}/></button>
+          <div className="pfi-sheet-visual"><img src={selected.photo || '/images/telescope-dusk.webp'} alt={selected.photo ? t('Foto laporan rukyat', 'Rukyat report photo') : t('Ilustrasi pengamatan hilal', 'Crescent observation illustration')} loading="lazy"/><span>{selected.photo?t('Foto laporan terverifikasi','Verified report photo'):t('Ilustrasi observasi PFI','PFI observation illustration')}</span></div>
           <span className="pfi-live-eyebrow">{t('LAPORAN RUKYAT TERVERIFIKASI', 'VERIFIED RUKYAT REPORT')}</span>
           <h3>{selected.city || selected.title || t('Lokasi pengamatan', 'Observation location')}</h3>
           <p>{selected.title || selected.body || ''}</p>
@@ -512,7 +530,6 @@ export default function PetaRukyat() {
             <span><small>{t('Instrumen', 'Instrument')}</small><b>{selected.instrument || '—'}</b></span>
             <span><small>{t('Akurasi koordinat GPS', 'GPS coordinate accuracy')}</small><b>{Number.isFinite(Number(selected.accuracyMeters)) && selected.accuracyMeters !== null && selected.accuracyMeters !== '' ? '±' + Math.round(Number(selected.accuracyMeters)) + ' m' : t('Tidak tersedia', 'Not available')}</b></span>
           </div>
-          {selected.photo && <img className="pfi-report-photo" src={selected.photo} alt={t('Foto laporan rukyat', 'Rukyat report photo')} loading="lazy"/>}
           <a className="pfi-coordinate-link" href={openCoordinates} target="_blank" rel="noreferrer"><ExternalLink size={15}/>{t('Buka lokasi pada OpenStreetMap', 'Open location in OpenStreetMap')}</a>
         </div>}
       </section>
