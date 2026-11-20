@@ -213,9 +213,11 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     expect(screen.getByText(/Kelengkapan profil/i)).toBeTruthy();
     expect(screen.getByText(/Email akun · privat/i)).toBeTruthy();
     expect(screen.getByRole('navigation', { name: /Tindakan profil/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Pengaturan profil Avatar, sampul/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Edit informasi Nama, lembaga/i })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /Pengaturan profil Avatar, sampul/i }));
+    expect(screen.getByRole('region', { name: /Ringkasan profil/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Tampilan & pengaturan Avatar, sampul/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Edit profil Nama, lembaga/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Status verifikasi/i })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Tampilan & pengaturan Avatar, sampul/i }));
     expect(screen.getByRole('dialog', { name: /Pengaturan profil/i })).toBeTruthy();
     expect(screen.getByText(/Tampilan profil/i)).toBeTruthy();
     expect(screen.getByText(/^Animasi sampul$/i)).toBeTruthy();
@@ -232,7 +234,7 @@ describe('PFI UI smoke tests in Happy DOM', () => {
     context.data.account = { id: 'member-1', name: 'Aep Falaq', email: 'aep@example.test', org: 'PFI', bio: '', role: 'observer', verification: 'none', created: '2026-01-01T00:00:00Z', avatarUrl: '' };
     api.mockResolvedValueOnce({ avatarUrl: '/api/avatars/member-1?v=1' }).mockResolvedValueOnce({ ...context.data.account, name: 'Aep Falak', bio: 'Pengamat hilal Tasikmalaya', avatarUrl: '/api/avatars/member-1', coverTheme: 'meteors' });
     render(<Profil />);
-    fireEvent.click(screen.getByRole('button', { name: /Edit profil/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Edit profil$/i }));
     const avatar = new File(['avatar'], 'avatar.png', { type: 'image/png' });
     fireEvent.change(screen.getByLabelText(/Unggah avatar/i), { target: { files: [avatar] } });
     await waitFor(() => expect(api).toHaveBeenCalledWith('/api/profile/avatar', 'POST', expect.any(FormData)));
