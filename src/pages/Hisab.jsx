@@ -30,11 +30,18 @@ function MetricInfo({ label, title, children }) {
 
 function KitabTrace({ k, t, dms, duration }) {
   const rows = [
+    [t('Jarak Bumi–Bulan', 'Earth–Moon distance'), 'r', `${Math.round(k.moon.dist).toLocaleString('id-ID')} km`, 'hlm. 27'],
+    [t('Tinggi geosentris Bulan', 'Geocentric lunar altitude'), 'hc', dms(k.geocentricAltitude), 'hlm. 28'],
+    [t('Tinggi Matahari', 'Solar altitude'), 'hm', dms(k.sun.alt), 'hlm. 28–29'],
+    [t('Beda azimut', 'Azimuth difference'), 'z = azc − azm', dms(k.azimuthDifference), 'hlm. 28'],
     [t('Paralaks horizontal', 'Horizontal parallax'), 'HP = asin(6378,14 ÷ r)', dms(k.horizontalParallax), 'hlm. 27–28'],
     [t('Semidiameter Bulan', 'Lunar semidiameter'), 'sdc = 0,272476 × HP', dms(k.semiDiameter), 'hlm. 28'],
+    [t('Refraksi', 'Refraction'), 'Ref = 0,0167 ÷ tan(hc + 7,31 ÷ (hc + 4,4))', dms(k.refraction), 'hlm. 28'],
+    [t('Kerendahan ufuk', 'Horizon dip'), 'Dip = (1,76 ÷ 60) × √TT', dms(k.dip), 'hlm. 25'],
     [t('Paralaks Bulan', 'Lunar parallax'), 'P = HP × cos hc', dms(k.parallax), 'hlm. 28'],
     [t('Nilai setelah paralaks', 'Value after parallax'), 'hc − P', dms(k.parallaxCorrectedAltitude), 'hlm. 28'],
     [t('Tinggi toposentris', 'Topocentric altitude'), k.secondaryCorrectionsApplied ? "hc′ = hc − P + Ref + Dip − sdc" : "hc′ = hc − P", dms(k.topocentricAltitude), 'hlm. 28'],
+    [t('Elongasi geosentris', 'Geocentric elongation'), 'Elo = acos(sin hc sin hm + cos hc cos hm cos z)', dms(k.elongation), 'hlm. 29'],
     [t('Elongasi toposentris', 'Topocentric elongation'), "Elo′ = acos(sin hc′ sin hm + cos hc′ cos hm cos z)", dms(k.topocentricElongation), 'hlm. 29'],
     [t('Muktsul hilal', 'Crescent duration'), "mh = hc × 4′", duration(k.muktsulMinutes), 'hlm. 29'],
     [t('Beda tinggi', 'Altitude difference'), 'Y = hc − hm', dms(k.altitudeDifference), 'hlm. 29'],
