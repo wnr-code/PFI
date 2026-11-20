@@ -362,6 +362,9 @@ test('Ad-Durrul Aniq correction model follows the published Ramadan 1434 Banyuwa
   assert.ok(Number.isFinite(result.comparison.elongationDifference));
   assert.match(result.comparison.note, /Diagnostic only/);
   assert.equal('agreement' in result.comparison, false);
+  assert.equal(result.audit.kitabModelStatus, 'hybrid-corrections');
+  assert.match(result.audit.verifiedKitabScope, /hc′/);
+  assert.match(result.audit.pendingKitabScope, /Nurul Hilal/);
   // Ad-Durrul Aniq terjemahan Kemenag 2025, hlm. 39–43.
   assert.ok(Math.abs(kitab.geocentricAltitude - (4 + 13 / 60 + 11 / 3600)) < 0.06);
   assert.ok(Math.abs(kitab.topocentricAltitude - (3 + 17 / 60 + 16 / 3600)) < 0.06);

@@ -28,4 +28,8 @@ test('hisab report preserves seconds and formats angular results as DMS', () => 
   assert.match(kitabRows['Perkiraan Bulan terbenam'], /\b\d{2}[:.]\d{2}[:.]\d{2}\b/);
   assert.match(kitabRows['Nurul Hilal (ephemeris hibrida)'], /^\d+\.\d{3}%$/);
   assert.ok(['Selatan Matahari', 'Utara Matahari'].includes(kitabRows['Posisi hilal']));
+  const auditRows = Object.fromEntries(sections[3].rows);
+  assert.match(auditRows['Status model kitab'], /Koreksi hibrida/);
+  assert.match(auditRows['Cakupan kitab terverifikasi'], /hc′/);
+  assert.match(auditRows['Cakupan kitab tertunda'], /tabel anomali Nurul Hilal/i);
 });
