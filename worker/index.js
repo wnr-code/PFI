@@ -56,6 +56,8 @@ function supabaseRuntimeConfig(env) {
 }
 
 // Pending rukyat reports are private to their owner and authorized reviewers.
+export const HISAB_METHODS = Object.freeze(['comparison', 'mabims']);
+
 export function canViewPost(post, profile) {
   if (post?.type !== 'rukyat' || post.status === 'verified') return true;
   return Boolean(profile && (profile.id === post.user_id || ['reviewer', 'admin'].includes(profile.role)));
@@ -536,7 +538,7 @@ export default {
         const period = hijri(date, site);
         if (period.day !== 1) return fail(400, 'Pilih hari pertama bulan Hijriah.');
         const method = body.method;
-        if (method !== 'mabims') return fail(400, 'Metode hisab belum didukung. Saat ini hanya MABIMS yang tersedia.');
+        if (!HISAB_METHODS.includes(method)) return fail(400, 'Metode hisab belum didukung. Gunakan perbandingan dua model dengan kriteria MABIMS.');
         const result = calculateHisab({ start, ...period }, site, method);
         result.engine = 'Astronomy Engine 2.1.19';
 

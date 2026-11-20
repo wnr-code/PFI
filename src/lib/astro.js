@@ -99,7 +99,7 @@ export function eclipseTimeline(date,l=SITES[0]){
  const lunarAltitude=position('Moon',lunar.peak.date,l).alt;
  return[
   make('Sun',solar.kind,solar.obscuration,solarStart,solar.peak.time.date,solarEnd,[solar.partial_begin.altitude,solar.peak.altitude,solar.partial_end.altitude].some((alt)=>alt>0),{totalBegin:solar.total_begin?.time.date?.toISOString()||null,totalEnd:solar.total_end?.time.date?.toISOString()||null,peakAltitude:solar.peak.altitude}),
-  make('Moon',lunar.kind,lunar.obscuration,lunarStart,lunar.peak.date,lunarEnd,lunarAltitude>0,{penumbralSemiDuration:lunar.sd_penum,partialSemiDuration:lunar.sd_partial,totalSemiDuration:lunar.sd_total,peakAltitude:lunarAltitude}),
+  make('Moon',lunar.kind,lunar.obscuration,lunarStart,lunar.peak.date,lunarEnd,lunarAltitude>0,{penumbralBegin:lunarStart.toISOString(),partialBegin:lunar.sd_partial?new Date(+lunar.peak.date-lunar.sd_partial*60000).toISOString():null,totalBegin:lunar.sd_total?new Date(+lunar.peak.date-lunar.sd_total*60000).toISOString():null,totalEnd:lunar.sd_total?new Date(+lunar.peak.date+lunar.sd_total*60000).toISOString():null,partialEnd:lunar.sd_partial?new Date(+lunar.peak.date+lunar.sd_partial*60000).toISOString():null,penumbralEnd:lunarEnd.toISOString(),penumbralSemiDuration:lunar.sd_penum,partialSemiDuration:lunar.sd_partial,totalSemiDuration:lunar.sd_total,peakAltitude:lunarAltitude}),
  ].sort((a,b)=>new Date(a.start)-new Date(b.start));
 }
 export const eventTypes={full:['Fase Bulan','Moon phase'],new:['Ijtimak','Conjunction'],rukyat:['Rukyat','Observation'],quarter:['Fase Bulan','Moon phase']};

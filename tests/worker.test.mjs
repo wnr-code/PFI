@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker, { canReviewEntity, canViewGroup, canViewPost, ensureUserSchema, groupSlug, normalizeRukyatDetails, uploadContentLengthStatus } from '../worker/index.js';
+import worker, { canReviewEntity, canViewGroup, canViewPost, ensureUserSchema, groupSlug, HISAB_METHODS, normalizeRukyatDetails, uploadContentLengthStatus } from '../worker/index.js';
 import { SITES, calculateHisab, clock, eclipseTimeline, lunar, sunsetTime } from '../src/lib/astro.js';
 
 test('Worker health endpoint verifies D1 schema and authentication configuration', async () => {
@@ -109,6 +109,12 @@ test('protected post creation rejects anonymous requests', async () => {
   });
   const response = await worker.fetch(request, {}, {});
   assert.equal(response.status, 401);
+});
+
+test('Worker accepts the dual-model hisab method used by the frontend', () => {
+  assert.ok(HISAB_METHODS.includes('comparison'));
+  assert.ok(HISAB_METHODS.includes('mabims'));
+  assert.equal(HISAB_METHODS.includes('unknown'), false);
 });
 
 test('hisab rejects an unknown observation site before accessing D1', async () => {
