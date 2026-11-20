@@ -5,7 +5,7 @@
  * Maintainer: @wnr-code — https://github.com/wnr-code
  * Dukung pengembang: https://trakteer.id/lanteraku/tip
  */
-import { Observer, Equator, EquatorFromVector, GeoVector, Horizon, MoonPhase, RotateVector, Rotation_EQJ_EQD, SearchMoonPhase, Illumination, AngleFromSun, SearchRiseSet, SearchAltitude, SearchHourAngle, SearchLunarEclipse, SearchGlobalSolarEclipse, KM_PER_AU } from 'astronomy-engine';
+import { Observer, Equator, EquatorFromVector, GeoVector, Horizon, MoonPhase, RotateVector, Rotation_EQJ_EQD, SearchMoonPhase, Illumination, AngleFromSun, SearchRiseSet, SearchAltitude, SearchHourAngle, SearchLunarEclipse, SearchGlobalSolarEclipse, SearchLocalSolarEclipse, KM_PER_AU } from 'astronomy-engine';
 export const DAY=86400000;
 export const SITES=[
  {id:'tasik',city:'Tasikmalaya',region:'Jawa Barat',site:'Bukit Panyangrayan',lat:-7.407,lon:108.142,elev:698,offset:7},
@@ -80,6 +80,23 @@ export function qibla(l){const r=Math.PI/180,y1=l.lat*r,y2=21.4225*r,dl=(39.8262
 export function prayers(day,l){const start=localTime(day,'00:00',l),o=new Observer(l.lat,l.lon,l.elev),dhuhr=SearchHourAngle('Sun',o,0,start).time.date,dec=position('Sun',dhuhr,l).dec,asrAlt=Math.atan(1/(1+Math.tan(Math.abs(l.lat-dec)*Math.PI/180)))*180/Math.PI;return[
  ['Subuh','Fajr',SearchAltitude('Sun',o,1,start,1,-20)?.date],['Terbit','Sunrise',SearchRiseSet('Sun',o,1,start,1)?.date],['Zuhur','Dhuhr',dhuhr],['Asar','Asr',SearchAltitude('Sun',o,-1,dhuhr,1,asrAlt)?.date],['Magrib','Maghrib',SearchRiseSet('Sun',o,-1,start,1)?.date],['Isya','Isha',SearchAltitude('Sun',o,-1,start,1,-18)?.date]];}
 export function eclipses(date){const lunar=SearchLunarEclipse(date),solar=SearchGlobalSolarEclipse(date);return[{body:'Moon',kind:lunar.kind,date:lunar.peak.date,obscuration:lunar.obscuration},{body:'Sun',kind:solar.kind,date:solar.peak.date,obscuration:solar.obscuration}].sort((a,b)=>a.date-b.date);}
+export function eclipseTimeline(date,l=SITES[0]){
+ const now=new Date(date),searchStart=new Date(+now-2*DAY),observer=new Observer(l.lat,l.lon,l.elev);
+ const lunar=SearchLunarEclipse(searchStart),lunarHalf=Math.max(lunar.sd_penum,lunar.sd_partial,lunar.sd_total)*60000;
+ const lunarStart=new Date(+lunar.peak.date-lunarHalf),lunarEnd=new Date(+lunar.peak.date+lunarHalf);
+ const solar=SearchLocalSolarEclipse(searchStart,observer),solarStart=solar.partial_begin.time.date,solarEnd=solar.partial_end.time.date;
+ const make=(body,kind,obscuration,start,peak,end,visible=true)=>{
+  const active=visible&&now>=start&&now<=end,progress=active?clamp((now-start)/(end-start),0,1):0;
+  let phase='upcoming';
+  if(active)phase=now<peak?'beginning':Math.abs(now-peak)<60000?'peak':'ending';
+  else if(now>end)phase='finished';
+  return{body,kind,obscuration,start:start.toISOString(),peak:peak.toISOString(),end:end.toISOString(),active,progress,phase,visible};
+ };
+ return[
+  make('Sun',solar.kind,solar.obscuration,solarStart,solar.peak.time.date,solarEnd,solar.peak.altitude>0),
+  make('Moon',lunar.kind,lunar.obscuration,lunarStart,lunar.peak.date,lunarEnd,true),
+ ];
+}
 export const eventTypes={full:['Fase Bulan','Moon phase'],new:['Ijtimak','Conjunction'],rukyat:['Rukyat','Observation'],quarter:['Fase Bulan','Moon phase']};
 function event(type,d,l,title,en,desc,descEn){return{id:`${type}-${d.toISOString().slice(0,16)}-${l.id}`,type,date:d.toISOString(),title,en,desc,descEn,loc:l};}
 function newEvents(d,l){const monthDate=new Date(+d+3*DAY),h=hijri(monthDate,l),n=HIJRI[h.month-1],ne=HIJRI_EN[h.month-1],r=SearchRiseSet('Sun',new Observer(l.lat,l.lon,l.elev),-1,d,2).date;return [event('new',d,l,`Ijtimak ${n} ${h.year} H`,`${ne} ${h.year} conjunction`,'Saat bujur ekliptika Bulan dan Matahari berimpit. Ijtimak bukan penetapan awal bulan.','The Sun and Moon share the same ecliptic longitude. This is not an official month declaration.'),event('rukyat',r,l,`Rukyatul Hilal ${n}`,`${ne} crescent watch`,'Usulan waktu pengamatan hilal pada terbenam Matahari pertama setelah ijtimak. Bukan jadwal kegiatan resmi.','A suggested observing time at the first sunset following conjunction, not an official event.')];}

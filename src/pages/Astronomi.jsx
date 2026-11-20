@@ -5,9 +5,9 @@
  * Maintainer: @wnr-code — https://github.com/wnr-code
  * Dukung pengembang: https://trakteer.id/lanteraku/tip
  */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { usePFI } from '../state.jsx';
-import { lunar, position, localTime, zlabel, SITES, eclipses, dateFmt, clock } from '../lib/astro.js';
+import { lunar, position, localTime, zlabel, SITES, eclipses, eclipseTimeline, dateFmt, clock } from '../lib/astro.js';
 import { Moon, Sun, Play, Compass, Crosshair, Orbit, Telescope, Eclipse, Timer, Info } from 'lucide-react';
 
 export default function Astronomi() {
@@ -15,10 +15,15 @@ export default function Astronomi() {
   const [tanggal, setTanggal] = useState(() => new Date().toISOString().slice(0, 10));
   const [waktu, setWaktu] = useState('18:00');
   const [siteId, setSiteId] = useState(data.site || 'tasik');
+  const [liveNow, setLiveNow] = useState(() => new Date());
   const site = SITES.find((item) => item.id === siteId) || SITES[0];
+  useEffect(() => { const timer = setInterval(() => setLiveNow(new Date()), 1000); return () => clearInterval(timer); }, []);
   const instant = useMemo(() => localTime(tanggal, waktu, site), [tanggal, waktu, site]);
   const moon = useMemo(() => lunar(instant), [instant]);
   const eclipseData = useMemo(() => eclipses(instant), [instant]);
+  const liveEclipses = useMemo(() => eclipseTimeline(liveNow, site), [liveNow, site]);
+  const liveEvent = liveEclipses.find((event) => event.active);
+  const displayedEclipses = liveEvent ? [liveEvent] : eclipseData;
   const simulasi = useMemo(() => {
     try {
       const pos = position('Moon', instant, site);
@@ -71,15 +76,15 @@ export default function Astronomi() {
       <section className="card technical-readout"><div className="card-header"><div><span className="section-kicker">{t('DATA TEKNIS', 'TECHNICAL DATA')}</span><h2>{t('Koordinat ekuatorial', 'Equatorial coordinates')}</h2></div></div><div className="technical-grid"><div><small>Right ascension</small><b>{simulasi.ra}°</b></div><div><small>Declination</small><b>{simulasi.dec}°</b></div><div><small>{t('Iluminasi', 'Illumination')}</small><b>{moon.illumination?.toFixed?.(1) ?? '—'}%</b></div><div><small>{t('Kriteria', 'Criteria')}</small><b>≥3° / ≥6,4°</b></div></div></section>
 
       <section className="eclipse-lab" aria-label={t('Simulasi gerhana mendatang', 'Upcoming eclipse simulation')}>
-        <header><div><span className="section-kicker">{t('MODEL GERHANA', 'ECLIPSE MODEL')}</span><h2>{t('Gerhana berikutnya', 'Upcoming eclipses')}</h2><p>{t('Animasi menggambarkan proses penutupan secara edukatif dan tidak mengubah data perhitungan.', 'The animation illustrates occultation for education and never changes calculation data.')}</p></div><Eclipse size={25}/></header>
-        <div className="eclipse-model-grid">{eclipseData.map((event) => {
-          const solar = event.body === 'Sun';
-          return <article className={`eclipse-model ${solar ? 'solar' : 'lunar'}`} key={event.body}>
-            <div className="eclipse-stage" aria-hidden="true"><div className="eclipse-stars"/><div className="eclipse-light-disc">{solar ? <Sun size={44}/> : <Moon size={44}/>}</div><div className="eclipse-shadow-disc"/></div>
-            <div className="eclipse-copy"><span>{solar ? t('GERHANA MATAHARI','SOLAR ECLIPSE') : t('GERHANA BULAN','LUNAR ECLIPSE')}</span><h3>{event.kind || t('Gerhana', 'Eclipse')}</h3><div><Timer size={13}/><b>{dateFmt(event.date, site, data.lang, {day:'numeric',month:'long',year:'numeric'})}</b><small>{clock(event.date, site)} {zlabel(site)}</small></div>{Number.isFinite(event.obscuration) && <p>{t('Magnitudo penutupan', 'Obscuration')} <strong>{(event.obscuration*100).toFixed(2)}%</strong></p>}</div>
+        <header><div><span className="section-kicker">{liveEvent ? t('GERHANA SEDANG TERJADI', 'ECLIPSE IN PROGRESS') : t('MODEL GERHANA', 'ECLIPSE MODEL')}</span><h2>{liveEvent ? t('Pantauan waktu nyata', 'Real-time monitoring') : t('Gerhana berikutnya', 'Upcoming eclipses')}</h2><p>{liveEvent ? t('Posisi bayangan mengikuti waktu mulai, puncak, dan selesai dari data astronomi lokasi ini.', 'Shadow position follows the astronomical start, peak, and end times for this location.') : t('Belum ada gerhana yang berlangsung di lokasi ini; gerakan berikut adalah ilustrasi edukatif.', 'No eclipse is in progress at this location; the following motion is an educational illustration.')}</p></div><Eclipse size={25}/></header>
+        <div className={`eclipse-model-grid ${liveEvent ? 'is-live' : ''}`}>{displayedEclipses.map((event) => {
+          const solar = event.body === 'Sun'; const eventDate = event.peak || event.date;
+          return <article className={`eclipse-model ${solar ? 'solar' : 'lunar'} ${event.active ? 'live' : ''}`} key={event.body}>
+            <div className="eclipse-stage" aria-hidden="true"><div className="eclipse-stars"/><div className="eclipse-light-disc">{solar ? <Sun size={44}/> : <Moon size={44}/>}</div><div className="eclipse-shadow-disc" style={event.active ? {'--eclipse-progress': event.progress} : undefined}/>{event.active && <b className="live-eclipse-label">LIVE · {Math.round(event.progress*100)}%</b>}</div>
+            <div className="eclipse-copy"><span>{event.active ? t('SEDANG TERJADI','IN PROGRESS') : solar ? t('GERHANA MATAHARI','SOLAR ECLIPSE') : t('GERHANA BULAN','LUNAR ECLIPSE')}</span><h3>{event.kind || t('Gerhana', 'Eclipse')}</h3><div><Timer size={13}/><b>{dateFmt(eventDate, site, data.lang, {day:'numeric',month:'long',year:'numeric'})}</b><small>{clock(eventDate, site)} {zlabel(site)}</small></div>{event.active && <p>{t('Fase', 'Phase')}: <strong>{event.phase}</strong> · {clock(liveNow,site)}:{String(liveNow.getSeconds()).padStart(2,'0')} {zlabel(site)}</p>}{Number.isFinite(event.obscuration) && <p>{t('Magnitudo penutupan', 'Obscuration')} <strong>{(event.obscuration*100).toFixed(2)}%</strong></p>}</div>
           </article>;
         })}</div>
-        <div className="eclipse-disclaimer"><Info size={15}/>{t('Visual bergerak adalah ilustrasi siklus, bukan skala lintasan atau durasi kontak gerhana. Waktu dan jenis peristiwa berasal dari mesin astronomi.', 'The moving visual is a cycle illustration, not a scale model of eclipse path or contact duration. Event time and type come from the astronomy engine.')}</div>
+        <div className={`eclipse-disclaimer ${liveEvent ? 'live' : ''}`}><Info size={15}/>{liveEvent ? t('Mode waktu nyata aktif. Animasi bebas dihentikan; data fase tetap dihitung dari waktu kontak astronomi.', 'Real-time mode is active. Motion may be disabled; phase data remains calculated from astronomical contact times.') : t('Visual bergerak adalah ilustrasi siklus, bukan skala lintasan atau durasi kontak gerhana.', 'The moving visual is a cycle illustration, not a scale model of eclipse path or contact duration.')}</div>
       </section>
     </div>
   );

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker, { canReviewEntity, canViewGroup, canViewPost, ensureUserSchema, groupSlug, normalizeRukyatDetails, uploadContentLengthStatus } from '../worker/index.js';
-import { SITES, calculateHisab, clock, lunar, sunsetTime } from '../src/lib/astro.js';
+import { SITES, calculateHisab, clock, eclipseTimeline, lunar, sunsetTime } from '../src/lib/astro.js';
 
 test('Worker health endpoint verifies D1 schema and authentication configuration', async () => {
   const requiredTables = [
@@ -229,6 +229,16 @@ test('Shawwal 1443 hisab remains within the published 1 May 2022 Indonesian refe
   assert.equal(result.meets, result.moon.alt >= 3 && result.elongation >= 6.4);
 });
 
+
+test('real-time eclipse timeline activates only inside observed contact times', () => {
+  const dallas = { id: 'dallas', city: 'Dallas', region: 'Texas', site: 'Dallas', lat: 32.7767, lon: -96.797, elev: 131, offset: -5 };
+  const during = eclipseTimeline(new Date('2024-04-08T18:42:00Z'), dallas).find((event) => event.body === 'Sun');
+  assert.equal(during.active, true);
+  assert.ok(during.progress > 0 && during.progress < 1);
+  assert.ok(['beginning', 'peak', 'ending'].includes(during.phase));
+  const ordinaryDay = eclipseTimeline(new Date('2024-04-10T18:42:00Z'), dallas);
+  assert.equal(ordinaryDay.some((event) => event.active), false);
+});
 
 test('Ad-Durrul Aniq correction model follows the published Ramadan 1434 Banyuwangi example', () => {
   const palengkung = {
